@@ -1,4 +1,4 @@
-package model
+package models
 
 // Create a structure to represent the user:
 type User struct {

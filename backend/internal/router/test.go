@@ -1,7 +1,7 @@
 package model
 
 // Create a structure to represent the user:
-type User struct {
+type Users struct {
 	Id        int    `json:"id"`
 	NickName  string `json:"nick_name"`
 	Age       int    `json:"age"`
