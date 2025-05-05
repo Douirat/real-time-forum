@@ -6,7 +6,7 @@ import (
 )
 
 // Create an interface to represent all the user repositoru functionalities:
-type usersRepositoryLayer interface {
+type UsersRepositoryLayer interface {
 	RegisterNewUser(user *models.User) error
 }
 
