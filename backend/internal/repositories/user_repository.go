@@ -9,6 +9,7 @@ import (
 type UsersRepositoryLayer interface {
 	RegisterNewUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
+	GetUserByID(id int) (*models.User, error)
 }
 
 // Create a structure to represent to implemente the contract with the repo interface:

@@ -14,7 +14,7 @@ type SessionServices interface {
 }
 
 type SessionService struct {
-	Repository repositories.SessionRepositoryLayer
+	SessionRepo repositories.SessionRepositoryLayer
 	UserRepo   repositories.UsersRepositoryLayer
 }
 
