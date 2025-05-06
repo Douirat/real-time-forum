@@ -38,6 +38,12 @@ func (userRepo *UsersRepository) RegisterNewUser(user *models.User) error {
 // get userbyemail
 func (userRepo *UsersRepository)GetUserByEmail(email string) (*models.User,error){
 	query:=`SELECT *FROM users WHERE email = ?`;
-	user := *models.User{};
-	
+	user := &models.User{};
+	err:=userRepo.db.QueryRow(query,email).Scan(
+		user.Id,user.NickName,user.Age,user.Gender,user.FirstName,user.LastName,user.Password,
+	)
+	if err !=nil{
+		return nil,err
+	}
+	return user,nil	
 }
