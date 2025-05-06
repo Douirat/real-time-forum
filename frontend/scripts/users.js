@@ -9,6 +9,10 @@ export async function registerNewUser() {
         confirmation: document.getElementById("confirmation").value,
     }
     console.log(user);
+    if(!isValidPassword(user.password, user.confirmation) || !isValidEmail(user.email)){
+        alert("invalid email or password")
+        return
+    }
 
     fetch("http://localhost:8080/add_user", {
         method: "POST",
@@ -34,4 +38,15 @@ let generate_age = (born) => {
     let current_date = new Date()
     let age = current_date.getFullYear() - birth_date.getFullYear()
     return age
+}
+
+// Is valid password:
+let isValidPassword = (password, confirmation)=>{
+    return password === confirmation && password.length >= 8
+}
+
+// is valid email:
+function isValidEmail(email) {
+    const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return regex.test(email);
 }
