@@ -8,8 +8,7 @@ import (
 // Create an interface to represent all the user repositoru functionalities:
 type UsersRepositoryLayer interface {
 	RegisterNewUser(user *models.User) error
-	GetUserByEmail(email string) (*models.User,error)
-
+	GetUserByEmail(email string) (*models.User, error)
 }
 
 // Create a structure to represent to implemente the contract with the repo interface:
@@ -36,14 +35,28 @@ func (userRepo *UsersRepository) RegisterNewUser(user *models.User) error {
 }
 
 // get userbyemail
-func (userRepo *UsersRepository)GetUserByEmail(email string) (*models.User,error){
-	query:=`SELECT *FROM users WHERE email = ?`;
-	user := &models.User{};
-	err:=userRepo.db.QueryRow(query,email).Scan(
-		user.Id,user.NickName,user.Age,user.Gender,user.FirstName,user.LastName,user.Password,
+func (userRepo *UsersRepository) GetUserByEmail(email string) (*models.User, error) {
+	query := `SELECT *FROM users WHERE email = ?`
+	user := &models.User{}
+	err := userRepo.db.QueryRow(query, email).Scan(
+		user.Id, user.NickName, user.Age, user.Gender, user.FirstName, user.LastName, user.Password,
 	)
-	if err !=nil{
-		return nil,err
+	if err != nil {
+		return nil, err
 	}
-	return user,nil	
+	return user, nil
+}
+
+// getid
+func (userRepo *UsersRepository) GetUserByID(id int) (*models.User, error) {
+	query := `SELECT id, nick_name, age, gender, first_name, last_name, email, password 
+			  FROM users WHERE id = ?`
+	user := &models.User{}
+	err := userRepo.db.QueryRow(query, id).Scan(
+		user.Id, user.NickName, user.Age, user.Gender, user.FirstName, user.LastName, user.Password,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
