@@ -8,6 +8,8 @@ import (
 // Create an interface to represent all the user repositoru functionalities:
 type UsersRepositoryLayer interface {
 	RegisterNewUser(user *models.User) error
+	GetUserByEmail(email string) (*models.User,error)
+
 }
 
 // Create a structure to represent to implemente the contract with the repo interface:
@@ -31,4 +33,11 @@ func (userRepo *UsersRepository) RegisterNewUser(user *models.User) error {
 		return err
 	}
 	return nil
+}
+
+// get userbyemail
+func (userRepo *UsersRepository)GetUserByEmail(email string) (*models.User,error){
+	query:=`SELECT *FROM users WHERE email = ?`;
+	user := *models.User{};
+	
 }
