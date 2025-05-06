@@ -3,6 +3,7 @@ package services
 import (
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/repositories"
+	"real_time_forum/internal/services/utils"
 )
 
 // Create an interface to describe the functionalities of the user services:
@@ -22,6 +23,9 @@ func NewUsersServices(userRepo repositories.UsersRepositoryLayer) *UsersServices
 
 // Register q new user service:
 func (userServ *UsersServices) UserRegestration(user *models.User) error {
+	if user.FirstName == "" || user.LastName == "" || user.Email == "" || !utils.IsValidGender(user.Gender) {
+
+	}
 	user.NickName = string(user.LastName[0]) + user.FirstName
 	return userServ.userRepository.RegisterNewUser(user)
 }
