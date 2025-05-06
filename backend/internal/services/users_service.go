@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/repositories"
 	"real_time_forum/internal/services/utils"
