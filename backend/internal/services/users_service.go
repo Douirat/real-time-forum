@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/repositories"
 	"real_time_forum/internal/services/utils"
@@ -23,9 +24,14 @@ func NewUsersServices(userRepo repositories.UsersRepositoryLayer) *UsersServices
 
 // Register q new user service:
 func (userServ *UsersServices) UserRegestration(user *models.User) error {
-	if user.FirstName == "" || user.LastName == "" || user.Email == "" || !utils.IsValidGender(user.Gender){
-
+	if user.FirstName == "" || user.LastName == "" || user.Email == "" || !utils.IsValidGender(user.Gender) || user.Age <= 18 || user.Password == "" {
+		return errors.New("invalid credentials")
+	}
+	hashedPassword, err := utils.HashPassword(user.Password)
+	if err != nil {
+		return err
 	}
 	user.NickName = string(user.LastName[0]) + user.FirstName
+	user.Password = hashedPassword
 	return userServ.userRepository.RegisterNewUser(user)
 }
