@@ -32,9 +32,6 @@ func (userHandler UsersHandlers) UsersRegistrationHandler(w http.ResponseWriter,
 			http.Error(w, "Error:"+err.Error(), http.StatusInternalServerError)
 		}
 		fmt.Println(user)
-		// 3. send success response
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
 
 		response := &Response{
 			status:  "success",
