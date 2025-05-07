@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type SessionServices interface {
+type SessionsServicesLayer interface {
 	CreateSession(userID int) (string, time.Time, error)
 	// ValidateSession(token string) (*model.Session, error)
 	// DestroySession(token string) error
