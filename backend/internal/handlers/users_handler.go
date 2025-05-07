@@ -63,7 +63,7 @@ func (userHandler *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Authenticate user
-	user, err := userHandler.userService.(credentials.Email, credentials.Password)
+	user, err := userHandler.userService.AuthenticateUser(credentials.Email, credentials.Password)
 	if err != nil {
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
