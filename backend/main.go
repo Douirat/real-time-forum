@@ -37,6 +37,7 @@ func main() {
 
 	mainRouter := router.NewRouter()
 	mainRouter.AddRoute("POST", "/add_user", usersHandlers.UsersRegistrationHandler)
+	mainRouter.AddRoute("POST", "/login", usersHandlers.Login)
 	fmt.Println(mainRouter.Routes)
 	fmt.Println("listenning on port: http://localhost:8080/")
 	mainError = http.ListenAndServe(":8080", mainRouter)
