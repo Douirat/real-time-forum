@@ -1,0 +1,13 @@
+@import url("usres.css");
+
+*{
+    box-sizing: border-box;
+    background-repeat: no-repeat;
+}
+
+body{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}

@@ -64,7 +64,7 @@ const schema = `
 func Migrate(db *sql.DB) error {
 	_, err := db.Exec(schema)
 	if err != nil {
-		return fmt.Errorf("error migrating: %w", err)
+		return fmt.Errorf("error migrating: %v\n", err)
 	}
 	return nil
 }

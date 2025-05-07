@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/services"
@@ -17,7 +18,7 @@ type Response struct {
 }
 
 // Instantiate a new user service:
-func NewUsersService(userServ services.UsersServicesLayer) *UsersHandlers {
+func NewUsersHandlers(userServ services.UsersServicesLayer) *UsersHandlers {
 	return &UsersHandlers{userService: userServ}
 }
 
@@ -30,9 +31,7 @@ func (userHandler UsersHandlers) UsersRegistrationHandler(w http.ResponseWriter,
 		} else if err := userHandler.userService.UserRegestration(user); err != nil {
 			http.Error(w, "Error:"+err.Error(), http.StatusInternalServerError)
 		}
-		// 3. send success response
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
+		fmt.Println(user)
 
 		response := &Response{
 			status:  "success",

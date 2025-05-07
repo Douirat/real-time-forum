@@ -1,45 +1,47 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 	"real_time_forum/database"
 	"real_time_forum/internal/handlers"
 	"real_time_forum/internal/repositories"
-	"real_time_forum/internal/services"
 	"real_time_forum/internal/router"
+	"real_time_forum/internal/services"
 )
 
+var databaseConnection *sql.DB
+var mainError error
+
+func init() {
+	databaseConnection, mainError = database.Connect()
+	if mainError == nil {
+		mainError = database.Migrate(databaseConnection)
+	}
+}
+
 func main() {
-	// Connect to database
-	db, err := database.Connect()
-	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+	if mainError != nil {
+		fmt.Println("Error connecting to database: %w", mainError)
+		return
 	}
-	defer db.Close()
+	defer databaseConnection.Close()
+	fmt.Println("connected successfully")
 
-	// Run migrations
-	if err = database.Migrate(db); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
-	}
+	usersRepostories := repositories.NewUsersRepository(databaseConnection)
+	usersServices := services.NewUsersServices(usersRepostories)
+	usersHandlers := handlers.NewUsersHandlers(usersServices)
 
-	// Initialize repositories
-	userRepo := repositories.NewUsersRepository(db)
 
-	// Initialize services
-	userService := services.NewUsersServices(userRepo)
 
-	// Initialize handlers
-	userHandler := handlers.NewUsersService(userService)
-
-	// Initialize router
-	r := router.NewRouter(userHandler)
-
-	// Start server
-	port := ":8080"
-	fmt.Printf("Server starting on port %s...\n", port)
-	if err := http.ListenAndServe(port, r); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	mainRouter := router.NewRouter()
+	mainRouter.AddRoute("POST", "/add_user", usersHandlers.UsersRegistrationHandler)
+	fmt.Println(mainRouter.Routes)
+	fmt.Println("listenning on port: http://localhost:8080/")
+	mainError = http.ListenAndServe(":8080", mainRouter)
+	if mainError != nil {
+		fmt.Printf("Error: %v\n", mainError)
+		return
 	}
 }
