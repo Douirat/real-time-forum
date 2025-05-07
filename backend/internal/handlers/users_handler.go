@@ -43,3 +43,44 @@ func (userHandler UsersHandlers) UsersRegistrationHandler(w http.ResponseWriter,
 	}
 	http.Error(w, "Only post methods allowed", http.StatusMethodNotAllowed)
 }
+
+// Login handles user authentication
+func (userHandler *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST method allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse login credentials
+	var credentials struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Authenticate user
+	user, err := userHandler.userService.(credentials.Email, credentials.Password)
+	if err != nil {
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		return
+	}
+
+	// Send response
+	w.Header().Set("Content-Type", "application/json")
+	
+	response := map[string]interface{}{
+		"status":  "success",
+		"message": "Login successful",
+		"user": map[string]interface{}{
+			"id":        user.Id,
+			"nick_name": user.NickName,
+			"email":     user.Email,
+		},
+	}
+	
+	json.NewEncoder(w).Encode(response)
+}

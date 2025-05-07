@@ -10,6 +10,8 @@ import (
 // Create an interface to describe the functionalities of the user services:
 type UsersServicesLayer interface {
 	UserRegestration(user *models.User) error
+	AuthenticateUser(email, password string) (*models.User, error)
+
 }
 
 // Create structure to implement the services innterfase:
@@ -34,4 +36,30 @@ func (userServ *UsersServices) UserRegestration(user *models.User) error {
 	user.NickName = string(user.LastName[0]) + user.FirstName
 	user.Password = hashedPassword
 	return userServ.userRepository.RegisterNewUser(user)
+}
+
+// AuthenticateUser verifies user credentials and returns the user if valid
+func (userRepo *UsersServices) AuthenticateUser(email, password string) (*models.User, error) {
+	// Input validation
+	if email == "" {
+		return nil, errors.New("email is required")
+	}
+	if password == "" {
+		return nil, errors.New("password is required")
+	}
+
+	// Get user by email
+	user, err := userRepo.userRepository.GetUserByEmail(email)
+	if err != nil {
+		// Log the error but don't expose details to client
+		// fmt.Printf("Login error: %v\n", err)
+		return nil, errors.New("invalid email or password")
+	}
+
+	// Check if password matches
+	if !utils.CheckPasswordHash(password, user.Password) {
+		return nil, errors.New("invalid email or password")
+	}
+
+	return user, nil
 }
