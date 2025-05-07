@@ -37,10 +37,12 @@ func (userRepo *UsersRepository) RegisterNewUser(user *models.User) error {
 
 // get userbyemail
 func (userRepo *UsersRepository) GetUserByEmail(email string) (*models.User, error) {
-	query := `SELECT *FROM users WHERE email = ?`
+	// Fixed SQL query missing quotes
+	query := "SELECT * FROM users WHERE email = ?"
 	user := &models.User{}
+	// Fixed Scan by using address-of fields
 	err := userRepo.db.QueryRow(query, email).Scan(
-		user.Id, user.NickName, user.Age, user.Gender, user.FirstName, user.LastName, user.Password,
+		&user.Id, &user.NickName, &user.Age, &user.Gender, &user.FirstName, &user.LastName, &user.Email, &user.Password,
 	)
 	if err != nil {
 		return nil, err
@@ -50,11 +52,12 @@ func (userRepo *UsersRepository) GetUserByEmail(email string) (*models.User, err
 
 // getid
 func (userRepo *UsersRepository) GetUserByID(id int) (*models.User, error) {
-	query := `SELECT id, nick_name, age, gender, first_name, last_name, email, password 
-			  FROM users WHERE id = ?`
+	// Fixed SQL query missing quotes and fixing syntax
+	query := "SELECT id, nick_name, age, gender, first_name, last_name, email, password FROM users WHERE id = ?"
 	user := &models.User{}
+	// Fixed Scan by using address-of fields
 	err := userRepo.db.QueryRow(query, id).Scan(
-		user.Id, user.NickName, user.Age, user.Gender, user.FirstName, user.LastName, user.Password,
+		&user.Id, &user.NickName, &user.Age, &user.Gender, &user.FirstName, &user.LastName, &user.Email, &user.Password,
 	)
 	if err != nil {
 		return nil, err
