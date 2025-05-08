@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/services"
+	"time"
 )
 
 // UsersHandlersLayer defines the contract for user handlers
@@ -16,8 +17,8 @@ type UsersHandlersLayer interface {
 
 // UsersHandlers implements the user handlers contract
 type UsersHandlers struct {
-	userServ     services.UsersServicesLayer
-	sessionServ  services.SessionsServicesLayer
+	userServ    services.UsersServicesLayer
+	sessionServ services.SessionsServicesLayer
 }
 
 // NewUsersHandlers creates a new user handler
@@ -94,7 +95,35 @@ func (userHandler *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(response)
 }
 
-//logout user
-func (userHandler *UsersHandlers) Logout(w http.ResponseWriter,r *http.Request){
-	
+// logout user
+func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request) {
+	//read session_token from cookie:
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	token := cookie.Value
+
+	//delete session from database :
+	err = userHandler.sessionServ.DestroySession(token)
+	if err != nil {
+		http.Error(w, "faild to logout", http.StatusInternalServerError)
+		return
+	}
+
+	//emty cookie :
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    "",
+		Path:     "/",
+		Expires:  time.Unix(0, 0),
+		MaxAge:   -1,
+		HttpOnly: true,
+	})
+
+	//response user
+	w.WriteHeader(http.StatusOK)
+    w.Write([]byte("Logged out successfully"))
+
 }

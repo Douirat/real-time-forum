@@ -58,5 +58,6 @@ func (sessionServ *SessionService) CreateSession(userID int) (string, time.Time,
 
 // destroy session :
 func (sessionServ *SessionService) DestroySession(token string) error {
+	fmt.Println(token)
 	return sessionServ.SessionRepo.DeleteSessionByToken(token)
 }
