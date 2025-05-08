@@ -9,7 +9,6 @@ import (
 	"real_time_forum/internal/repositories"
 	"real_time_forum/internal/router"
 	"real_time_forum/internal/services"
-	"time"
 )
 
 var databaseConnection *sql.DB
@@ -36,14 +35,7 @@ func main() {
 
 	// Initialize services
 	usersServices := services.NewUsersServices(usersRepository)
-	
-	// Create session service with configuration
-	sessionService := &services.SessionService{
-		SessionRepo: sessionRepository,
-		UserRepo:    usersRepository,
-		TokenLength: 32,               // 32 bytes for token
-		SessionLife: 24 * time.Hour,   // Sessions last 24 hours
-	}
+	sessionService := services.NewSessionsServices(usersRepository, sessionRepository)
 
 	// Initialize handlers
 	usersHandlers := handlers.NewUsersHandlers(usersServices, sessionService)

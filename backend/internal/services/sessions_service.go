@@ -21,6 +21,16 @@ type SessionService struct {
 	SessionLife  time.Duration // How long sessions last
 }
 
+// Instantiate the user_service structure:
+func NewSessionsServices(userRepo repositories.UsersRepositoryLayer, sessionRepo repositories.SessionRepositoryLayer) *SessionService {
+	return &SessionService{
+		UserRepo:    userRepo,
+		SessionRepo: sessionRepo,
+		TokenLength: 32,
+		SessionLife: 24 * time.Hour,
+	}
+}
+
 // CreateSession generates a new session for the user
 func (sessionServ *SessionService) CreateSession(userID int) (string, time.Time, error) {
 	// Check if user exists
