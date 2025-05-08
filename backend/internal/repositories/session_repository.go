@@ -8,6 +8,7 @@ import (
 
 type SessionRepositoryLayer interface {
 	CreateSession(userID int, token string, expiresAt time.Time) error
+	DeleteSessionByToken(token string) error
 }
 
 type SessionsRepository struct {
@@ -39,4 +40,9 @@ func (sr *SessionsRepository) CreateSession(userID int, token string, expiresAt 
 	}
 
 	return nil
+}
+
+func (sr *SessionsRepository) DeleteSessionByToken(token string) error {
+	_, err := sr.DB.Exec("DELETE FROM sessions WHERE session_token = ?", token)
+	return err
 }
