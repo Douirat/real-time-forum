@@ -46,6 +46,7 @@ func main() {
 	// User routes
 	mainRouter.AddRoute("POST", "/add_user", usersHandlers.UsersRegistrationHandler)
 	mainRouter.AddRoute("POST", "/login", usersHandlers.Login)
+	mainRouter.AddRoute("POST", "/logout", usersHandlers.Logout)
 
 	fmt.Println("Routes registered:", mainRouter.Routes)
 	fmt.Println("Listening on port: http://localhost:8080/")

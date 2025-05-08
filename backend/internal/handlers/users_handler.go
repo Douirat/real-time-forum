@@ -93,3 +93,8 @@ func (userHandler *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+//logout user
+func (userHandler *UsersHandlers) Logout(w http.ResponseWriter,r *http.Request){
+	
+}
