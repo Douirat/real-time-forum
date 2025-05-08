@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/services"
+	"strings"
 	"time"
 )
 
@@ -97,16 +98,23 @@ func (userHandler *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) 
 
 // logout user
 func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request) {
+	var token string
 	//read session_token from cookie:
-	cookie, err := r.Cookie("session_token")
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
+	authHeader := r.Header.Get("Authorization")
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		token = strings.TrimPrefix(authHeader, "Bearer ")
+	} else {
+		// fallback: cookie
+		cookie, err := r.Cookie("session_token")
+		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		token = cookie.Value
 	}
-	token := cookie.Value
 
 	//delete session from database :
-	err = userHandler.sessionServ.DestroySession(token)
+	err := userHandler.sessionServ.DestroySession(token)
 	if err != nil {
 		http.Error(w, "faild to logout", http.StatusInternalServerError)
 		return
@@ -124,6 +132,6 @@ func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request)
 
 	//response user
 	w.WriteHeader(http.StatusOK)
-    w.Write([]byte("Logged out successfully"))
+	w.Write([]byte("Logged out successfully"))
 
 }
