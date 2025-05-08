@@ -9,16 +9,16 @@ import (
 
 type SessionsServicesLayer interface {
 	CreateSession(userID int) (string, time.Time, error)
+	DestroySession(token string) error
 	// ValidateSession(token string) (*model.Session, error)
-	// DestroySession(token string) error
 	// CleanupExpiredSessions() error
 }
 
 type SessionService struct {
 	SessionRepo repositories.SessionRepositoryLayer
 	UserRepo    repositories.UsersRepositoryLayer
-	TokenLength int // Length of session tokens
-	SessionLife  time.Duration // How long sessions last
+	TokenLength int           // Length of session tokens
+	SessionLife time.Duration // How long sessions last
 }
 
 // Instantiate the user_service structure:
@@ -54,4 +54,9 @@ func (sessionServ *SessionService) CreateSession(userID int) (string, time.Time,
 		return "", time.Time{}, err
 	}
 	return token, expiresAt, nil
+}
+
+// destroy session :
+func (sessionServ *SessionService) DestroySession(token string) error {
+	return sessionServ.SessionRepo.DeleteSessionByToken(token)
 }
