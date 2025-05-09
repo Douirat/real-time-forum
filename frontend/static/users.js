@@ -1,4 +1,4 @@
-export async function registerNewUser() {
+export async function register_new_user() {
     let user = {
         first_name: document.getElementById("first_name").value.trim(),
         last_name: document.getElementById("last_name").value.trim(),
@@ -14,7 +14,7 @@ export async function registerNewUser() {
         return
     }
 
-    fetch("http://localhost:8080/add_user", {
+    fetch("http://localhost:8080/register", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"

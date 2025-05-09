@@ -1,6 +1,7 @@
-export function registerForm() {
-    return /*html*/`
-        <form action="#" id="users_form" method="post">
+// Registration form component:
+export function registration_form() {
+    document.body.innerHTML = /*html*/`
+        <form id="registration_form" method="POST">
             <fieldset id="general_field">
                 <legend>Sign-up:</legend>
                 <fieldset class="Personal_fields">
@@ -31,7 +32,44 @@ export function registerForm() {
                     </div>
                 </fieldset>
                 <input id="submit" type="submit">
+                <a href="/login">Login</a>
             </fieldset>
         </form>
+
     `
+
+    // Reinject the script to load again:
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = '/static/main.js';
+    document.body.appendChild(script);
 }
+
+// Login form component:
+export function login_form() {
+    document.body.innerHTML = /*html*/`
+    <form id="login_form" method="post">
+        <fieldset class="Personal_fields">
+            <legend>Log-in:</legend>
+            <div>
+                <input type="email" class="email" id="email" placeholder="email..." required>
+            </div>
+            <div>
+                <input type="password" class="password" id="password" placeholder="password..." required>
+            </div>
+            
+                <button type="submit">Login</button>
+                <a href="/register">Sign-up</a>
+        
+        </fieldset>
+    </form>
+    `;
+
+    // Reinject the script to load again:
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = '/static/main.js';
+    document.body.appendChild(script);
+}
+
+
