@@ -22,6 +22,12 @@ type UsersHandlers struct {
 	sessionServ services.SessionsServicesLayer
 }
 
+// A structure to represent the login credentials:
+type Credentials struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+}
+
 // NewUsersHandlers creates a new user handler
 func NewUsersHandlers(userServ services.UsersServicesLayer, sessionServ services.SessionsServicesLayer) *UsersHandlers {
 	return &UsersHandlers{
@@ -52,19 +58,16 @@ func (userHandler *UsersHandlers) UsersRegistrationHandler(w http.ResponseWriter
 
 // Login handles user authentication
 func (userHandler *UsersHandlers) Login(w http.ResponseWriter, r *http.Request) {
-	var loginData struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
-	err := json.NewDecoder(r.Body).Decode(&loginData)
+	credentials := Credentials{}
+	fmt.Println("..........................")
+	err := json.NewDecoder(r.Body).Decode(&credentials)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	// Authenticate user
-	user, err := userHandler.userServ.AuthenticateUser(loginData.Email, loginData.Password)
+	user, err := userHandler.userServ.AuthenticateUser(credentials.Email, credentials.Password)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Authentication failed: %v", err), http.StatusUnauthorized)
 		return
@@ -101,8 +104,8 @@ func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request)
 	var token string
 	//read session_token from cookie:
 	authHeader := r.Header.Get("Authorization")
-	if strings.HasPrefix(authHeader, "Bearer ") {
-		token = strings.TrimPrefix(authHeader, "Bearer ")
+	if strings.HasPrefix(authHeader, "Bearer") {
+		token = strings.TrimPrefix(authHeader, "Bearer")
 	} else {
 		// fallback: cookie
 		cookie, err := r.Cookie("session_token")

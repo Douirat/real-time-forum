@@ -29,22 +29,22 @@ func main() {
 	defer databaseConnection.Close()
 	fmt.Println("Connected successfully to database")
 
-	// Initialize repositories
+	// Initialize repositories:
 	usersRepository := repositories.NewUsersRepository(databaseConnection)
 	sessionRepository := repositories.NewSessionsRepository(databaseConnection)
 
-	// Initialize services
+	// Initialize services:
 	usersServices := services.NewUsersServices(usersRepository)
 	sessionService := services.NewSessionsServices(usersRepository, sessionRepository)
 
-	// Initialize handlers
+	// Initialize handlers:
 	usersHandlers := handlers.NewUsersHandlers(usersServices, sessionService)
 
-	// Setup router and routes
+	// Setup router and routes:
 	mainRouter := router.NewRouter()
 	
-	// User routes
-	mainRouter.AddRoute("POST", "/add_user", usersHandlers.UsersRegistrationHandler)
+	// User routes:
+	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)
 	mainRouter.AddRoute("POST", "/login", usersHandlers.Login)
 	mainRouter.AddRoute("POST", "/logout", usersHandlers.Logout)
 

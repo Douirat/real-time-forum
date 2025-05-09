@@ -8,7 +8,7 @@ import (
 
 // Check valid gender:
 func IsValidGender(gender string) bool {
-	return gender == "male" || gender == "female"
+	return gender == "Male" || gender == "Female"
 }
 
 // HashPassword takes a plain text password and returns a bcrypt hash
