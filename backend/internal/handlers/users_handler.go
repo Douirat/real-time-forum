@@ -61,9 +61,10 @@ func (userHandler *UsersHandlers) UsersLoginHandler(w http.ResponseWriter, r *ht
 	credentials := Credentials{}
 	err := json.NewDecoder(r.Body).Decode(&credentials)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, "the error is here!!!", http.StatusBadRequest)
 		return
 	}
+	fmt.Println("Credentials", credentials)
 
 	// Authenticate user:
 	user, err := userHandler.userServ.AuthenticateUser(credentials.Email, credentials.Password)
