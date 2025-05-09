@@ -45,7 +45,7 @@ func main() {
 	
 	// User routes:
 	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)
-	mainRouter.AddRoute("POST", "/login", usersHandlers.Login)
+	mainRouter.AddRoute("POST", "/login", usersHandlers.UsersLoginHandler)
 	mainRouter.AddRoute("POST", "/logout", usersHandlers.Logout)
 
 	fmt.Println("Routes registered:", mainRouter.Routes)
