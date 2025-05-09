@@ -1,12 +1,11 @@
 import { registration_form, login_form } from "./components/forms.js"
-import { register_new_user } from "./users.js"
+import { register_new_user, login_user } from "./users.js"
 import { render_home_page } from "./home.js"
 
 function navigateTo(url) {
     history.pushState(null, null, url)
     router()
 }
-
 async function router() {
     let routers = [
         { path: "/", view: render_home_page },
@@ -22,7 +21,6 @@ async function router() {
         }
     })
     console.log(routes_with_booleans);
-
     let match = routes_with_booleans.find(selected => selected.isMatche)
     console.log("selected: ", match);
 
@@ -45,16 +43,27 @@ document.addEventListener("DOMContentLoaded", () => {
         ele.addEventListener('click', (e) => {
             e.preventDefault()
             navigateTo(ele.href)
-            if (location.pathname === "/register") {
-                console.log("Called ....");
-
-                let form_data = document.getElementById("registration_form")
-                if (form_data) {
-                    form_data.addEventListener("submit", (event) => {
-                        event.preventDefault()
-                        register_new_user()
-                    })
-                }
+            switch (location.pathname) {
+                case "/register":
+                    setTimeout(() => {
+                        let registration_form = document.getElementById("registration_form")
+                        if (registration_form) {
+                            registration_form.addEventListener("submit", (event) => {
+                                event.preventDefault()
+                                register_new_user()
+                            })
+                        }
+                    }, 0)
+                case "/login":
+                    setTimeout(() => {
+                        let login_form = document.getElementById("login_form")
+                        if (login_form) {
+                            login_form.addEventListener("submit", (event) => {
+                                event.preventDefault()
+                                login_user()
+                            })
+                        }
+                    }, 0)
             }
         })
     })

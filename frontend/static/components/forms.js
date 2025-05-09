@@ -35,13 +35,12 @@ export function registration_form() {
                 <a href="/login">Login</a>
             </fieldset>
         </form>
-
     `
 
     // Reinject the script to load again:
     const script = document.createElement('script');
     script.type = 'module';
-    script.src = '/static/main.js';
+    script.src = '/static/script.js';
     document.body.appendChild(script);
 }
 
@@ -68,7 +67,7 @@ export function login_form() {
     // Reinject the script to load again:
     const script = document.createElement('script');
     script.type = 'module';
-    script.src = '/static/main.js';
+    script.src = '/static/script.js';
     document.body.appendChild(script);
 }
 

@@ -44,7 +44,7 @@ func (userHandler *UsersHandlers) UsersRegistrationHandler(w http.ResponseWriter
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-
+	fmt.Println(user)
 	err = userHandler.userServ.UserRegestration(&user)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Registration failed: %v", err), http.StatusBadRequest)
@@ -59,6 +59,7 @@ func (userHandler *UsersHandlers) UsersRegistrationHandler(w http.ResponseWriter
 // Login handles user authentication
 func (userHandler *UsersHandlers) UsersLoginHandler(w http.ResponseWriter, r *http.Request) {
 	credentials := Credentials{}
+	fmt.Println("Methos =========>", r.Method)
 	err := json.NewDecoder(r.Body).Decode(&credentials)
 	if err != nil {
 		http.Error(w, "the error is here!!!", http.StatusBadRequest)
