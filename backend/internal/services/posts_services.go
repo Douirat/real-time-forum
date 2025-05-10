@@ -1,9 +1,12 @@
 package services
 
 import (
-	"database/sql"
+	"errors"
+	"fmt"
+	"time"
 
 	"real_time_forum/internal/models"
+	"real_time_forum/internal/repositories"
 )
 
 // Create an interface for the posts services:
@@ -14,7 +17,22 @@ type PostsServiceLayer interface {
 // Create a structure to implement the functionalities
 // within our interface contract:
 type PostsService struct {
-	db *sql.DB
+	PostRepo repositories.PostsRepositoryLayer
 }
 
-// 
+// Instantiate a new postService instance:
+func NewPostService(postRepo *repositories.PostsRepository) *PostsService {
+	return &PostsService{
+		PostRepo: postRepo,
+	}
+}
+
+// Create a new post server:
+func (postSer *PostsService) CreatePost(post *models.Post) error {
+	if post.Title == "" || post.Content == "" {
+		return errors.New("missing content or title")
+	}
+	post.CreatedAt = time.Now().Format("2006-01-02 15:04:05")
+	fmt.Println("--------> ", post)
+	return postSer.PostRepo.CreatePost(post)
+}

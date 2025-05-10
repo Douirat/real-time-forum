@@ -35,14 +35,17 @@ func main() {
 	// Initialize repositories:
 	usersRepository := repositories.NewUsersRepository(databaseConnection)
 	sessionRepository := repositories.NewSessionsRepository(databaseConnection)
+	postsRepository := repositories.NewPostsRepository(databaseConnection)
 
 	// Initialize services:
 	usersServices := services.NewUsersServices(usersRepository)
 	sessionService := services.NewSessionsServices(usersRepository, sessionRepository)
+	postsServices := services.NewPostService(postsRepository)
+
 
 	// Initialize handlers:
 	usersHandlers := handlers.NewUsersHandlers(usersServices, sessionService)
-
+	postsHandlers := handlers.NewPostsHandles(postsServices)
 	// Setup router and routes:
 	mainRouter := router.NewRouter(sessionService)
 
@@ -50,6 +53,7 @@ func main() {
 	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)
 	mainRouter.AddRoute("POST", "/login", usersHandlers.UsersLoginHandler)
 	mainRouter.AddRoute("POST", "/logout", usersHandlers.Logout)
+	mainRouter.AddRoute("POST", "/add_post", postsHandlers.CreatePostsHandler)
 
 	fmt.Println("Routes registered:", mainRouter.Routes)
 	fmt.Println("Listening on port: http://localhost:8080/login")
