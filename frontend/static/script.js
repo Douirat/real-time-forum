@@ -2,7 +2,7 @@ import { registration_form, login_form } from "./components/forms.js"
 import { register_new_user, login_user } from "./users.js"
 import { render_home_page } from "./home.js"
 
-function navigateTo(url) {
+export function navigateTo(url) {
     history.pushState(null, null, url)
     router()
 }

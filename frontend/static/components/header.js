@@ -1,3 +1,4 @@
+import { navigateTo } from "../script.js";
 
 export function header() {
     return /*html*/`
@@ -25,6 +26,7 @@ export function logout() {
                     const errorText = await response.text();
                     throw new Error(errorText);
                 }
+                
                 navigateTo("/login")
                 return response.json();
             })

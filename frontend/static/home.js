@@ -2,6 +2,8 @@ import { header, logout } from "./components/header.js";
 import { postForm } from "./components/post.js";
 
 export function render_home_page() {
+    
+
     document.body.innerHTML = /*html*/`
         ${header()}
         <main>
