@@ -10,7 +10,7 @@ import (
 type SessionsServicesLayer interface {
 	CreateSession(userID int) (string, time.Time, error)
 	DestroySession(token string) error
-	// ValidateSession(token string) (*model.Session, error)
+	IsValidSession(token string) bool
 	// CleanupExpiredSessions() error
 }
 
@@ -54,4 +54,9 @@ func (sessionServ *SessionService) CreateSession(userID int) (string, time.Time,
 func (sessionServ *SessionService) DestroySession(token string) error {
 	fmt.Println(token)
 	return sessionServ.SessionRepo.DeleteSessionByToken(token)
+}
+
+// Check if the session is valid:
+func (sessionSev *SessionService) IsValidSession(token string)bool{
+return sessionSev.SessionRepo.GetSessionByToken(token)
 }

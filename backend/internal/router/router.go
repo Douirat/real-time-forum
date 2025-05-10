@@ -1,18 +1,21 @@
 package router
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
+
+	"real_time_forum/internal/services"
 )
 
 type Router struct {
-	Routes map[string]http.HandlerFunc
+	Routes        map[string]http.HandlerFunc
+	usersSessions services.SessionsServicesLayer
 }
 
-func NewRouter() *Router {
+func NewRouter(session *services.SessionService) *Router {
 	return &Router{
-		Routes: make(map[string]http.HandlerFunc),
+		Routes:        make(map[string]http.HandlerFunc),
+		usersSessions: session,
 	}
 }
 
@@ -28,7 +31,6 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	origin := r.Header.Get("Origin")
-	fmt.Println("------------> ", origin)
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
@@ -42,7 +44,18 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// check the session to allow only logged in user to visit the home page:
+	// Fixed session check code - check if cookie exists before accessing its value
+	isValid := false
+	session, err := r.Cookie("session_token")
+	if err == nil && session != nil {
+		isValid = router.usersSessions.IsValidSession(session.Value)
+	}
 	if r.Method == "GET" && (r.URL.Path == "/" || r.URL.Path == "/index.html") {
+		if !isValid {
+			http.Redirect(w, r, "/login", http.StatusFound) // 302
+			return
+		}
 		http.ServeFile(w, r, "../frontend/index.html")
 		return
 	}

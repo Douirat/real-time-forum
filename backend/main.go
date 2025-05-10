@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+
 	"real_time_forum/database"
 	"real_time_forum/internal/handlers"
 	"real_time_forum/internal/repositories"
@@ -11,8 +12,10 @@ import (
 	"real_time_forum/internal/services"
 )
 
-var databaseConnection *sql.DB
-var mainError error
+var (
+	databaseConnection *sql.DB
+	mainError          error
+)
 
 func init() {
 	databaseConnection, mainError = database.Connect()
@@ -41,7 +44,7 @@ func main() {
 	usersHandlers := handlers.NewUsersHandlers(usersServices, sessionService)
 
 	// Setup router and routes:
-	mainRouter := router.NewRouter()
+	mainRouter := router.NewRouter(sessionService)
 
 	// User routes:
 	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)
@@ -49,7 +52,7 @@ func main() {
 	mainRouter.AddRoute("POST", "/logout", usersHandlers.Logout)
 
 	fmt.Println("Routes registered:", mainRouter.Routes)
-	fmt.Println("Listening on port: http://localhost:8080/")
+	fmt.Println("Listening on port: http://localhost:8080/login")
 
 	mainError = http.ListenAndServe(":8080", mainRouter)
 	if mainError != nil {

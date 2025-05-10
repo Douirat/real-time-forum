@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"real_time_forum/internal/models"
-	"real_time_forum/internal/services"
 	"strings"
 	"time"
+
+	"real_time_forum/internal/models"
+	"real_time_forum/internal/services"
 )
 
 // UsersHandlersLayer defines the contract for user handlers
@@ -24,8 +25,8 @@ type UsersHandlers struct {
 
 // A structure to represent the login credentials:
 type Credentials struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 // NewUsersHandlers creates a new user handler
@@ -59,10 +60,9 @@ func (userHandler *UsersHandlers) UsersRegistrationHandler(w http.ResponseWriter
 // Login handles user authentication
 func (userHandler *UsersHandlers) UsersLoginHandler(w http.ResponseWriter, r *http.Request) {
 	credentials := Credentials{}
-	fmt.Println("Methos =========>", r.Method)
 	err := json.NewDecoder(r.Body).Decode(&credentials)
 	if err != nil {
-		http.Error(w, "the error is here!!!", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	fmt.Println("Credentials", credentials)
@@ -83,22 +83,21 @@ func (userHandler *UsersHandlers) UsersLoginHandler(w http.ResponseWriter, r *ht
 
 	// Set the secure session coockie:
 	http.SetCookie(w, &http.Cookie{
-		Name: "session_token",
-		Value: token,
-		Expires: expiresAt,
+		Name:     "session_token",
+		Value:    token,
+		Expires:  expiresAt,
 		HttpOnly: true,
-		Secure: true,
+		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	})
 
-
 	// Create response with user data and session info:
 	response := struct {
-		UserID      int `json:"user_id"`
-		Token     string       `json:"token"`
-		ExpiresAt string       `json:"expires_at"`
+		UserID    int    `json:"user_id"`
+		Token     string `json:"token"`
+		ExpiresAt string `json:"expires_at"`
 	}{
-		UserID:      user.Id,
+		UserID:    user.Id,
 		Token:     token,
 		ExpiresAt: expiresAt.Format(http.TimeFormat),
 	}
@@ -111,7 +110,7 @@ func (userHandler *UsersHandlers) UsersLoginHandler(w http.ResponseWriter, r *ht
 // logout user:
 func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request) {
 	var token string
-	//read session_token from cookie:
+	// read session_token from cookie:
 	authHeader := r.Header.Get("Authorization")
 	if strings.HasPrefix(authHeader, "Bearer") {
 		token = strings.TrimPrefix(authHeader, "Bearer")
@@ -125,14 +124,14 @@ func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request)
 		token = cookie.Value
 	}
 
-	//delete session from database :
+	// delete session from database :
 	err := userHandler.sessionServ.DestroySession(token)
 	if err != nil {
 		http.Error(w, "faild to logout", http.StatusInternalServerError)
 		return
 	}
 
-	//emty cookie :
+	// emty cookie :
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
 		Value:    "",
@@ -142,12 +141,12 @@ func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request)
 		HttpOnly: true,
 	})
 
-	//response user
-w.Header().Set("Content-Type", "application/json")
-json.NewEncoder(w).Encode(struct {
-	Message string `json:"message"`
-}{
-	Message: "User logged out successfully",
-})
-
+	// response user
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(struct {
+		Message string `json:"message"`
+	}{
+		Message: "User logged out successfully",
+	})
 }
+
