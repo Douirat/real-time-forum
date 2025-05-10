@@ -32,6 +32,7 @@ async function router() {
     if (match.route.view) {
         match.route.view.apply()
     }
+    render_events_handlers()
 }
 
 
@@ -43,28 +44,33 @@ document.addEventListener("DOMContentLoaded", () => {
         ele.addEventListener('click', (e) => {
             e.preventDefault()
             navigateTo(ele.href)
-            switch (location.pathname) {
-                case "/register":
-                    setTimeout(() => {
-                        let registration_form = document.getElementById("registration_form")
-                        if (registration_form) {
-                            registration_form.addEventListener("submit", (event) => {
-                                event.preventDefault()
-                                register_new_user()
-                            })
-                        }
-                    }, 0)
-                case "/login":
-                    setTimeout(() => {
-                        let login_form = document.getElementById("login_form")
-                        if (login_form) {
-                            login_form.addEventListener("submit", (event) => {
-                                event.preventDefault()
-                                login_user()
-                            })
-                        }
-                    }, 0)
-            }
         })
     })
 })
+
+
+// Render events handler:
+function render_events_handlers(){
+    switch (location.pathname) {
+        case "/register":
+            setTimeout(() => {
+                let registration_form = document.getElementById("registration_form")
+                if (registration_form) {
+                    registration_form.addEventListener("submit", (event) => {
+                        event.preventDefault()
+                        register_new_user()
+                    })
+                }
+            }, 0)
+        case "/login":
+            setTimeout(() => {
+                let login_form = document.getElementById("login_form")
+                if (login_form) {
+                    login_form.addEventListener("submit", (event) => {
+                        event.preventDefault()
+                        login_user()
+                    })
+                }
+            }, 0)
+    }
+}
