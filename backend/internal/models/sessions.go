@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-// Session represents a user session
+// Session model represents a user session
 type Session struct {
 	ID           int       `json:"id"`
 	UserID       int       `json:"user_id"`

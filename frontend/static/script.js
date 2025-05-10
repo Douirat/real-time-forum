@@ -35,7 +35,7 @@ async function router() {
     render_events_handlers()
 }
 
-
+// run my progrqm when the DOM is loaded:
 document.addEventListener("DOMContentLoaded", () => {
     router()
     console.log(location.pathname)
