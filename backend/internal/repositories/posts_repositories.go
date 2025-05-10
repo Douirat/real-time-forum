@@ -14,6 +14,13 @@ type PostsRepository struct {
 	db *sql.DB
 }
 
+// Create a new instance of the postRepo object:
+func NewPostsRepository(database *sql.DB) *PostsRepository {
+	return &PostsRepository{
+		db: database,
+	}
+}
+
 // Function to handle posts creations:
 func (postRepository *PostsRepository) CreatePost(post *models.Post) error {
 	query := `INSERT INTO posts(title, content, created_at, user_id) VALUES(?, ?, ?, ?, ?)`
