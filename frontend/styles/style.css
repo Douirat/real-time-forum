@@ -3,11 +3,62 @@
 *{
     box-sizing: border-box;
     background-repeat: no-repeat;
+    padding: 0;
+    margin: 0;
 }
 
-body{
+
+header{
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background-color: #222;
+    padding: 25px 50px;
+}
+
+header nav {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
+}
+
+.logo{
+    font-size: 28px;
+    text-decoration: none;
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 3px;
+}
+
+.logout{
+    text-decoration: none;
+    color: #222;
+    background-color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 19px;
+    transition: .3s;
+    border: none;
+    outline: none;
+    cursor: pointer;
+}
+
+.logout:hover{
+    background-color: #555;
+    color: #fff;
+}
+
+main{
+    min-height: 100vh;
+    padding: 130px 30px;
+    display: flex;
+}
+
+main section{
+    flex: 2;
+}
+
+main aside{
+    flex: 1;
 }
