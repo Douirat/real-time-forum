@@ -17,17 +17,18 @@ type SessionsServicesLayer interface {
 type SessionService struct {
 	SessionRepo repositories.SessionRepositoryLayer
 	UserRepo    repositories.UsersRepositoryLayer
-	TokenLength int           // Length of session tokens:
+	TokenLength int
+	SessionLife time.Duration
 }
 
-// Instantiate the user_service structure:
 func NewSessionsServices(userRepo repositories.UsersRepositoryLayer, sessionRepo repositories.SessionRepositoryLayer) *SessionService {
 	return &SessionService{
 		UserRepo:    userRepo,
 		SessionRepo: sessionRepo,
+		TokenLength: 32,
+		SessionLife: 24 * time.Hour,
 	}
 }
-
 // CreateSession generates a new session for the user:
 func (sessionServ *SessionService) CreateSession(userID int) (string, time.Time, error) {
 	// Check if user exists:
@@ -37,13 +38,13 @@ func (sessionServ *SessionService) CreateSession(userID int) (string, time.Time,
 	}
 
 	// Generate token:
-	token, err := utils.GenerateRandomToken(32)
+	token, err := utils.GenerateRandomToken(sessionServ.TokenLength)
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("error generating token: %w", err)
 	}
 
 	// Set expiration time:
-	expiresAt := time.Now().Add(24 * time.Hour)
+	expiresAt := time.Now().Add(sessionServ.SessionLife)
 
 	// Save to database:
 	err = sessionServ.SessionRepo.CreateSession(userID, token, expiresAt)
