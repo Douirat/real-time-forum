@@ -15,11 +15,11 @@ type SessionsServicesLayer interface {
 }
 
 type SessionService struct {
-	SessionRepo repositories.SessionRepositoryLayer
+	SessionRepo repositories.SessionsRepositoryLayer
 	UserRepo    repositories.UsersRepositoryLayer
 }
 
-func NewSessionsServices(userRepo repositories.UsersRepositoryLayer, sessionRepo repositories.SessionRepositoryLayer) *SessionService {
+func NewSessionsServices(userRepo repositories.UsersRepositoryLayer, sessionRepo repositories.SessionsRepositoryLayer) *SessionService {
 	return &SessionService{
 		UserRepo:    userRepo,
 		SessionRepo: sessionRepo,
