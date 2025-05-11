@@ -17,15 +17,14 @@ type PostsServiceLayer interface {
 // Create a structure to implement the functionalities
 // within our interface contract:
 type PostsService struct {
-	PostRepo repositories.PostsRepositoryLayer
+	PostRepo    repositories.PostsRepositoryLayer
 	SessionRepo repositories.SessionsRepositoryLayer
-
 }
 
 // Instantiate a new postService instance:
 func NewPostService(postRepo *repositories.PostsRepository, sessRepo *repositories.SessionsRepository) *PostsService {
 	return &PostsService{
-		PostRepo: postRepo,
+		PostRepo:    postRepo,
 		SessionRepo: sessRepo,
 	}
 }

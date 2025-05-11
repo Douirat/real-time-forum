@@ -32,7 +32,7 @@ func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http
 		}
 		fmt.Println(post)
 		session, Err := r.Cookie("session_token")
-		if Err != nil && session != nil{
+		if Err == nil && session != nil{
 			err = postHand.postsServ.CreatePost(&post, session.Value)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)

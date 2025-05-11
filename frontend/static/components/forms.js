@@ -71,4 +71,14 @@ export function login_form() {
     document.body.appendChild(script);
 }
 
-
+// The post creation form:
+export function post_form() {
+    return /*html*/`
+        <form id="posts_form" method="POST">
+            <h1>create Post</h1>
+            <input id="title" type="text" placeholder="Title..." required>
+            <input id="content" type="text" placeholder="Content..." required>
+            <button type="submit">Create</button>
+        </form>
+    `
+}

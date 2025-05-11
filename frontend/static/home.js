@@ -1,5 +1,5 @@
 import { header, logout } from "./components/header.js";
-import { postForm } from "./components/post.js";
+import { post_form } from "./components/forms.js";
 
 export function render_home_page() {
     
@@ -9,7 +9,7 @@ export function render_home_page() {
         <main>
             <section>
                 <div class="postForm">
-                    ${postForm()}
+                    ${post_form()}
                 </div>
                 <div class="posts">
                     

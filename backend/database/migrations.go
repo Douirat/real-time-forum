@@ -32,7 +32,7 @@ const schema = `
     title TEXT NOT NULL,
     content TEXT NOT NULL, 
     -- image_path TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL,
     user_id INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(ID) ON DELETE CASCADE);
 
