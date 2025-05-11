@@ -14,3 +14,4 @@ curl -X POST \
 
 # Make the script executable with:
 # chmod +x register_curl.sh
+

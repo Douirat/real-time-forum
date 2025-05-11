@@ -42,7 +42,6 @@ func main() {
 	sessionService := services.NewSessionsServices(usersRepository, sessionRepository)
 	postsServices := services.NewPostService(postsRepository, sessionRepository)
 
-
 	// Initialize handlers:
 	usersHandlers := handlers.NewUsersHandlers(usersServices, sessionService)
 	postsHandlers := handlers.NewPostsHandles(postsServices)
@@ -54,6 +53,7 @@ func main() {
 	mainRouter.AddRoute("POST", "/login", usersHandlers.UsersLoginHandler)
 	mainRouter.AddRoute("POST", "/logout", usersHandlers.Logout)
 	mainRouter.AddRoute("POST", "/add_post", postsHandlers.CreatePostsHandler)
+	mainRouter.AddRoute("GET", "/get_posts", postsHandlers.GetAllPostsHandler)
 
 	fmt.Println("Routes registered:", mainRouter.Routes)
 	fmt.Println("Listening on port: http://localhost:8080/")

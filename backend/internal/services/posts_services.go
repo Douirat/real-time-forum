@@ -12,6 +12,7 @@ import (
 // Create an interface for the posts services:
 type PostsServiceLayer interface {
 	CreatePost(post *models.Post, token string) error
+	GetAllPostsService() ([]*models.Post, error)
 }
 
 // Create a structure to implement the functionalities
@@ -38,4 +39,19 @@ func (postSer *PostsService) CreatePost(post *models.Post, token string) error {
 	post.UserId, _ = postSer.SessionRepo.GetSessionByToken(token)
 	fmt.Println("--------> ", post)
 	return postSer.PostRepo.CreatePost(post)
+}
+
+// Get all posts service:
+func (postSer *PostsService) GetAllPostsService() ([]*models.Post, error) {
+	posts, err := postSer.PostRepo.GetAllPostsRepository()
+	if err != nil {
+		return nil, err
+	}
+	for _, post := range posts {
+		parsedTime, err := time.Parse("2006-01-02 15:04:05", post.CreatedAt)
+		if err == nil {
+			post.CreatedAt = parsedTime.Format(time.RFC3339) // ISO 8601 standard
+		}
+	}
+	return posts, nil
 }

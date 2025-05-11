@@ -32,7 +32,7 @@ func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http
 		}
 		fmt.Println(post)
 		session, Err := r.Cookie("session_token")
-		if Err == nil && session != nil{
+		if Err == nil && session != nil {
 			err = postHand.postsServ.CreatePost(&post, session.Value)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -50,4 +50,21 @@ func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http
 
 	}
 	http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+}
+
+// Get all posts handler:
+func (postHand *PostsHandlers) GetAllPostsHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("method ===> ", r.Method)
+	if r.Method != "GET" {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	posts, err := postHand.postsServ.GetAllPostsService()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(posts)
 }
