@@ -2,9 +2,10 @@ package services
 
 import (
 	"fmt"
+	"time"
+
 	"real_time_forum/internal/repositories"
 	"real_time_forum/internal/services/utils"
-	"time"
 )
 
 type SessionsServicesLayer interface {
@@ -25,6 +26,7 @@ func NewSessionsServices(userRepo repositories.UsersRepositoryLayer, sessionRepo
 		SessionRepo: sessionRepo,
 	}
 }
+
 // CreateSession generates a new session for the user:
 func (sessionServ *SessionService) CreateSession(userID int) (string, time.Time, error) {
 	// Check if user exists:
@@ -57,6 +59,7 @@ func (sessionServ *SessionService) DestroySession(token string) error {
 }
 
 // Check if the session is valid:
-func (sessionSev *SessionService) IsValidSession(token string)bool{
-return sessionSev.SessionRepo.GetSessionByToken(token)
+func (sessionSev *SessionService) IsValidSession(token string) bool {
+	_, b := sessionSev.SessionRepo.GetSessionByToken(token)
+	return b
 }

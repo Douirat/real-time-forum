@@ -31,16 +31,23 @@ func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http
 			return
 		}
 		fmt.Println(post)
-		err = postHand.postsServ.CreatePost(&post)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		session, Err := r.Cookie("session_token")
+		if Err != nil && session != nil{
+			err = postHand.postsServ.CreatePost(&post, session.Value)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			json.NewEncoder(w).Encode(map[string]string{"message": "post added successfully"})
+			return
+		} else {
+			http.Redirect(w, r, "/login", http.StatusFound) // 302
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]string{"message": "post added successfully"})
-		return
 	}
 	http.Error(w, "invalid method", http.StatusMethodNotAllowed)
 }

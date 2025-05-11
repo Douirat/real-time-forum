@@ -40,7 +40,7 @@ func main() {
 	// Initialize services:
 	usersServices := services.NewUsersServices(usersRepository)
 	sessionService := services.NewSessionsServices(usersRepository, sessionRepository)
-	postsServices := services.NewPostService(postsRepository)
+	postsServices := services.NewPostService(postsRepository, sessionRepository)
 
 
 	// Initialize handlers:
@@ -56,7 +56,7 @@ func main() {
 	mainRouter.AddRoute("POST", "/add_post", postsHandlers.CreatePostsHandler)
 
 	fmt.Println("Routes registered:", mainRouter.Routes)
-	fmt.Println("Listening on port: http://localhost:8080/login")
+	fmt.Println("Listening on port: http://localhost:8080/")
 
 	mainError = http.ListenAndServe(":8080", mainRouter)
 	if mainError != nil {

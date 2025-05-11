@@ -39,10 +39,6 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	if frontEndPaths[r.URL.Path] && r.Method == "GET" {
-		http.ServeFile(w, r, "../frontend/index.html")
-		return
-	}
 
 	// check the session to allow only logged in user to visit the home page:
 	// Fixed session check code - check if cookie exists before accessing its value
@@ -51,6 +47,26 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err == nil && session != nil {
 		isValid = router.usersSessions.IsValidSession(session.Value)
 	}
+
+
+	if frontEndPaths[r.URL.Path] && r.Method == "GET" {
+		// Special case for the login page itself - always serve it
+		if r.URL.Path == "/login" {
+			http.ServeFile(w, r, "../frontend/index.html")
+			return
+		}
+		
+		// For all other frontend paths, check session validity
+		if !isValid {
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return
+		}
+		
+		// Session is valid, serve the frontend app
+		http.ServeFile(w, r, "../frontend/index.html")
+		return
+	}
+
 	if r.Method == "GET" && (r.URL.Path == "/" || r.URL.Path == "/index.html") {
 		if !isValid {
 			http.Redirect(w, r, "/login", http.StatusFound) // 302
