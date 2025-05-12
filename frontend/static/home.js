@@ -1,8 +1,9 @@
 import { header, logout } from "./components/header.js";
 import { post_form } from "./components/forms.js";
+import { show_posts } from "./post.js";
 
 export function render_home_page() {
-    
+
 
     document.body.innerHTML = /*html*/`
         ${header()}
@@ -12,7 +13,7 @@ export function render_home_page() {
                     ${post_form()}
                 </div>
                 <div class="posts">
-                    
+
                 </div>
             </section>
             <aside class="right">
@@ -29,6 +30,6 @@ export function render_home_page() {
             </aside>
         </main>
     `
-
+    show_posts()
     logout()
 }
