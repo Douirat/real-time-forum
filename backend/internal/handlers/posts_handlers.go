@@ -44,7 +44,7 @@ func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http
 			json.NewEncoder(w).Encode(map[string]string{"message": "post added successfully"})
 			return
 		} else {
-			http.Redirect(w, r, "/login", http.StatusFound) // 302
+			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
 
