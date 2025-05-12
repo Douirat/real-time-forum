@@ -78,7 +78,6 @@ function render_events_handlers() {
             break
 
         case "/":
-            // setTimeout(() => {
                 let posts_form = document.getElementById("posts_form")
                 if (posts_form) {
                     posts_form.addEventListener("submit", (event) => {
@@ -86,7 +85,6 @@ function render_events_handlers() {
                         add_new_post()
                     })
                 }
-            // }, 0)
             break
     }
 }
