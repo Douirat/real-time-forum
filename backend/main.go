@@ -58,6 +58,7 @@ func main() {
 	mainRouter.AddRoute("POST", "/add_post", postsHandlers.CreatePostsHandler)
 	mainRouter.AddRoute("GET", "/get_posts", postsHandlers.GetAllPostsHandler)
 	mainRouter.AddRoute("POST", "/commenting", commentsHandlers.MakeCommentsHandler)
+	mainRouter.AddRoute("GET", "/get_comments", commentsHandlers.ShowCommentsHandler)
 
 
 	fmt.Println("Routes registered:", mainRouter.Routes)

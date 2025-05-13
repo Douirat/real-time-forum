@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"time"
 
 	"real_time_forum/internal/models"
@@ -11,6 +10,7 @@ import (
 // Create an interface to represent the comment service:
 type CommentsServicesLayer interface {
 	MakeComments(comment *models.Comment, token string) error
+	ShowCommentsservice(id int) ([]*models.Comment, error)
 }
 
 // Create an object to function the functionalities of the my service layer:
@@ -29,8 +29,12 @@ func NewCommentsServices(commRepo *repositories.CommentsRepository, sesRep *repo
 
 // Make a comment service:
 func (comServ *CommentsServices) MakeComments(comment *models.Comment, token string) error {
-	// comment.AuthorID, _ = comServ.sessRepo.GetSessionByToken(token)
-	fmt.Println("called  ====> ")
+	comment.AuthorID, _ = comServ.sessRepo.GetSessionByToken(token)
 	comment.CreatedAt = time.Now().Format("2006-01-02 15:04:05")
 	return comServ.commentsRepo.MakeComment(comment)
+}
+
+// show comments:
+func (comServ *CommentsServices) ShowCommentsservice(id int) ([]*models.Comment, error) {
+	return comServ.commentsRepo.ShowComments(id)
 }

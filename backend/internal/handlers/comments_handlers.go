@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/services"
@@ -33,11 +34,11 @@ func (comHand *CommentsHandler) MakeCommentsHandler(w http.ResponseWriter, r *ht
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	// session, err := r.Cookie("session_token")
-	// if err != nil || session == nil {
-	// 	http.Redirect(w, r, "/login", http.StatusFound)
-	// 	return
-	// }
+	session, err := r.Cookie("session_token")
+	if err != nil || session == nil {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
 	fmt.Println("comment ===>", comment)
 	err = comHand.ComSer.MakeComments(&comment, "")
 	if err != nil {
@@ -50,4 +51,29 @@ func (comHand *CommentsHandler) MakeCommentsHandler(w http.ResponseWriter, r *ht
 	}{
 		Message: "comment created successfully",
 	})
+}
+
+// handle showing comments:
+func (comHand *CommentsHandler) ShowCommentsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "method not allowed", http.StatusBadRequest)
+		return
+	}
+	queryParam := r.URL.Query()
+	query := queryParam.Get("id")
+
+	id, err := strconv.Atoi(query)
+	if err != nil {
+		http.Error(w, "query not allowed", http.StatusBadRequest)
+		return
+	}
+	
+	comments, err := comHand.ComSer.ShowCommentsservice(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fmt.Println(comments)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(comments)
 }
