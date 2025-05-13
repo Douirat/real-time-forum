@@ -41,7 +41,7 @@ export function add_comment(postId) {
 
 // Function to fetch and display comments for a specific post
 export function show_comments_for_post(postId) {
-    fetch(`http://localhost:8080/get_comments/${postId}`)
+    fetch(`http://localhost:8080/get_comments?id=${postId}`)
     .then(response => {
         if (!response.ok) {
             throw new Error('Failed to fetch comments');
