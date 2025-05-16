@@ -30,6 +30,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"/login":    true,
 	}
 
+	// CORS headers
 	origin := r.Header.Get("Origin")
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -40,51 +41,46 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// check the session to allow only logged in user to visit the home page:
-	// Fixed session check code - check if cookie exists before accessing its value
+	// Check session
 	isValid := false
 	session, err := r.Cookie("session_token")
 	if err == nil && session != nil {
 		isValid = router.usersSessions.IsValidSession(session.Value)
 	}
 
-
+	// If the user is logged in and tries to go to login or register -> redirect to home
 	if frontEndPaths[r.URL.Path] && r.Method == "GET" {
-		// Special case for the login page itself - always serve it
-		if r.URL.Path == "/login" {
+		if isValid {
+			http.Redirect(w, r, "/", http.StatusFound)
+		} else {
 			http.ServeFile(w, r, "../frontend/index.html")
-			return
 		}
-		
-		// For all other frontend paths, check session validity
+		return
+	}
+
+	// If user is not logged in and tries to go to home
+	if r.Method == "GET" && (r.URL.Path == "/" || r.URL.Path == "/index.html") {
 		if !isValid {
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
-		
-		// Session is valid, serve the frontend app
 		http.ServeFile(w, r, "../frontend/index.html")
 		return
 	}
 
-	if r.Method == "GET" && (r.URL.Path == "/" || r.URL.Path == "/index.html") {
-		if !isValid {
-			http.Redirect(w, r, "/login", http.StatusFound) // 302
-			return
-		}
-		http.ServeFile(w, r, "../frontend/index.html")
-		return
-	}
-
-	if r.Method == "GET" && strings.HasPrefix(r.URL.Path, "/static/") || r.Method == "GET" && strings.HasPrefix(r.URL.Path, "/styles/") {
+	// Serve static files
+	if r.Method == "GET" && (strings.HasPrefix(r.URL.Path, "/static/") || strings.HasPrefix(r.URL.Path, "/styles/")) {
 		http.ServeFile(w, r, "../frontend"+r.URL.Path)
 		return
 	}
 
+	// Handle registered routes
 	route := strings.ToLower(r.Method + ":" + r.URL.Path)
 	if handler, ok := router.Routes[route]; ok {
 		handler(w, r)
 		return
 	}
+
+	// Not found
 	http.NotFound(w, r)
 }
