@@ -9,3 +9,11 @@ type Post struct {
 	CreatedAt string `json:"created_at"`
 	UserId    int    `json:"user_id"`
 }
+
+type PostUser struct {
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	Content   string `json:"content"`
+	CreatedAt string `json:"created_at"`
+	UserName  string `json:"user_name"`
+}
