@@ -29,15 +29,12 @@ export function add_new_post() {
         })
         .then(data => {
             console.log(data);
-            // Add the post ID to the post data
-            post_data.id = data.id || Date.now(); // Use server ID or fallback to timestamp
-
-            // Directly add the new post to the container without refreshing
-            addPostToContainer(post_data);
-
             // Clear input fields
             document.getElementById("title").value = "";
             document.getElementById("content").value = "";
+            
+            // Refresh posts to show the new one
+            show_posts();
         })
         .catch(errorText => console.log("Error:", errorText));
 }
@@ -45,7 +42,7 @@ export function add_new_post() {
 // Function to dynamically add a new post to the container
 function addPostToContainer(post) {
     let postsContainer = document.querySelector(".posts");
-    console.log("post", post)
+    console.log("post", post);
 
     // Create a new post div
     let postDiv = document.createElement("div");
@@ -56,10 +53,19 @@ function addPostToContainer(post) {
     postDiv.style.border = "1px solid #ddd";
     postDiv.style.borderRadius = "5px";
 
-    // Create UserName element
-    let userNameElement = document.createElement("h3");
-    userNameElement.textContent = post.user_name;
-    userNameElement.style.margin = "0 0 10px 0";
+    // Create UserName and timestamp element
+    let userNameElement = document.createElement("h4");
+    userNameElement.textContent = `Posted by: ${post.user_name || "Unknown User"}`;
+    userNameElement.style.margin = "0 0 5px 0";
+    userNameElement.style.color = "#666";
+    
+    // Create timestamp element
+    let timestampElement = document.createElement("small");
+    timestampElement.textContent = post.created_at ? `Posted on: ${new Date(post.created_at).toLocaleString()}` : "";
+    timestampElement.style.display = "block";
+    timestampElement.style.color = "#888";
+    timestampElement.style.fontSize = "12px";
+    timestampElement.style.marginBottom = "10px";
 
     // Create title element
     let titleElement = document.createElement("h3");
@@ -129,9 +135,20 @@ function addPostToContainer(post) {
         add_comment(post.id);
     };
 
-    commentForm.append(commentInput, submitButton, commentsContainer, commentForm)
+    // Correct assembly of elements
+    commentForm.appendChild(commentInput);
+    commentForm.appendChild(submitButton);
+    
+    commentsSection.appendChild(commentsContainer);
+    commentsSection.appendChild(commentForm);
 
-    postDiv.append(userNameElement, titleElement, contentElement, commentButton, commentsSection)
+    postDiv.appendChild(userNameElement);
+    postDiv.appendChild(timestampElement);
+    postDiv.appendChild(titleElement);
+    postDiv.appendChild(contentElement);
+    postDiv.appendChild(commentButton);
+    postDiv.appendChild(commentsSection);
+
     // Add the new post to the top of the container
     postsContainer.insertBefore(postDiv, postsContainer.firstChild);
 }
@@ -147,7 +164,7 @@ export function show_posts() {
             postsContainer.innerHTML = "";
 
             // Reverse the data to show newest posts first
-            if (data) {
+            if (data && data.length > 0) {
                 data.reverse().forEach(post => {
                     // Create a new post div
                     let postDiv = document.createElement("div");
@@ -157,6 +174,20 @@ export function show_posts() {
                     postDiv.style.padding = "15px";
                     postDiv.style.border = "1px solid #ddd";
                     postDiv.style.borderRadius = "5px";
+
+                    // Create UserName and timestamp element
+                    let userNameElement = document.createElement("h4");
+                    userNameElement.textContent = `Posted by: ${post.user_name || "Unknown User"}`;
+                    userNameElement.style.margin = "0 0 5px 0";
+                    userNameElement.style.color = "#666";
+                    
+                    // Create timestamp element
+                    let timestampElement = document.createElement("small");
+                    timestampElement.textContent = post.created_at ? `Posted on: ${new Date(post.created_at).toLocaleString()}` : "";
+                    timestampElement.style.display = "block";
+                    timestampElement.style.color = "#888";
+                    timestampElement.style.fontSize = "12px";
+                    timestampElement.style.marginBottom = "10px";
 
                     // Create title element
                     let titleElement = document.createElement("h3");
@@ -235,6 +266,8 @@ export function show_posts() {
                     commentsSection.appendChild(commentForm);
 
                     // Add elements to post div
+                    postDiv.appendChild(userNameElement);
+                    postDiv.appendChild(timestampElement);
                     postDiv.appendChild(titleElement);
                     postDiv.appendChild(contentElement);
                     postDiv.appendChild(commentButton);
@@ -243,8 +276,8 @@ export function show_posts() {
                     // Add the post div to the container
                     postsContainer.appendChild(postDiv);
                 });
-
-
+            } else {
+                postsContainer.innerHTML = "<p>No posts yet. Be the first to create one!</p>";
             }
         })
         .catch(error => {
