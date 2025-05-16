@@ -1,5 +1,5 @@
 import { registration_form, login_form } from "./components/forms.js"
-import { register_new_user, login_user } from "./users.js"
+import { register_new_user, login_user, is_user_logged } from "./users.js"
 import { render_home_page } from "./home.js"
 import { add_new_post } from "./post.js"
 
@@ -78,6 +78,10 @@ function render_events_handlers() {
             break
 
         case "/":
+            console.log("hhhhhhhhhh");
+            
+            is_user_logged()
+            setTimeout(() => {
                 let posts_form = document.getElementById("posts_form")
                 if (posts_form) {
                     posts_form.addEventListener("submit", (event) => {
@@ -85,6 +89,7 @@ function render_events_handlers() {
                         add_new_post()
                     })
                 }
+            }, 0)
             break
     }
 }

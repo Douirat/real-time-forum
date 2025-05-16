@@ -55,9 +55,11 @@ func main() {
 	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)
 	mainRouter.AddRoute("POST", "/login", usersHandlers.UsersLoginHandler)
 	mainRouter.AddRoute("POST", "/logout", usersHandlers.Logout)
+	mainRouter.AddRoute("GET", "/is_logged", usersHandlers.IsLogged)
 	mainRouter.AddRoute("POST", "/add_post", postsHandlers.CreatePostsHandler)
 	mainRouter.AddRoute("GET", "/get_posts", postsHandlers.GetAllPostsHandler)
 	mainRouter.AddRoute("POST", "/commenting", commentsHandlers.MakeCommentsHandler)
+
 
 
 	fmt.Println("Routes registered:", mainRouter.Routes)

@@ -69,6 +69,34 @@ export async function login_user() {
         .catch(errorText => console.log("Error:", errorText));
 }
 
+//check if user isLogged:
+export function is_user_logged() {
+    fetch("http://localhost:8080/is_logged", {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        },
+    })
+        .then(async response => {
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log(data);
+            if (!data.is_loged) {
+                let a = document.createElement("a")
+                a.href = "/login"
+                a.click() 
+            }
+        })
+        .catch(error => {
+            console.log("Error:", error.message);
+        });
+}
+
 
 // Generate age:
 let generate_age = (born) => {
