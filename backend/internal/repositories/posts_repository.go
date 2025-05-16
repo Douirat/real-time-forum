@@ -8,7 +8,7 @@ import (
 
 type PostsRepositoryLayer interface {
 	CreatePost(post *models.Post) error
-	GetAllPostsRepository()([]*models.Post, error)
+	GetAllPostsRepository() ([]*models.PostUser, error)
 }
 
 type PostsRepository struct {
@@ -29,21 +29,37 @@ func (postRepository *PostsRepository) CreatePost(post *models.Post) error {
 	return err
 }
 
-
 // Create a method to get all posts from database:
-func (postRepo *PostsRepository)GetAllPostsRepository()([]*models.Post, error){
-	query := `SELECT * FROM posts`
+func (postRepo *PostsRepository) GetAllPostsRepository() ([]*models.PostUser, error) {
+	query := `
+		SELECT 
+			p.ID, 
+			p.title, 
+			p.content, 
+			p.created_at, 
+			u.nick_name
+		FROM posts AS p
+		INNER JOIN users AS u ON p.user_id = u.ID;
+	`
+
 	rows, err := postRepo.db.Query(query)
 	if err != nil {
-		return  nil, err
+		return nil, err
 	}
-	var posts []*models.Post
-	for rows.Next(){
-		post := &models.Post{}
-		if err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.CreatedAt, &post.UserId); err != nil {
+	defer rows.Close()
+
+	var posts []*models.PostUser
+	for rows.Next() {
+		post := &models.PostUser{}
+		if err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.CreatedAt, &post.UserName); err != nil {
 			return nil, err
 		}
 		posts = append(posts, post)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return posts, nil
 }

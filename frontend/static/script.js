@@ -81,12 +81,13 @@ function render_events_handlers() {
             setTimeout(() => {
                 let posts_form = document.getElementById("posts_form")
                 if (posts_form) {
+                    console.log("hkhkhkh")
                     posts_form.addEventListener("submit", (event) => {
                         event.preventDefault()
                         add_new_post()
                     })
                 }
-            }, 0)
+            }, 200)
             break
     }
 }

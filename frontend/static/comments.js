@@ -59,7 +59,7 @@ export function show_comments_for_post(postId) {
         commentsContainer.innerHTML = "";
         
         // If no comments, show a message
-        if (comments.length === 0) {
+        if (!comments) {
             commentsContainer.innerHTML = `<p>No comments yet</p>`;
             return;
         }
