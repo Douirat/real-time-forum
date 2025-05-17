@@ -78,27 +78,6 @@ export function post_form() {
             <h1>create Post</h1>
             <input id="title" type="text" placeholder="Title..." required>
             <input id="content" type="text" placeholder="Content..." required>
-
-            <fieldset>
-                <legend>Categories:</legend>
-                <label>
-                    <input type="checkbox" name="category" value="sport">
-                    Sport
-                </label>
-                <label>
-                    <input type="checkbox" name="category" value="culture">
-                    Culture
-                </label>
-                <label>
-                    <input type="checkbox" name="category" value="technology">
-                    Technology
-                </label>
-                <label>
-                    <input type="checkbox" name="category" value="coding">
-                    Coding
-                </label>
-            </fieldset>
-
             <button type="submit">Create</button>
         </form>
     `
