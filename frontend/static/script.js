@@ -55,6 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function render_events_handlers() {
     switch (location.pathname) {
         case "/register":
+            setTimeout(() => {
                 let registration_form = document.getElementById("registration_form")
                 if (registration_form) {
                     registration_form.addEventListener("submit", (event) => {
@@ -62,8 +63,10 @@ function render_events_handlers() {
                         register_new_user()
                     })
                 }
+            }, 0)
             break
         case "/login":
+            setTimeout(() => {
                 let login_form = document.getElementById("login_form")
                 if (login_form) {
                     login_form.addEventListener("submit", (event) => {
@@ -71,6 +74,7 @@ function render_events_handlers() {
                         login_user()
                     })
                 }
+            }, 0)
             break
 
         case "/":
@@ -83,7 +87,7 @@ function render_events_handlers() {
                         add_new_post()
                     })
                 }
-            }, 0)
+            }, 200)
             break
     }
 }

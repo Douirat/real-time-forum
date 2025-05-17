@@ -4,8 +4,8 @@
 response=$(curl -s -X POST http://localhost:8080/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "alae@example.com",
-    "password": "strongpassword123" 
+    "email": "idmossab@gmail.com",
+    "password": "idmossab@gmail.com" 
 }')
 
 # Show raw response
