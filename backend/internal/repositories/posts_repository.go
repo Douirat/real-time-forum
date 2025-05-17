@@ -24,9 +24,23 @@ func NewPostsRepository(database *sql.DB) *PostsRepository {
 
 // Function to handle posts creations:
 func (postRepository *PostsRepository) CreatePost(post *models.Post) error {
-	query := `INSERT INTO posts(title, content, created_at, user_id) VALUES(?, ?, ?, ?)`
-	_, err := postRepository.db.Exec(query, post.Title, post.Content, post.CreatedAt, post.UserId)
-	return err
+    query := "INSERT INTO posts(title, content, created_at, user_id) VALUES(?, ?, ?, ?)"
+    result, err := postRepository.db.Exec(query, post.Title, post.Content, post.CreatedAt, post.UserId)
+    if err != nil {
+        return err
+    }
+
+    postID, err := result.LastInsertId()
+    if err != nil {
+        return err
+    }
+
+    categoryID := 1 
+    _, err = postRepository.db.Exec(
+        "INSERT INTO post_categories(post_id, category_id) VALUES (?, ?)",
+        postID, categoryID,
+    )
+    return err
 }
 
 // Create a method to get all posts from database:
