@@ -41,6 +41,11 @@ const schema = `
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL);
 
+    -- insert inside categories
+    INSERT INTO categories (name) VALUES ('Sport');
+    INSERT INTO categories (name) VALUES ('Culture');
+    INSERT INTO categories (name) VALUES ('Technology');
+    INSERT INTO categories (name) VALUES ('Coding');
     -- Post-Category relationship
     CREATE TABLE IF NOT EXISTS post_categories (
     post_id INTEGER,
@@ -48,11 +53,7 @@ const schema = `
     PRIMARY KEY (post_id, category_id),
     FOREIGN KEY (post_id) REFERENCES posts(ID) ON DELETE CASCADE, 
     FOREIGN KEY (category_id) REFERENCES categories(ID) ON DELETE CASCADE);
-    -- insert inside categories
-    INSERT INTO categories (name) VALUES ('Sport');
-    INSERT INTO categories (name) VALUES ('Culture');
-    INSERT INTO categories (name) VALUES ('Technology');
-    INSERT INTO categories (name) VALUES ('Coding');
+    
 
      -- Create a table to hold comments' data:
       CREATE TABLE IF NOT EXISTS comments (
