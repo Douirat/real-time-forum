@@ -16,4 +16,5 @@ type PostUser struct {
 	Content   string `json:"content"`
 	CreatedAt string `json:"created_at"`
 	UserName  string `json:"user_name"`
+	Categories []string `json:"categories"`
 }
