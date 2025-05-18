@@ -9,6 +9,7 @@ import (
 type PostsRepositoryLayer interface {
 	CreatePost(post *models.PostUser) error
 	GetAllPostsRepository() ([]*models.PostUser, error)
+	GetCategories() ([]*models.Categories, error)
 }
 
 type PostsRepository struct {
@@ -81,8 +82,8 @@ func (postRepo *PostsRepository) GetAllPostsRepository() ([]*models.PostUser, er
 }
 
 // Create a method to get all posts from database:
-func (postRepo *PostsRepository) GetCategories() ([]*models.PostUser, error) {
-	query := `SELECT `
+func (postRepo *PostsRepository) GetCategories() ([]*models.Categories, error) {
+	query := `SELECT * FROM categories `
 
 	rows, err := postRepo.db.Query(query)
 	if err != nil {
@@ -90,18 +91,17 @@ func (postRepo *PostsRepository) GetCategories() ([]*models.PostUser, error) {
 	}
 	defer rows.Close()
 
-	var posts []*models.PostUser
+	var categ []*models.Categories
 	for rows.Next() {
-		post := &models.PostUser{}
-		if err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.CreatedAt, &post.UserName); err != nil {
+		cat := &models.Categories{}
+		if err := rows.Scan(&cat.ID, &cat.Category); err != nil {
 			return nil, err
 		}
-		posts = append(posts, post)
+		categ = append(categ, cat)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
-	return posts, nil
+	return categ, nil
 }
