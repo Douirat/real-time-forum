@@ -12,6 +12,7 @@ import (
 type PostsServiceLayer interface {
 	CreatePost(post *models.PostUser, token string) error
 	GetAllPostsService() ([]*models.PostUser, error)
+	GetAllCategoriesService() ([]*models.Categories, error)
 }
 
 // Create a structure to implement the functionalities
@@ -53,3 +54,13 @@ func (postSer *PostsService) GetAllPostsService() ([]*models.PostUser, error) {
 	}
 	return posts, nil
 }
+
+// Get all categories service:
+func (postSer *PostsService) GetAllCategoriesService() ([]*models.Categories, error) {
+	categ, err := postSer.PostRepo.GetCategories()
+	if err != nil {
+		return nil, err
+	}
+	return categ, nil
+}
+
