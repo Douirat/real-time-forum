@@ -7,7 +7,7 @@ import (
 )
 
 type PostsRepositoryLayer interface {
-	CreatePost(post *models.Post) error
+	CreatePost(post *models.Post,categoryID int) error
 	GetAllPostsRepository() ([]*models.PostUser, error)
 }
 
@@ -23,7 +23,7 @@ func NewPostsRepository(database *sql.DB) *PostsRepository {
 }
 
 // Function to handle posts creations:
-func (postRepository *PostsRepository) CreatePost(post *models.Post) error {
+func (postRepository *PostsRepository) CreatePost(post *models.Post,categoryID int) error {
     query := "INSERT INTO posts(title, content, created_at, user_id) VALUES(?, ?, ?, ?)"
     result, err := postRepository.db.Exec(query, post.Title, post.Content, post.CreatedAt, post.UserId)
     if err != nil {
@@ -35,7 +35,7 @@ func (postRepository *PostsRepository) CreatePost(post *models.Post) error {
         return err
     }
 
-    categoryID := 1 
+    // categoryID = 1 
     _, err = postRepository.db.Exec(
         "INSERT INTO post_categories(post_id, category_id) VALUES (?, ?)",
         postID, categoryID,
