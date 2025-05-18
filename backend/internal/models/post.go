@@ -11,10 +11,11 @@ type Post struct {
 }
 
 type PostUser struct {
-	ID        int    `json:"id"`
-	Title     string `json:"title"`
-	Content   string `json:"content"`
-	CreatedAt string `json:"created_at"`
-	UserName  string `json:"user_name"`
-	Categories int `json:"categories"`
+	ID         int    `json:"id"`
+	Title      string `json:"title"`
+	Content    string `json:"content"`
+	CreatedAt  string `json:"created_at"`
+	UserId     int    `json:"user_id"`
+	UserName   string `json:"user_name"`
+	Categories []int  `json:"categories"`
 }
