@@ -87,7 +87,6 @@ func (userHandler *UsersHandlers) UsersLoginHandler(w http.ResponseWriter, r *ht
 		Value:    token,
 		Expires:  expiresAt,
 		HttpOnly: true,
-		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	})
 

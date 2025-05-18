@@ -71,28 +71,30 @@ export function login_form() {
     document.body.appendChild(script);
 }
 
-// The post creation form:
-export function post_form() {
+// Enhanced post creation form with categories:
+export function post_form(categories) {
+    // Generate HTML for category checkboxes
+    const categoriesHTML = categories && categories.length > 0 
+        ? `
+            <div class="categories-container">
+                <h3>Select categories:</h3>
+                <div class="categories-options">
+                    ${categories.map(category => `
+                        <label class="category-label">
+                            <input type="checkbox" class="category-checkbox" value="${category.id}"> ${category.c_name}
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+        `
+        : '<p>No categories available</p>';
+
     return /*html*/`
         <form id="posts_form" method="POST">
             <h1>Create Post</h1>
             <input id="title" type="text" placeholder="Title..." required>
-            <input id="content" type="text" placeholder="Content..." required>
-            
-            <h3>Select Categories</h3>
-            <label>
-                <input type="checkbox" id="sport" value="1"> Sport
-            </label>
-            <label>
-                <input type="checkbox" id="coding" value="2"> Coding
-            </label>
-            <label>
-                <input type="checkbox" id="culture" value="3"> Culture
-            </label>
-            <label>
-                <input type="checkbox" id="technology" value="4"> Technology
-            </label>
-
+            <textarea id="content" placeholder="Content..." required></textarea>
+            ${categoriesHTML}
             <button type="submit">Create</button>
         </form>
     `;

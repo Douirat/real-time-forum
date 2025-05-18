@@ -42,10 +42,10 @@ const schema = `
     c_name TEXT UNIQUE NOT NULL);
 
     -- insert inside categories
-    INSERT OR IGNORE  INTO categories (name) VALUES ('Sport');
-    INSERT OR IGNORE INTO categories (name) VALUES ('Culture');
-    INSERT OR IGNORE INTO categories (name) VALUES ('Technology');
-    INSERT OR IGNORE INTO categories (name) VALUES ('Coding');
+    INSERT OR IGNORE  INTO categories (c_name) VALUES ('Sport');
+    INSERT OR IGNORE INTO categories (c_name) VALUES ('Culture');
+    INSERT OR IGNORE INTO categories (c_name) VALUES ('Technology');
+    INSERT OR IGNORE INTO categories (c_name) VALUES ('Coding');
     -- Post-Category relationship
     CREATE TABLE IF NOT EXISTS post_categories (
     post_id INTEGER,

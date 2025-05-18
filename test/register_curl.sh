@@ -6,10 +6,10 @@ curl -X POST \
   -d '{
     "first_name": "alae",
     "last_name": "alae",
-    "age": 22,
+    "age": 12/12/1999,
     "gender": "male",
-    "email": "alae@example.com",
-    "password": "strongpassword123"
+    "email": "idmossab@gmail.com,
+    "password": "idmossab@gmail.com"
   }'
 
 # Make the script executable with:
