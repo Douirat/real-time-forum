@@ -19,3 +19,7 @@ type PostUser struct {
 	UserName   string `json:"user_name"`
 	Categories []int  `json:"categories"`
 }
+type Categories struct {
+	ID       int    `json:"id"`
+	Category string `json:"c_name"`
+}

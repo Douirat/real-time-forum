@@ -79,3 +79,29 @@ func (postRepo *PostsRepository) GetAllPostsRepository() ([]*models.PostUser, er
 
 	return posts, nil
 }
+
+// Create a method to get all posts from database:
+func (postRepo *PostsRepository) GetCategories() ([]*models.PostUser, error) {
+	query := `SELECT `
+
+	rows, err := postRepo.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []*models.PostUser
+	for rows.Next() {
+		post := &models.PostUser{}
+		if err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.CreatedAt, &post.UserName); err != nil {
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return posts, nil
+}

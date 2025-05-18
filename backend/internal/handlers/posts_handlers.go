@@ -23,33 +23,35 @@ func NewPostsHandles(postSer *services.PostsService) *PostsHandlers {
 
 // Create a new post handler:
 func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
-		var post models.Post
-		err := json.NewDecoder(r.Body).Decode(&post)
-		if err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			return
-		}
-		fmt.Println(post)
-		session, Err := r.Cookie("session_token")
-		if Err == nil && session != nil {
-			err = postHand.postsServ.CreatePost(&post, session.Value)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(map[string]string{"message": "post added successfully"})
-			return
-		} else {
-			http.Redirect(w, r, "/login", http.StatusFound)
-			return
-		}
-
+	if r.Method != "POST" {
+		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+		return
 	}
-	http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+
+	var post models.PostUser
+
+	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	session, err := r.Cookie("session_token")
+
+	if err != nil || session == nil {
+		fmt.Println("qsdqsdqsdqsdqsd",err)
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	err = postHand.postsServ.CreatePost(&post, session.Value)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "post added successfully"})
 }
 
 // Get all posts handler:

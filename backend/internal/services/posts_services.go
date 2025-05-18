@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"real_time_forum/internal/models"
@@ -37,7 +36,6 @@ func (postSer *PostsService) CreatePost(post *models.PostUser, token string) err
 	}
 	post.CreatedAt = time.Now().Format("2006-01-02 15:04:05")
 	post.UserId, _ = postSer.SessionRepo.GetSessionByToken(token)
-	fmt.Println("--------> ", post)
 	return postSer.PostRepo.CreatePost(post)
 }
 
@@ -47,7 +45,6 @@ func (postSer *PostsService) GetAllPostsService() ([]*models.PostUser, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(posts)
 	for _, post := range posts {
 		parsedTime, err := time.Parse("2006-01-02 15:04:05", post.CreatedAt)
 		if err == nil {

@@ -39,7 +39,7 @@ const schema = `
     -- create categories table :
     CREATE TABLE IF NOT EXISTS categories (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL);
+    c_name TEXT UNIQUE NOT NULL);
 
     -- insert inside categories
     INSERT OR IGNORE  INTO categories (name) VALUES ('Sport');

@@ -75,10 +75,25 @@ export function login_form() {
 export function post_form() {
     return /*html*/`
         <form id="posts_form" method="POST">
-            <h1>create Post</h1>
+            <h1>Create Post</h1>
             <input id="title" type="text" placeholder="Title..." required>
             <input id="content" type="text" placeholder="Content..." required>
+            
+            <h3>Select Categories</h3>
+            <label>
+                <input type="checkbox" id="sport" value="1"> Sport
+            </label>
+            <label>
+                <input type="checkbox" id="coding" value="2"> Coding
+            </label>
+            <label>
+                <input type="checkbox" id="culture" value="3"> Culture
+            </label>
+            <label>
+                <input type="checkbox" id="technology" value="4"> Technology
+            </label>
+
             <button type="submit">Create</button>
         </form>
-    `
+    `;
 }
