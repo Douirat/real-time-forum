@@ -58,10 +58,9 @@ func main() {
 	mainRouter.AddRoute("GET", "/is_logged", usersHandlers.IsLogged)
 	mainRouter.AddRoute("POST", "/add_post", postsHandlers.CreatePostsHandler)
 	mainRouter.AddRoute("GET", "/get_posts", postsHandlers.GetAllPostsHandler)
+	mainRouter.AddRoute("GET", "/get_categories", postsHandlers.GetAllCategoriesHandler)
 	mainRouter.AddRoute("POST", "/commenting", commentsHandlers.MakeCommentsHandler)
 	mainRouter.AddRoute("GET", "/get_comments", commentsHandlers.ShowCommentsHandler)
-
-
 
 	fmt.Println("Routes registered:", mainRouter.Routes)
 	fmt.Println("Listening on port: http://localhost:8080/")
