@@ -70,3 +70,20 @@ func (postHand *PostsHandlers) GetAllPostsHandler(w http.ResponseWriter, r *http
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(posts)
 }
+
+// Get all posts handler:
+func (postHand *PostsHandlers) GetAllCategoriesHandler(w http.ResponseWriter, r *http.Request) {
+	//fmt.Println("method ===> ", r.Method)
+	if r.Method != "GET" {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	categ, err := postHand.postsServ.GetAllCategoriesService()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(categ)
+}
