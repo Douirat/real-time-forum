@@ -7,7 +7,7 @@ import (
 )
 
 type PostsRepositoryLayer interface {
-	CreatePost(post *models.Post,categoryID int) error
+	CreatePost(post *models.PostUser) error
 	GetAllPostsRepository() ([]*models.PostUser, error)
 }
 
