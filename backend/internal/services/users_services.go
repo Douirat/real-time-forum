@@ -12,7 +12,6 @@ import (
 type UsersServicesLayer interface {
 	UserRegestration(user *models.User) error
 	AuthenticateUser(email, password string) (*models.User, error)
-
 }
 
 // Create structure to implement the services innterfase:
@@ -41,7 +40,7 @@ func (userServ *UsersServices) UserRegestration(user *models.User) error {
 }
 
 // AuthenticateUser verifies user credentials and returns the user if valid
-func (userRepo *UsersServices) AuthenticateUser(email, password string) (*models.User, error) {
+func (userServ *UsersServices) AuthenticateUser(email, password string) (*models.User, error) {
 	// Input validation
 	if email == "" {
 		return nil, errors.New("email is required")
@@ -51,7 +50,7 @@ func (userRepo *UsersServices) AuthenticateUser(email, password string) (*models
 	}
 
 	// Get user by email
-	user, err := userRepo.userRepository.GetUserByEmail(email)
+	user, err := userServ.userRepository.GetUserByEmail(email)
 	if err != nil {
 		// Log the error but don't expose details to client
 		// fmt.Printf("Login error: %v\n", err)
@@ -64,4 +63,9 @@ func (userRepo *UsersServices) AuthenticateUser(email, password string) (*models
 	}
 
 	return user, nil
+}
+
+// Get all user to fill the chat menu:
+func (userServ *UsersServices) GetUsersService(offset, limit int) ([]*models.ChatUser, error) {
+	return userServ.userRepository.GetUsersRepo(offset, limit)
 }

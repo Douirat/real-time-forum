@@ -1,7 +1,8 @@
 import { header, logout } from "./components/header.js";
 import { post_form } from "./components/forms.js";
+import { render_chat_area } from "./components/chat.js";
 import { show_posts } from "./post.js";
-import {navigateTo} from "./script.js"
+import { navigateTo } from "./script.js"
 
 export function render_home_page() {
     fetch("http://localhost:8080/is_logged", {
@@ -22,8 +23,9 @@ export function render_home_page() {
             if (!data.is_loged) {
                 navigateTo("/login")
             } else {
-                    document.body.innerHTML = /*html*/`
+                document.body.innerHTML = /*html*/`
                     ${header()}
+                    
                     <main>
                         <section>
                             <div class="postForm">
@@ -33,23 +35,18 @@ export function render_home_page() {
                 
                             </div>
                         </section>
-                        <aside class="right">
-                            <div class="profile">
+                    </main>
+                    <aside class="right">
+                            <div id="profile">
                                 <h1>mos3ab</h1>
                             </div>
-                            <div class="friends">
-                                <ul>
-                                    <li>youssef</li>
-                                    <li>smail</li>
-                                    <li>lfarsi</li>
-                                </ul>
+                            <div id="chat">
                             </div>
                         </aside>
-                    </main>
                 `
-                    show_posts()
-                    logout()
-      
+                show_posts()
+                logout()
+                render_chat_area()
             }
         })
         .catch(error => {

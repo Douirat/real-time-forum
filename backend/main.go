@@ -37,24 +37,32 @@ func main() {
 	sessionRepository := repositories.NewSessionsRepository(databaseConnection)
 	postsRepository := repositories.NewPostsRepository(databaseConnection)
 	commentsRepository := repositories.NewCommentsRepository(databaseConnection)
+	messageRepository := repositories.NewMessageRepository(databaseConnection)
 
 	// Initialize services:
 	usersServices := services.NewUsersServices(usersRepository)
 	sessionService := services.NewSessionsServices(usersRepository, sessionRepository)
 	postsServices := services.NewPostService(postsRepository, sessionRepository)
 	commentsService := services.NewCommentsServices(commentsRepository, sessionRepository)
+	webSocketService := services.NewWebSocketService(messageRepository)
+
 
 	// Initialize handlers:
 	usersHandlers := handlers.NewUsersHandlers(usersServices, sessionService)
 	postsHandlers := handlers.NewPostsHandles(postsServices)
 	commentsHandlers := handlers.NewCommentsHandler(commentsService)
+	webSocketHandler := handlers.NewWebSocketHandler(webSocketService)
+	
 	// Setup router and routes:
 	mainRouter := router.NewRouter(sessionService)
 
 	// User routes:
+	
+	mainRouter.AddRoute("GET", "/ws", webSocketHandler.WebsocketHandler)
 	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)
 	mainRouter.AddRoute("POST", "/login", usersHandlers.UsersLoginHandler)
 	mainRouter.AddRoute("POST", "/logout", usersHandlers.Logout)
+	mainRouter.AddRoute("GET", "/get_users", usersHandlers.GetUsersHandler)
 	mainRouter.AddRoute("GET", "/is_logged", usersHandlers.IsLogged)
 	mainRouter.AddRoute("POST", "/add_post", postsHandlers.CreatePostsHandler)
 	mainRouter.AddRoute("GET", "/get_posts", postsHandlers.GetAllPostsHandler)

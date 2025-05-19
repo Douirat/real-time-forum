@@ -29,6 +29,12 @@ type Credentials struct {
 	Password string `json:"password"`
 }
 
+// Create a struct to determine the limits of each:
+type Edge struct {
+	Offset int `json:"offset"`
+	Limit int `json:"limit"`
+}
+
 // NewUsersHandlers creates a new user handler
 func NewUsersHandlers(userServ services.UsersServicesLayer, sessionServ services.SessionsServicesLayer) *UsersHandlers {
 	return &UsersHandlers{
@@ -157,10 +163,8 @@ func (userHandler *UsersHandlers) IsLogged(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 
-	// محاولة الحصول على الكوكي
 	cookie, err := r.Cookie("session_token")
 	if err != nil {
-		// إذا لم يوجد كوكي نرجع false
 		logged = false
 		json.NewEncoder(w).Encode(struct {
 			IsLoged bool `json:"is_loged"`
@@ -174,10 +178,8 @@ func (userHandler *UsersHandlers) IsLogged(w http.ResponseWriter, r *http.Reques
 		token = cookie.Value
 	}
 
-	// التحقق من صلاحية السيشن
 	logged = userHandler.sessionServ.IsValidSession(token)
 
-	// إرسال النتيجة
 	json.NewEncoder(w).Encode(struct {
 		IsLoged bool `json:"is_loged"`
 	}{
@@ -185,3 +187,20 @@ func (userHandler *UsersHandlers) IsLogged(w http.ResponseWriter, r *http.Reques
 	})
 }
 
+// Get users for chat:
+func (userHandler *UsersHandlers) GetUsersHandler(w http.ResponseWriter, r *http.Request){
+	if r.Method != "GET" {
+		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	edge := &Edge{}
+	err := json.NewDecoder(r.Body).Decode(&edge)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	
+
+}

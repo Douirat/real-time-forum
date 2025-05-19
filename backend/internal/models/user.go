@@ -11,3 +11,9 @@ type User struct {
 	Email     string `json:"email"`
 	Password  string `json:"password"`
 }
+
+// Create a model to ease working on chat
+type ChatUser struct {
+	Id       int    `json:"id"`
+	NickName string `json:"nick_name"`
+}
