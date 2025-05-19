@@ -77,7 +77,8 @@ export function post_form() {
         <form id="posts_form" method="POST">
             <h1>create Post</h1>
             <input id="title" type="text" placeholder="Title..." required>
-            <input id="content" type="text" placeholder="Content..." required>
+            <!-- <input id="content" type="" placeholder="Content..." required> -->
+            <textarea id="content" placeholder="Content..." required></textarea>
             <button type="submit">Create</button>
         </form>
     `

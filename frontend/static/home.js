@@ -1,4 +1,5 @@
 import { header, logout } from "./components/header.js";
+import { render_left_aside, display_chat_users } from "./components/left_aside.js";
 import { post_form } from "./components/forms.js";
 import { render_chat_area } from "./components/chat.js";
 import { show_posts } from "./post.js";
@@ -24,17 +25,16 @@ export function render_home_page() {
                 navigateTo("/login")
             } else {
                 document.body.innerHTML = /*html*/`
+                <!-- <div id="home_container"> -->
                     ${header()}
-                    
-                    <main>
-                        <section>
+                    ${render_left_aside()}
+                    <main class="main">
                             <div class="postForm">
                                 ${post_form()}
                             </div>
                             <div class="posts">
                 
                             </div>
-                        </section>
                     </main>
                     <aside class="right">
                             <div id="profile">
@@ -43,10 +43,12 @@ export function render_home_page() {
                             <div id="chat">
                             </div>
                         </aside>
+                        <!-- </div> -->
                 `
                 show_posts()
                 logout()
                 render_chat_area()
+                display_chat_users()
             }
         })
         .catch(error => {
