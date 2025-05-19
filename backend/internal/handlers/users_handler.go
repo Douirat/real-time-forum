@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,7 +33,7 @@ type Credentials struct {
 // Create a struct to determine the limits of each:
 type Edge struct {
 	Offset int `json:"offset"`
-	Limit int `json:"limit"`
+	Limit  int `json:"limit"`
 }
 
 // NewUsersHandlers creates a new user handler
@@ -188,19 +189,19 @@ func (userHandler *UsersHandlers) IsLogged(w http.ResponseWriter, r *http.Reques
 }
 
 // Get users for chat:
-func (userHandler *UsersHandlers) GetUsersHandler(w http.ResponseWriter, r *http.Request){
-	if r.Method != "GET" {
+func (userHandler *UsersHandlers) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
 		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
 		return
 	}
 
-	edge := &Edge{}
-	err := json.NewDecoder(r.Body).Decode(&edge)
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+
+	users, err := userHandler.userServ.GetUsersService(offset, limit)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	
-
+	json.NewEncoder(w).Encode(users)
 }

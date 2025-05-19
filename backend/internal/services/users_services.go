@@ -12,6 +12,7 @@ import (
 type UsersServicesLayer interface {
 	UserRegestration(user *models.User) error
 	AuthenticateUser(email, password string) (*models.User, error)
+	GetUsersService(offset, limit int) ([]*models.ChatUser, error)
 }
 
 // Create structure to implement the services innterfase:
