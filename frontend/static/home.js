@@ -21,7 +21,6 @@ export function render_home_page() {
             return response.json();
         })
         .then(data => {
-            console.log(data);
             if (!data.is_loged) {
                 navigateTo("/login")
             } else {

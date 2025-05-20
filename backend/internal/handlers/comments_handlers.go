@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -39,7 +38,6 @@ func (comHand *CommentsHandler) MakeCommentsHandler(w http.ResponseWriter, r *ht
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
-	fmt.Println("comment ===>", comment)
 	err = comHand.ComSer.MakeComments(&comment, session.Value)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -67,13 +65,12 @@ func (comHand *CommentsHandler) ShowCommentsHandler(w http.ResponseWriter, r *ht
 		http.Error(w, "query not allowed", http.StatusBadRequest)
 		return
 	}
-	
+
 	comments, err := comHand.ComSer.ShowCommentsservice(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Println(comments)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(comments)
 }

@@ -45,13 +45,12 @@ export function add_new_post() {
     })
         .then(async response => {
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(errorText);
+                let err = await response.json()
+                throw new Error(err)
             }
             return response.json();
         })
         .then(data => {
-            console.log(data);
             // Clear input fields
             document.getElementById("title").value = "";
             document.getElementById("content").value = "";
@@ -64,7 +63,7 @@ export function add_new_post() {
             // Refresh posts to show the new one
             navigateTo("/")
         })
-        .catch(errorText => console.log("Error:", errorText));
+        .catch(errorText => navigateTo("/login"));
 }
 
 // Enhanced show posts function with category display:

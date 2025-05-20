@@ -26,7 +26,6 @@ func init() {
 
 func main() {
 	if mainError != nil {
-		fmt.Printf("Error connecting to database: %v\n", mainError)
 		return
 	}
 	defer databaseConnection.Close()
@@ -62,12 +61,11 @@ func main() {
 	mainRouter.AddRoute("POST", "/commenting", commentsHandlers.MakeCommentsHandler)
 	mainRouter.AddRoute("GET", "/get_comments", commentsHandlers.ShowCommentsHandler)
 
-	fmt.Println("Routes registered:", mainRouter.Routes)
 	fmt.Println("Listening on port: http://localhost:8080/")
 
 	mainError = http.ListenAndServe(":8080", mainRouter)
 	if mainError != nil {
-		fmt.Printf("Error: %v\n", mainError)
+		
 		return
 	}
 }

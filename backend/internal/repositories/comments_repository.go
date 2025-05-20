@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"database/sql"
-	"fmt"
 
 	"real_time_forum/internal/models"
 )
@@ -34,7 +33,6 @@ func (commentsRepo *CommentsRepository) MakeComment(comment *models.Comment) err
 
 // Show comments of a specific post:
 func (commentsRepo *CommentsRepository) ShowComments(id int) ([]*models.Comment, error) {
-	fmt.Println("CALLED", id)
 	query := `SELECT
 	 c.ID ,
 	 c.content,
@@ -53,7 +51,7 @@ func (commentsRepo *CommentsRepository) ShowComments(id int) ([]*models.Comment,
 	var comments []*models.Comment
 	for raws.Next() {
 		comment := &models.Comment{}
-		raws.Scan(&comment.Id, &comment.Content, &comment.AuthorID, &comment.PostId, &comment.CreatedAt,&comment.NickName)
+		raws.Scan(&comment.Id, &comment.Content, &comment.AuthorID, &comment.PostId, &comment.CreatedAt, &comment.NickName)
 		comments = append(comments, comment)
 	}
 	return comments, nil

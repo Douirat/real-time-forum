@@ -12,7 +12,6 @@ export async function register_new_user() {
     confirmation: document.getElementById("confirmation").value,
     nick_name: "-",
   };
-  console.log(user);
   if (
     !isValidPassword(user.password, user.confirmation) ||
     !isValidEmail(user.email)
@@ -45,7 +44,6 @@ export async function login_user() {
     email: document.getElementById("email").value.trim(),
     password: document.getElementById("password").value,
   };
-  console.log(credentials);
 
   if (
     !isValidEmail(credentials.email) ||

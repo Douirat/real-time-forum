@@ -13,7 +13,6 @@ async function router() {
     { path: "/register", view: registration_form },
     { path: "/login", view: login_form },
   ];
-  console.log(routers);
 
   let routes_with_booleans = routers.map((route) => {
     return {
@@ -21,9 +20,7 @@ async function router() {
       isMatche: location.pathname === route.path,
     };
   });
-  console.log(routes_with_booleans);
   let match = routes_with_booleans.find((selected) => selected.isMatche);
-  console.log("selected: ", match);
 
   if (!match) {
     console.error("Page not found");
@@ -68,7 +65,6 @@ function render_events_handlers() {
         let login_form = document.getElementById("login_form");
         if (login_form) {
           login_form.addEventListener("submit", (event) => {
-            console.log("sqdsqddqsqsd");
             event.preventDefault();
             login_user();
           });
@@ -80,7 +76,6 @@ function render_events_handlers() {
       setTimeout(() => {
         let posts_form = document.getElementById("posts_form");
         if (posts_form) {
-          console.log("hkhkhkh");
           posts_form.addEventListener("submit", (event) => {
             event.preventDefault();
             add_new_post();

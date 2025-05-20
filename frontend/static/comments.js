@@ -27,14 +27,12 @@ export function add_comment(postId) {
         return response.json();
     })
     .then(data => {
-        console.log("Comment added:", data);
         // Clear input
         commentInput.value = "";
         // Refresh comments to show the latest with proper user name
         show_comments_for_post(postId);
     })
     .catch(error => {
-        console.error("Error adding comment:", error);
         alert("Failed to add comment");
     });
 }
@@ -51,7 +49,6 @@ export function show_comments_for_post(postId) {
     .then(comments => {
         const commentsContainer = document.getElementById(`comments-container-${postId}`);
         if (!commentsContainer) {
-            console.error(`Comments container not found for post ${postId}`);
             return;
         }
         
@@ -88,7 +85,6 @@ export function show_comments_for_post(postId) {
         commentsContainer.appendChild(commentsList);
     })
     .catch(error => {
-        console.error("Error fetching comments:", error);
     });
 }
 
