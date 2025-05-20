@@ -40,7 +40,7 @@ func (comHand *CommentsHandler) MakeCommentsHandler(w http.ResponseWriter, r *ht
 		return
 	}
 	fmt.Println("comment ===>", comment)
-	err = comHand.ComSer.MakeComments(&comment, "")
+	err = comHand.ComSer.MakeComments(&comment, session.Value)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

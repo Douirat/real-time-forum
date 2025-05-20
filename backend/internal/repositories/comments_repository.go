@@ -35,7 +35,17 @@ func (commentsRepo *CommentsRepository) MakeComment(comment *models.Comment) err
 // Show comments of a specific post:
 func (commentsRepo *CommentsRepository) ShowComments(id int) ([]*models.Comment, error) {
 	fmt.Println("CALLED", id)
-	query := `SELECT * FROM comments WHERE post_id = ?`
+	query := `SELECT
+	 c.ID ,
+	 c.content,
+	 c.author_id,
+	 c.post_id,
+	 c.created_at,
+	 u.nick_name
+	 FROM comments AS c
+	 JOIN users AS u
+	 ON c.author_id=u.ID
+	 WHERE post_id = ?`
 	raws, err := commentsRepo.db.Query(query, id)
 	if err != nil {
 		return nil, err
@@ -43,7 +53,7 @@ func (commentsRepo *CommentsRepository) ShowComments(id int) ([]*models.Comment,
 	var comments []*models.Comment
 	for raws.Next() {
 		comment := &models.Comment{}
-		raws.Scan(&comment.Id, &comment.Content, &comment.AuthorID, &comment.PostId, &comment.CreatedAt)
+		raws.Scan(&comment.Id, &comment.Content, &comment.AuthorID, &comment.PostId, &comment.CreatedAt,&comment.NickName)
 		comments = append(comments, comment)
 	}
 	return comments, nil

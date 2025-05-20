@@ -76,7 +76,7 @@ export function show_comments_for_post(postId) {
             commentItem.innerHTML = `
                 <div class="comment" style="margin-bottom: 10px; border-left: 3px solid #ccc; padding-left: 10px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
-                        <strong style="font-size: 14px; color: #444;">${comment.user_name || 'Anonymous'}</strong>
+                        <strong style="font-size: 14px; color: #444;">${comment.nick_name || 'Anonymous'}</strong>
                         <small style="color: #666;">${comment.created_at ? new Date(comment.created_at).toLocaleString() : 'Just now'}</small>
                     </div>
                     <p style="margin: 5px 0;">${comment.content}</p>
