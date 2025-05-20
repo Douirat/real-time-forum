@@ -1,5 +1,6 @@
 // Import comment functions
 import { toggle_comments, add_comment } from './comments.js';
+import { navigateTo } from './script.js';
 
 // Function to fetch categories
 export function fetch_categories() {
@@ -29,7 +30,7 @@ export function add_new_post() {
         content: document.getElementById("content").value,
         categories: selectedCategories // Add categories to the post data
     }
-    console.log(post_data);
+   
 
     if (post_data.title == "" || post_data.content == "") {
         alert("please fill in all the post fields")
@@ -61,7 +62,7 @@ export function add_new_post() {
             });
             
             // Refresh posts to show the new one
-            show_posts();
+            navigateTo("/")
         })
         .catch(errorText => console.log("Error:", errorText));
 }

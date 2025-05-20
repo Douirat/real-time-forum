@@ -56,16 +56,6 @@ export function render_home_page() {
                             </aside>
                         </main>
                     `;
-                    
-                    // Add event listener for post form submission
-                    const postForm = document.getElementById("posts_form");
-                    if (postForm) {
-                        postForm.addEventListener("submit", function(event) {
-                            event.preventDefault();
-                            add_new_post();
-                        });
-                    }
-                    
                     // Load posts
                     show_posts();
                     

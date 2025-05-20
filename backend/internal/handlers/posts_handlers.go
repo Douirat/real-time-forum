@@ -27,7 +27,7 @@ func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http
 		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
 		return
 	}
-
+	fmt.Println("ssssss")
 	var post models.PostUser
 
 	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
@@ -38,7 +38,6 @@ func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http
 	session, err := r.Cookie("session_token")
 
 	if err != nil || session == nil {
-		fmt.Println("qsdqsdqsdqsdqsd",err)
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}

@@ -32,18 +32,17 @@ func (postRepository *PostsRepository) CreatePost(post *models.PostUser) error {
 	if err != nil {
 		return err
 	}
-	
+	//check if error return to create 
+	defer tx.Rollback()
 	// Execute the post creation query
 	result, err := tx.Exec(query, post.Title, post.Content, post.CreatedAt, post.UserId)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
 	// Get the newly created post ID
 	postID, err := result.LastInsertId()
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 	
@@ -55,7 +54,6 @@ func (postRepository *PostsRepository) CreatePost(post *models.PostUser) error {
 				postID, categoryID,
 			)
 			if err != nil {
-				tx.Rollback()
 				return err
 			}
 		}
