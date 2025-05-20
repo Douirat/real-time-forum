@@ -63,9 +63,7 @@ func (postHand *PostsHandlers) GetAllPostsHandler(w http.ResponseWriter, r *http
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(posts)
+	utils.ResponseJSON(w, http.StatusCreated, posts)
 }
 
 // Get all posts handler:
@@ -79,7 +77,5 @@ func (postHand *PostsHandlers) GetAllCategoriesHandler(w http.ResponseWriter, r 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(categ)
+	utils.ResponseJSON(w, http.StatusCreated, categ)
 }
