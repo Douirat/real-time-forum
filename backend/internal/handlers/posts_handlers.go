@@ -24,13 +24,13 @@ func NewPostsHandles(postSer *services.PostsService) *PostsHandlers {
 // Create a new post handler:
 func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "invalid method"})
 		return
 	}
 	var post models.PostUser
 
 	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "Invalid request body"})
 		return
 	}
 
@@ -53,12 +53,12 @@ func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http
 // Get all posts handler:
 func (postHand *PostsHandlers) GetAllPostsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "method not allowed"})
 		return
 	}
 	posts, err := postHand.postsServ.GetAllPostsService()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "error getPosts"})
 		return
 	}
 	utils.ResponseJSON(w, http.StatusCreated, posts)
@@ -67,12 +67,12 @@ func (postHand *PostsHandlers) GetAllPostsHandler(w http.ResponseWriter, r *http
 // Get all posts handler:
 func (postHand *PostsHandlers) GetAllCategoriesHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "method not allowed"})
 		return
 	}
 	categ, err := postHand.postsServ.GetAllCategoriesService()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "error getCategories"})
 		return
 	}
 	utils.ResponseJSON(w, http.StatusCreated, categ)
