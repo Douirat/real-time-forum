@@ -43,7 +43,7 @@ func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http
 
 	err = postHand.postsServ.CreatePost(&post, session.Value)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "error createPost"})
 		return
 	}
 
