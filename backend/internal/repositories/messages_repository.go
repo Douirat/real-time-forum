@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"database/sql"
+	"fmt"
 	"real_time_forum/internal/models"
 )
 
@@ -52,5 +53,6 @@ func (mesRepo *MessageRepository) GetChatHistory(client, guest int) ([]*models.M
 		}
 		messages = append(messages, msg)
 	}
+	fmt.Println(messages)
 	return messages, nil
 }

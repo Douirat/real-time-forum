@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"real_time_forum/internal/services"
 	"strconv"
@@ -31,6 +32,7 @@ func (messHand *MessagesHandler) GetChatHistoryHandler(w http.ResponseWriter, r 
 	}
 
 	guestId, err := strconv.Atoi(userIDParam)
+	fmt.Println("guest id: ", guestId)
 	if err != nil {
 		http.Error(w, "Invalid user_id format", http.StatusBadRequest)
 		return
@@ -42,7 +44,7 @@ func (messHand *MessagesHandler) GetChatHistoryHandler(w http.ResponseWriter, r 
 		return
 	}
 	sessionToken := cookie.Value
-
+	fmt.Println(sessionToken)
 	messages, err := messHand.MessageSer.GetChatHistoryService(guestId, sessionToken)
 	if err != nil {
 		if err.Error() == "user has no session" {

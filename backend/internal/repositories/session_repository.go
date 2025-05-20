@@ -54,6 +54,6 @@ func (sessionRepo *SessionsRepository) GetSessionByToken(token string) (int, boo
 	query := `SELECT user_id FROM sessions WHERE session_token = ?`
 	var userId int
 	err := sessionRepo.db.QueryRow(query, token).Scan(&userId)
-	// fmt.Println("token ===> ", userId)
+	fmt.Println("token ===> ", userId)
 	return userId, (err == nil)
 }

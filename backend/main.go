@@ -72,7 +72,7 @@ func main() {
 	
 	
 
-	fmt.Println("Routes registered:", mainRouter.Routes)
+	// fmt.Println("Routes registered:", mainRouter.Routes)
 	fmt.Println("Listening on port: http://localhost:8080/")
 
 	mainError = http.ListenAndServe(":8080", mainRouter)

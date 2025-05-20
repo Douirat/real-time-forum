@@ -1,7 +1,7 @@
 package services
 
 import (
-	"errors"
+	"fmt"
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/repositories"
 )
@@ -18,16 +18,21 @@ type MessagesService struct {
 }
 
 // Instantiate the message service:
-func NewMessageService(messRep *repositories.MessageRepository, sessRepo *repositories.SessionsRepository) *MessagesService {
-	return &MessagesService{messageRepo: messRep}
+func NewMessageService(messRep *repositories.MessageRepository, sessionRepo *repositories.SessionsRepository) *MessagesService {
+	return &MessagesService{
+		messageRepo: messRep,
+		sessRepo:    sessionRepo,
+	}
 }
 
 // Get all the messages between the client and the chosen user:
 func (mesSer *MessagesService) GetChatHistoryService(id int, sessionValue string) ([]*models.Message, error) {
-	// Get User_id by session:
-	clientId, exist := mesSer.sessRepo.GetSessionByToken(sessionValue)
-	if !exist {
-		return nil, errors.New("user has no session")
+	// Get client ID from session token
+	clientId, ok := mesSer.sessRepo.GetSessionByToken(sessionValue)
+	if !ok {
+		return nil, fmt.Errorf("invalid or expired session token")
 	}
+	fmt.Println("client:  ", clientId)
+	// Retrieve chat history between client and selected user
 	return mesSer.messageRepo.GetChatHistory(clientId, id)
 }
