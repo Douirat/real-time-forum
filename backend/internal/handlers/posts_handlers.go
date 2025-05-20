@@ -37,9 +37,7 @@ func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http
 	session, err := r.Cookie("session_token")
 
 	if err != nil || session == nil {
-		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{
-			"message": "invalid token",
-		})
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid token"})
 		return
 	}
 
