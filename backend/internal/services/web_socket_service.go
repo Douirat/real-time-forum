@@ -3,6 +3,7 @@ package services
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"real_time_forum/internal/repositories"
@@ -52,7 +53,7 @@ func (webSoc *WebSocketService) HandleClient(conn net.Conn) {
 
 		var packet map[string]interface{}
 		json.Unmarshal([]byte(msg), &packet)
-
+		fmt.Println(packet)
 		switch packet["type"] {
 		case "register":
 			username = packet["username"].(string)
@@ -112,7 +113,7 @@ func (webSoc *WebSocketService) readMessage(r *bufio.Reader) (string, error) {
 	return string(data), nil
 }
 
-func (webSoc *WebSocketService)writeMessage(w *bufio.Writer, message string) error {
+func (webSoc *WebSocketService) writeMessage(w *bufio.Writer, message string) error {
 	payload := []byte(message)
 	header := []byte{0x81, byte(len(payload))}
 	w.Write(header)

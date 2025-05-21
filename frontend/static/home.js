@@ -47,7 +47,6 @@ export function render_home_page() {
                 `
                 show_posts()
                 logout()
-                render_chat_area()
                 display_chat_users()
             }
         })

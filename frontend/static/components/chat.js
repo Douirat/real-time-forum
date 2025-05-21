@@ -4,11 +4,6 @@ document.getElementById("chat").innerHTML = /*HTML*/`
  <!-- Chat Container -->
  <div id="chat-container" class="chat-container">
             <div class="chat-header">
-                <h2>Simple Chat App</h2>
-                <div>
-                    <span id="current-user"></span>
-                    <button id="logout-button">Logout</button>
-                </div>
             </div>
             <div class="chat-area">
                 <div class="users-list" id="users-list">

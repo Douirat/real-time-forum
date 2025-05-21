@@ -2,7 +2,7 @@ import { registration_form, login_form } from "./components/forms.js"
 import { register_new_user, login_user } from "./users.js"
 import { render_home_page } from "./home.js"
 import { add_new_post } from "./post.js"
-import { create_web_socket } from "./web_socket.js"
+// import { create_web_socket } from "./web_socket.js"
 
 
 export function navigateTo(url) {
@@ -79,10 +79,6 @@ function render_events_handlers() {
             break
 
         case "/":
-            // Set the globl variables:
-            var web_socket = create_web_socket()
-            console.log(web_socket);
-            
             setTimeout(() => {
                 let posts_form = document.getElementById("posts_form")
                 if (posts_form) {
