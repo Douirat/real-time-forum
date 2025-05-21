@@ -51,7 +51,7 @@ func (userRepo *UsersRepository) GetUserByEmail(email string) (*models.User, err
 	return user, nil
 }
 
-// getid
+// get user bu id:
 func (userRepo *UsersRepository) GetUserByID(id int) (*models.User, error) {
 	// Fixed SQL query missing quotes and fixing syntax
 	query := "SELECT id, nick_name, age, gender, first_name, last_name, email, password FROM users WHERE id = ?"

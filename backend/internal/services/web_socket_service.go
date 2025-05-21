@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"real_time_forum/internal/models"
 	"real_time_forum/internal/repositories"
 	"sync"
+	"time"
 )
 
 // Declare the global varibles:
@@ -18,29 +20,40 @@ var (
 
 // Create an interface for the websocket service:
 type WebSocketServiceLayer interface {
-	HandleClient(conn net.Conn)
+	HandleClient(token string, conn net.Conn)
 	readMessage(r *bufio.Reader) (string, error)
 	writeMessage(w *bufio.Writer, message string) error
 }
 
+// Create a contractor the implement the websocket layer:
 type WebSocketService struct {
-	messRepo repositories.MessageRepositoryLayer
+	messRepo    repositories.MessageRepositoryLayer
+	sessionRepo repositories.SessionsRepositoryLayer
+	userRepo    repositories.UsersRepositoryLayer
 }
 
 // Instantiate the websocket service:
-func NewWebSocketService(mesRepo *repositories.MessageRepository) *WebSocketService {
-	return &WebSocketService{messRepo: mesRepo}
+func NewWebSocketService(mesRepo *repositories.MessageRepository, sessRep *repositories.SessionsRepository, userRepo *repositories.UsersRepository) *WebSocketService {
+	return &WebSocketService{
+		messRepo: mesRepo,
+		sessionRepo: sessRep,
+		userRepo: userRepo,
+	}
 }
 
 // create an object to repesent the clint:
 type Client struct {
 	username string
+	userId   int
 	conn     net.Conn
 	writer   *bufio.Writer
 }
 
-func (webSoc *WebSocketService) HandleClient(conn net.Conn) {
-	var username string
+func (webSoc *WebSocketService) HandleClient(token string, conn net.Conn) {
+	var (
+		username string
+		userID   int
+	)
 	reader := bufio.NewReader(conn)
 	writer := bufio.NewWriter(conn)
 
@@ -52,36 +65,101 @@ func (webSoc *WebSocketService) HandleClient(conn net.Conn) {
 		}
 
 		var packet map[string]interface{}
-		json.Unmarshal([]byte(msg), &packet)
-		fmt.Println(packet)
+		if err := json.Unmarshal([]byte(msg), &packet); err != nil {
+			log.Println("Invalid JSON packet:", err)
+			continue
+		}
+
+		// guestUserName := packet["username"].(string)
+
+		fmt.Println("session token: ", token)
+		fmt.Println("packet: ", packet)
+
+		var valid bool
+		clientId, valid := webSoc.sessionRepo.GetSessionByToken(token)
+		if !valid {
+			log.Println("Invalid session token for", token)
+			return
+		}
+
 		switch packet["type"] {
 		case "register":
-			username = packet["username"].(string)
+			// Get user by id from data base:
+			user, err := webSoc.userRepo.GetUserByID(clientId)
+			if err != nil {
+				log.Println("Error finding the client: ", err)
+				return
+			}
+			fmt.Println("user is:\n",user)
 			clientsMu.Lock()
-			clients[username] = &Client{username, conn, writer}
+			clients[username] = &Client{
+				username: user.NickName,
+				userId:   user.Id,
+				conn:     conn,
+				writer:   writer,
+			}
 			clientsMu.Unlock()
-			log.Println(username, "joined")
+
+			log.Println(username, "registered with ID", userID)
+
 		case "message":
-			to := packet["to"].(string)
-			content := packet["content"].(string)
+			toUser, toOk := packet["to"].(string)
+			content, contentOk := packet["content"].(string)
+			if !toOk || !contentOk {
+				log.Println("Malformed message packet")
+				continue
+			}
 
 			clientsMu.Lock()
-			recipient, ok := clients[to]
+			recipient, recipientOnline := clients[toUser]
+			sender := clients[username]
 			clientsMu.Unlock()
-			if ok {
+
+			if sender == nil {
+				log.Println("Sender not found in clients map")
+				continue
+			}
+
+			// Build message model
+			message := &models.Message{
+				Content:    content,
+				SenderId:   sender.userId,
+				RecieverId: 0, // default if recipient is offline
+				IsRead:     recipientOnline,
+				CreatedAt:  time.Now(),
+			}
+
+			if recipientOnline {
+				message.RecieverId = recipient.userId
+			} else {
+				log.Println("Recipient", toUser, "not online")
+				// Optionally queue message for later delivery
+			}
+
+			// Save to database
+			if err := webSoc.messRepo.InsertMessage(message); err != nil {
+				log.Println("DB insert error:", err)
+			}
+
+			if recipientOnline {
 				data := map[string]interface{}{
 					"type":    "message",
 					"from":    username,
 					"content": content,
 				}
-				jsonData, _ := json.Marshal(data)
-				webSoc.writeMessage(recipient.writer, string(jsonData))
-			} else {
-				log.Println("Recipient", to, "not found")
+				if jsonData, err := json.Marshal(data); err == nil {
+					if err := webSoc.writeMessage(recipient.writer, string(jsonData)); err != nil {
+						log.Println("Error sending message to recipient:", err)
+					}
+				}
 			}
+
+		default:
+			log.Println("Unknown packet type:", packet["type"])
 		}
 	}
 
+	// Handle disconnect
 	clientsMu.Lock()
 	delete(clients, username)
 	clientsMu.Unlock()

@@ -49,8 +49,13 @@ func (webSoc *WebSocketHandler) WebsocketHandler(w http.ResponseWriter, r *http.
 		"Connection: Upgrade\r\n" +
 		"Sec-WebSocket-Accept: " + accept + "\r\n\r\n"
 	conn.Write([]byte(response))
-
-	go webSoc.webServ.HandleClient(conn)
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	token := cookie.Value
+	go webSoc.webServ.HandleClient(token, conn)
 }
 
 func (webSoc *WebSocketHandler) computeAcceptKey(key string) string {

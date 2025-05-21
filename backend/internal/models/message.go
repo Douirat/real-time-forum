@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 // create a message model to ease working with messages:
 type Message struct {
 	Id         int    `json:"id"`
@@ -7,6 +9,6 @@ type Message struct {
 	SenderId   int    `json:"sender_id"`
 	RecieverId int    `json:"reciever_id"`
 	IsRead     bool   `json:"is_read"`
-	CreatedAt  string `json:"created_at"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
