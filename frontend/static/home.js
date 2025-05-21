@@ -21,10 +21,7 @@ export function render_home_page() {
             return response.json();
         })
         .then(data => {
-            if (!data.is_loged) {
-                navigateTo("/login")
-            } else {
-                // First fetch categories before rendering the page
+       // First fetch categories before rendering the page
                 fetch_categories().then(categories => {
                     // Store categories globally
                     categoriesData = categories;
@@ -65,8 +62,9 @@ export function render_home_page() {
                     console.error("Error fetching categories:", error);
                 });
             }
-        })
+        )
         .catch(error => {
             console.log("Error:", error.message);
+            navigateTo("/login")
         });
 }

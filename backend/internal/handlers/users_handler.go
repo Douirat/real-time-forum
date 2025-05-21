@@ -137,32 +137,20 @@ func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request)
 }
 
 // logout user:
+// logout user:
 func (userHandler *UsersHandlers) IsLogged(w http.ResponseWriter, r *http.Request) {
-	var token string
-	var logged bool
-
-	w.Header().Set("Content-Type", "application/json")
-
 	cookie, err := r.Cookie("session_token")
 	if err != nil {
-		logged = false
-		json.NewEncoder(w).Encode(struct {
-			IsLoged bool `json:"is_loged"`
-		}{
-			IsLoged: logged,
-		})
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid token"})
 		return
 	}
 
-	if cookie != nil {
-		token = cookie.Value
+	token := cookie.Value
+	logged := userHandler.sessionServ.IsValidSession(token)
+	if !logged {
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid token"})
+		return
 	}
 
-	logged = userHandler.sessionServ.IsValidSession(token)
-
-	json.NewEncoder(w).Encode(struct {
-		IsLoged bool `json:"is_loged"`
-	}{
-		IsLoged: logged,
-	})
+	utils.ResponseJSON(w, http.StatusOK, map[string]string{"message": "User logged out successfully"})
 }

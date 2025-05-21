@@ -68,7 +68,7 @@ export async function login_user() {
       navigateTo("/");
       return response.json();
     })
-    .then((data) => navigateTo("/register"))
+    .then((data) => navigateTo("/"))
     .catch((errorText) => console.log("Error:", errorText));
 }
 
