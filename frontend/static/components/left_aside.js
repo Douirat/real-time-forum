@@ -97,7 +97,7 @@ function create_chat_room(user = {}) {
           return
         }
         console.log("The client wants to chat with: ", user.id);
-        sendMessage(socket, user.nick_name, content)
+        sendMessage(socket, user.id, content)
       })
 
       // Append input and button to the inputDiv

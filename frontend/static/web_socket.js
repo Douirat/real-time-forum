@@ -7,7 +7,6 @@ export function create_web_socket(username) {
         // Register user
         socket.send(JSON.stringify({
             type: "register",
-            username: username
         }));
     };
 
