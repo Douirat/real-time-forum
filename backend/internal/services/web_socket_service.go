@@ -35,9 +35,9 @@ type WebSocketService struct {
 // Instantiate the websocket service:
 func NewWebSocketService(mesRepo *repositories.MessageRepository, sessRep *repositories.SessionsRepository, userRepo *repositories.UsersRepository) *WebSocketService {
 	return &WebSocketService{
-		messRepo: mesRepo,
+		messRepo:    mesRepo,
 		sessionRepo: sessRep,
-		userRepo: userRepo,
+		userRepo:    userRepo,
 	}
 }
 
@@ -52,7 +52,6 @@ type Client struct {
 func (webSoc *WebSocketService) HandleClient(token string, conn net.Conn) {
 	var (
 		username string
-		userID   int
 	)
 	reader := bufio.NewReader(conn)
 	writer := bufio.NewWriter(conn)
@@ -90,7 +89,7 @@ func (webSoc *WebSocketService) HandleClient(token string, conn net.Conn) {
 				log.Println("Error finding the client: ", err)
 				return
 			}
-			fmt.Println("user is:\n",user)
+			fmt.Println("user is:\n", user)
 			clientsMu.Lock()
 			clients[username] = &Client{
 				username: user.NickName,
@@ -100,18 +99,24 @@ func (webSoc *WebSocketService) HandleClient(token string, conn net.Conn) {
 			}
 			clientsMu.Unlock()
 
-			log.Println(username, "registered with ID", userID)
+			log.Println(username, "registered with ID", user.Id)
 
 		case "message":
-			toUser, toOk := packet["to"].(string)
-			content, contentOk := packet["content"].(string)
-			if !toOk || !contentOk {
-				log.Println("Malformed message packet")
-				continue
+			guestId := packet["to"].(float64)
+			content := packet["content"].(string)
+
+			fmt.Printf("guest id: %f and content: %v\n", guestId, content)
+
+			// Get the guest from database by it's id:
+			guest, err := webSoc.userRepo.GetUserByID(int(guestId))
+			if err != nil {
+				fmt.Println("error retiriving the client from database: ", err)
+				return
 			}
 
+			fmt.Println("Guest: \n", guest)
 			clientsMu.Lock()
-			recipient, recipientOnline := clients[toUser]
+			recipient, recipientOnline := clients[guest.NickName]
 			sender := clients[username]
 			clientsMu.Unlock()
 
@@ -124,15 +129,17 @@ func (webSoc *WebSocketService) HandleClient(token string, conn net.Conn) {
 			message := &models.Message{
 				Content:    content,
 				SenderId:   sender.userId,
-				RecieverId: 0, // default if recipient is offline
+				RecieverId: guest.Id,
 				IsRead:     recipientOnline,
 				CreatedAt:  time.Now(),
 			}
 
+			fmt.Println("Message: \n", message)
+
 			if recipientOnline {
 				message.RecieverId = recipient.userId
 			} else {
-				log.Println("Recipient", toUser, "not online")
+				log.Println("Recipient", guest.NickName, "not online")
 				// Optionally queue message for later delivery
 			}
 
