@@ -1,5 +1,7 @@
 import { header, logout } from "./components/header.js";
+import { render_left_aside, display_chat_users } from "./components/left_aside.js";
 import { post_form } from "./components/forms.js";
+// import { render_chat_area } from "./components/chat.js";
 import { fetch_categories, show_posts, add_new_post } from "./post.js";
 import { navigateTo } from "./script.js";
 
@@ -21,14 +23,15 @@ export function render_home_page() {
             return response.json();
         })
         .then(data => {
-       // First fetch categories before rendering the page
-                fetch_categories().then(categories => {
-                    // Store categories globally
-                    categoriesData = categories;
-                    
-                    // Render the home page with categories
-                    document.body.innerHTML = /*html*/`
+            // First fetch categories before rendering the page
+            fetch_categories().then(categories => {
+                // Store categories globally
+                categoriesData = categories;
+
+                // Render the home page with categories
+                document.body.innerHTML = /*html*/`
                         ${header()}
+                        ${render_left_aside()}
                         <main>
                             <section>
                                 <div class="postForm">
@@ -52,16 +55,20 @@ export function render_home_page() {
                             </aside>
                         </main>
                     `;
-                    // Load posts
-                    show_posts();
-                    
-                    // Setup logout handler
-                    logout();
-                })
+                // Load posts
+                show_posts()
+                fetch_categories()
+                display_chat_users()
+                // render_chat_area()
+                
+
+                // Setup logout handler
+                logout();
+            })
                 .catch(error => {
                     console.error("Error fetching categories:", error);
                 });
-            }
+        }
         )
         .catch(error => {
             console.log("Error:", error.message);

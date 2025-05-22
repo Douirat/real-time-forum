@@ -3,13 +3,13 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/services"
 	"real_time_forum/internal/services/utils"
-
 )
 
 // UsersHandlersLayer defines the contract for user handlers
@@ -28,6 +28,12 @@ type UsersHandlers struct {
 type Credentials struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+// Create a struct to determine the limits of each:
+type Edge struct {
+	Offset int `json:"offset"`
+	Limit  int `json:"limit"`
 }
 
 // NewUsersHandlers creates a new user handler
@@ -96,7 +102,7 @@ func (userHandler *UsersHandlers) UsersLoginHandler(w http.ResponseWriter, r *ht
 		Token:     token,
 		ExpiresAt: expiresAt.Format(http.TimeFormat),
 	}
-	
+
 	utils.ResponseJSON(w, http.StatusCreated, response)
 }
 
@@ -153,4 +159,22 @@ func (userHandler *UsersHandlers) IsLogged(w http.ResponseWriter, r *http.Reques
 	}
 
 	utils.ResponseJSON(w, http.StatusOK, map[string]string{"message": "User logged out successfully"})
+}
+
+// Get users for chat:
+func (userHandler *UsersHandlers) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+
+	users, err := userHandler.userServ.GetUsersService(offset, limit)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(users)
 }

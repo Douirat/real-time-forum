@@ -10,6 +10,7 @@ type UsersRepositoryLayer interface {
 	RegisterNewUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
 	GetUserByID(id int) (*models.User, error)
+	GetUsersRepo(offset, limit int) ([]*models.ChatUser, error)
 }
 
 // Create a structure to represent to implemente the contract with the repo interface:
@@ -50,7 +51,7 @@ func (userRepo *UsersRepository) GetUserByEmail(email string) (*models.User, err
 	return user, nil
 }
 
-// getid
+// get user bu id:
 func (userRepo *UsersRepository) GetUserByID(id int) (*models.User, error) {
 	// Fixed SQL query missing quotes and fixing syntax
 	query := "SELECT id, nick_name, age, gender, first_name, last_name, email, password FROM users WHERE id = ?"
@@ -63,4 +64,25 @@ func (userRepo *UsersRepository) GetUserByID(id int) (*models.User, error) {
 		return nil, err
 	}
 	return user, nil
+}
+
+// Get all users:
+func (userRepo *UsersRepository) GetUsersRepo(offset, limit int) ([]*models.ChatUser, error) {
+	query := `SELECT ID, nick_name FROM users LIMIT ? OFFSET ?`
+	rows, err := userRepo.db.Query(query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*models.ChatUser
+	for rows.Next() {
+		chatUser := &models.ChatUser{}
+		err := rows.Scan(&chatUser.Id, &chatUser.NickName)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, chatUser)
+	}
+	return users, nil
 }

@@ -82,30 +82,21 @@ export function show_posts() {
                     // Create a new post div
                     let postDiv = document.createElement("div");
                     postDiv.className = "post-item";
-                    postDiv.dataset.postId = post.id;
-                    postDiv.style.margin = "15px 0";
-                    postDiv.style.padding = "15px";
-                    postDiv.style.border = "1px solid #ddd";
-                    postDiv.style.borderRadius = "5px";
 
                     // Create UserName and timestamp element
                     let userNameElement = document.createElement("h4");
                     userNameElement.textContent = `Posted by: ${post.user_name || "Unknown User"}`;
-                    userNameElement.style.margin = "0 0 5px 0";
-                    userNameElement.style.color = "#666";
-                    
+
+
                     // Create timestamp element
                     let timestampElement = document.createElement("small");
                     timestampElement.textContent = post.created_at ? `Posted on: ${new Date(post.created_at).toLocaleString()}` : "";
-                    timestampElement.style.display = "block";
-                    timestampElement.style.color = "#888";
-                    timestampElement.style.fontSize = "12px";
-                    timestampElement.style.marginBottom = "10px";
+
 
                     // Create title element
                     let titleElement = document.createElement("h3");
                     titleElement.textContent = post.title;
-                    titleElement.style.margin = "0 0 10px 0";
+
 
                     // Create content element
                     let contentElement = document.createElement("p");
@@ -131,12 +122,6 @@ export function show_posts() {
                     let commentButton = document.createElement("button");
                     commentButton.textContent = "Comments";
                     commentButton.className = "comment-btn";
-                    commentButton.style.padding = "5px 10px";
-                    commentButton.style.backgroundColor = "#f0f0f0";
-                    commentButton.style.border = "1px solid #ccc";
-                    commentButton.style.borderRadius = "3px";
-                    commentButton.style.cursor = "pointer";
-                    commentButton.style.marginTop = "10px";
                     commentButton.onclick = function () {
                         toggle_comments(post.id);
                     };

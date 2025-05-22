@@ -2,7 +2,7 @@ import { navigateTo } from "../script.js";
 
 export function header() {
     return /*html*/`
-        <header>
+        <header class="header">
             <nav>
                 <a href="/" class="logo">FORUM</a>
                 <button class="logout">logout</button>
@@ -13,7 +13,7 @@ export function header() {
 
 export function logout() {
     let btn = document.querySelector('.logout')
-
+    console.log("fff",btn)
     btn.addEventListener('click', () => {
         fetch("http://localhost:8080/logout", {
             method: "POST",
