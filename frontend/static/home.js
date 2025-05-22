@@ -2,7 +2,7 @@ import { header, logout } from "./components/header.js";
 import { render_left_aside, display_chat_users } from "./components/left_aside.js";
 import { post_form } from "./components/forms.js";
 // import { render_chat_area } from "./components/chat.js";
-import { fetch_categories, show_posts, add_new_post } from "./post.js";
+import { fetch_categories, show_posts } from "./post.js";
 import { navigateTo } from "./script.js";
 
 // Global variable to store categories data
@@ -23,9 +23,7 @@ export function render_home_page() {
             return response.json();
         })
         .then(data => {
-            // First fetch categories before rendering the page
             fetch_categories().then(categories => {
-                // Store categories globally
                 categoriesData = categories;
 
                 // Render the home page with categories
@@ -55,14 +53,10 @@ export function render_home_page() {
                             </aside>
                         </main>
                     `;
-                // Load posts
                 show_posts()
-                fetch_categories()
                 display_chat_users()
                 // render_chat_area()
-                
 
-                // Setup logout handler
                 logout();
             })
                 .catch(error => {
