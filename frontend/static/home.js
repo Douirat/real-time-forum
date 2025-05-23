@@ -39,6 +39,7 @@ export function render_home_page() {
                                     <!-- Posts will be loaded here -->
                                 </div>
                          
+                            </main>
                             <aside class="right">
                                 <div class="profile">
                                     <h1>mos3ab</h1>
@@ -51,7 +52,6 @@ export function render_home_page() {
                                     </ul>
                                 </div>
                             </aside>
-                        </main>
                     `;
                 show_posts()
                 display_chat_users()
