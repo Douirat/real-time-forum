@@ -53,7 +53,7 @@ func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http
 // Get all posts handler:
 func (postHand *PostsHandlers) GetAllPostsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "method not allowed"})
+		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "method not allowed"})
 		return
 	}
 	posts, err := postHand.postsServ.GetAllPostsService()

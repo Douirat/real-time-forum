@@ -142,8 +142,7 @@ func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request)
 	utils.ResponseJSON(w, http.StatusCreated, map[string]string{"message": "User logged out successfully"})
 }
 
-// logout user:
-// logout user:
+// IsLogged user:
 func (userHandler *UsersHandlers) IsLogged(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session_token")
 	if err != nil {
@@ -164,7 +163,7 @@ func (userHandler *UsersHandlers) IsLogged(w http.ResponseWriter, r *http.Reques
 // Get users for chat:
 func (userHandler *UsersHandlers) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "method not allowed"})
 		return
 	}
 
@@ -173,8 +172,8 @@ func (userHandler *UsersHandlers) GetUsersHandler(w http.ResponseWriter, r *http
 
 	users, err := userHandler.userServ.GetUsersService(offset, limit)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "faild to getUser"})
 		return
 	}
-	json.NewEncoder(w).Encode(users)
+	utils.ResponseJSON(w, http.StatusCreated, users)
 }
