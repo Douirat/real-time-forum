@@ -31,14 +31,15 @@ export function render_home_page() {
                         ${header()}
                         ${render_left_aside()}
                         <main>
-                            <section>
+                        
                                 <div class="postForm">
                                     ${post_form(categories)}
                                 </div>
                                 <div class="posts">
                                     <!-- Posts will be loaded here -->
                                 </div>
-                            </section>
+                         
+                            </main>
                             <aside class="right">
                                 <div class="profile">
                                     <h1>mos3ab</h1>
@@ -51,12 +52,9 @@ export function render_home_page() {
                                     </ul>
                                 </div>
                             </aside>
-                        </main>
                     `;
                 show_posts()
                 display_chat_users()
-                // render_chat_area()
-
                 logout();
             })
                 .catch(error => {

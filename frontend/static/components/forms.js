@@ -75,7 +75,7 @@ export function login_form() {
 export function post_form(categories) {
     // Generate HTML for category checkboxes
     const categoriesHTML = categories && categories.length > 0 
-        ? `
+        ? /*HTML*/ `
             <div class="categories-container">
                 <h3>Select categories:</h3>
                 <div class="categories-options">
