@@ -48,14 +48,23 @@ document.addEventListener("DOMContentLoaded", () => {
   // Handle all form submissions using event delegation
   document.body.addEventListener("submit", (e) => {
     e.preventDefault();
-    
+
     // Check which form was submitted based on its ID
-    if (e.target.id === "registration_form") {
-      register_new_user();
-    } else if (e.target.id === "login_form") {
-      login_user();
-    } else if (e.target.id === "posts_form") {
-      add_new_post();
+    switch (e.target.id) {
+      case "registration_form":
+        register_new_user();
+        break;
+
+      case "login_form":
+        login_user();
+        break;
+
+      case "posts_form":
+        add_new_post();
+        break;
+
+      default:
+        console.warn("Unknown form submitted:", e.target.id);
     }
   });
 });
