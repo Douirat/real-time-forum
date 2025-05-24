@@ -2,6 +2,9 @@
 import { toggle_comments, add_comment } from './comments.js';
 import { navigateTo } from './script.js';
 
+var offset = 0;
+var limit = 10;
+
 // Function to fetch categories
 export function fetch_categories() {
     return fetch("http://localhost:8080/get_categories")
@@ -31,11 +34,11 @@ export function add_new_post() {
         categories: selectedCategories // Add categories to the post data
     }
    
-
     if (post_data.title == "" || post_data.content == "") {
         alert("please fill in all the post fields")
         return
     }
+    
     fetch("http://localhost:8080/add_post", {
         method: "POST",
         headers: {
@@ -60,7 +63,8 @@ export function add_new_post() {
                 checkbox.checked = false;
             });
             
-            // Refresh posts to show the new one
+            // Reset pagination and refresh posts
+            offset = 0;
             navigateTo("/")
         })
         .catch(errorText => navigateTo("/login"));
@@ -68,47 +72,56 @@ export function add_new_post() {
 
 // Enhanced show posts function with category display:
 export function show_posts() {
-    fetch("http://localhost:8080/get_posts")
+    console.log(`Fetching posts with offset: ${offset}, limit: ${limit}`);
+    
+    fetch(`http://localhost:8080/get_posts?offset=${offset}&limit=${limit}`)
         .then(response => {
             return response.json();
         })
         .then(data => {
             let postsContainer = document.querySelector(".posts");
-            postsContainer.innerHTML = "";
+            
+            // If this is the first load (offset = 0), clear the container
+            if (offset === 0) {
+                postsContainer.innerHTML = "";
+            }
 
-            // Reverse the data to show newest posts first
+            // Check if we got any posts
             if (data && data.length > 0) {
-                data.reverse().forEach(post => {
+                // Update offset for next batch
+                offset += data.length;
+                
+                // Reverse the data to show newest posts first (only for first load)
+                if (offset === data.length) {
+                    data.reverse();
+                }
+                
+                data.forEach(post => {
                     // Create a new post div
                     let postDiv = document.createElement("div");
                     postDiv.className = "post-item";
-
+                    
                     // Create UserName and timestamp element
                     let userNameElement = document.createElement("h4");
                     userNameElement.textContent = `Posted by: ${post.user_name || "Unknown User"}`;
-
 
                     // Create timestamp element
                     let timestampElement = document.createElement("small");
                     timestampElement.textContent = post.created_at ? `Posted on: ${new Date(post.created_at).toLocaleString()}` : "";
 
-
                     // Create title element
                     let titleElement = document.createElement("h3");
                     titleElement.textContent = post.title;
 
-
                     // Create content element
                     let contentElement = document.createElement("p");
                     contentElement.textContent = post.content;
-                    contentElement.style.margin = "0 0 15px 0";
                     
                     // Create categories element if categories exist
                     let categoriesElement = null;
                     if (post.categories_names) {
                         categoriesElement = document.createElement("div");
                         categoriesElement.className = "post-categories";
-                        categoriesElement.style.marginBottom = "10px";
                         
                         const categoriesList = post.categories_names.split(',');
                         categoriesElement.innerHTML = `
@@ -129,11 +142,6 @@ export function show_posts() {
                     // Create comments section (initially hidden)
                     let commentsSection = document.createElement("div");
                     commentsSection.id = `comments-section-${post.id}`;
-                    commentsSection.style.display = "none";
-                    commentsSection.style.marginTop = "15px";
-                    commentsSection.style.padding = "10px";
-                    commentsSection.style.backgroundColor = "#f9f9f9";
-                    commentsSection.style.borderRadius = "3px";
 
                     // Create comments container
                     let commentsContainer = document.createElement("div");
@@ -151,21 +159,10 @@ export function show_posts() {
                     commentInput.id = `comment-input-${post.id}`;
                     commentInput.type = "text";
                     commentInput.placeholder = "Write a comment...";
-                    commentInput.style.flex = "1";
-                    commentInput.style.padding = "8px";
-                    commentInput.style.border = "1px solid #ddd";
-                    commentInput.style.borderRadius = "3px";
-                    commentInput.style.marginRight = "5px";
 
                     // Create submit button
                     let submitButton = document.createElement("button");
                     submitButton.textContent = "Submit";
-                    submitButton.style.padding = "8px 15px";
-                    submitButton.style.backgroundColor = "#4CAF50";
-                    submitButton.style.color = "white";
-                    submitButton.style.border = "none";
-                    submitButton.style.borderRadius = "3px";
-                    submitButton.style.cursor = "pointer";
                     submitButton.onclick = function () {
                         add_comment(post.id);
                     };
@@ -192,11 +189,22 @@ export function show_posts() {
                     // Add the post div to the container
                     postsContainer.appendChild(postDiv);
                 });
+                
+                console.log(`Loaded ${data.length} posts. New offset: ${offset}`);
             } else {
-                postsContainer.innerHTML = "<p>No posts yet. Be the first to create one!</p>";
+                // No more posts to load
+                if (offset === 0) {
+                    postsContainer.innerHTML = "<p>No posts yet. Be the first to create one!</p>";
+                }
+                console.log("No more posts to load");
             }
         })
         .catch(error => {
             console.error("Fetch error:", error);
         });
+}
+
+// Reset pagination (useful when adding new posts or refreshing)
+export function reset_pagination() {
+    offset = 0;
 }
