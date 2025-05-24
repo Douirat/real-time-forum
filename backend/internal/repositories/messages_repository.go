@@ -4,12 +4,16 @@ import (
 	"database/sql"
 	"fmt"
 	"real_time_forum/internal/models"
+	"time"
 )
 
 // Create an interface to represent the repository:
 type MessageRepositoryLayer interface {
 	InsertMessage(m *models.Message) error
 	GetChatHistory(client, guest int) ([]*models.Message, error)
+	// MarkMessagesAsRead(senderID, receiverID int) error
+	// GetUnreadMessageCount(userID int) (int, error)
+	// GetUnreadMessages(userID int) ([]*models.Message, error)
 }
 
 // Create a struct to implement the messages contract:
@@ -47,9 +51,13 @@ func (mesRepo *MessageRepository) GetChatHistory(client, guest int) ([]*models.M
 	var messages []*models.Message
 	for rows.Next() {
 		msg := &models.Message{}
-		var createdAt string
-		if err := rows.Scan(&msg.Id, &msg.Content, &msg.SenderId, &msg.RecieverId, &msg.IsRead, &createdAt); err != nil {
+		var createdAtStr string
+		if err := rows.Scan(&msg.Id, &msg.Content, &msg.SenderId, &msg.RecieverId, &msg.IsRead, &createdAtStr); err != nil {
 			return nil, err
+		}
+		// Parse the timestamp
+		if createdAt, parseErr := time.Parse("2006-01-02 15:04:05", createdAtStr); parseErr == nil {
+			msg.CreatedAt = createdAt
 		}
 		messages = append(messages, msg)
 	}

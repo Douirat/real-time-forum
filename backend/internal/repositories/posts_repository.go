@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"database/sql"
-
 	"real_time_forum/internal/models"
 )
 
