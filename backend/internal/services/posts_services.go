@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"real_time_forum/internal/models"
@@ -11,7 +12,7 @@ import (
 // Create an interface for the posts services:
 type PostsServiceLayer interface {
 	CreatePost(post *models.PostUser, token string) error
-	GetAllPostsService() ([]*models.PostUser, error)
+	GetAllPostsService(offsetStr, limitStr string) ([]*models.PostUser, error)
 	GetAllCategoriesService() ([]*models.Categories, error)
 }
 
@@ -41,8 +42,19 @@ func (postSer *PostsService) CreatePost(post *models.PostUser, token string) err
 }
 
 // Get all posts service:
-func (postSer *PostsService) GetAllPostsService() ([]*models.PostUser, error) {
-	posts, err := postSer.PostRepo.GetAllPostsRepository()
+func (postSer *PostsService) GetAllPostsService(offsetStr, limitStr string) ([]*models.PostUser, error) {
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil {
+		return nil, err
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		return nil, err
+	}
+
+
+	posts, err := postSer.PostRepo.GetAllPostsRepository(offset, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -63,4 +75,3 @@ func (postSer *PostsService) GetAllCategoriesService() ([]*models.Categories, er
 	}
 	return categ, nil
 }
-

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"real_time_forum/internal/models"
@@ -40,7 +41,7 @@ func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http
 		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid token"})
 		return
 	}
-
+	fmt.Println(post)
 	err = postHand.postsServ.CreatePost(&post, session.Value)
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "error createPost"})
@@ -56,7 +57,11 @@ func (postHand *PostsHandlers) GetAllPostsHandler(w http.ResponseWriter, r *http
 		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "method not allowed"})
 		return
 	}
-	posts, err := postHand.postsServ.GetAllPostsService()
+
+	offsetStr := r.URL.Query().Get("offset")
+	limitStr := r.URL.Query().Get("limit")
+
+	posts, err := postHand.postsServ.GetAllPostsService(offsetStr, limitStr)
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "error getPosts"})
 		return

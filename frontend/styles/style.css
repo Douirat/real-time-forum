@@ -15,7 +15,7 @@ body {
     grid-template-areas:
         "header header header"
         "left main right";
-    height: 100vh;
+    min-height: 110vh;
     gap: 10px;
 }
 
@@ -67,7 +67,6 @@ body {
         border-radius: 5px;
         color: #555;
     }
-
 }
 
 .main {
@@ -79,14 +78,12 @@ body {
 }
 
 
-
 .postForm {
     margin: 15px 0;
     border-radius: 5px;
     border: 1px solid #ddd;
     padding: 5px;
     width: 80%;
-
 }
 
 #posts_form {
