@@ -26,39 +26,39 @@ func init() {
 
 func main() {
 	if mainError != nil {
+		fmt.Println("Error connecting to database:", mainError)
 		return
 	}
 	defer databaseConnection.Close()
-	fmt.Println("Connected successfully to database")
+	fmt.Println("✅ Connected successfully to database")
 
-	// Initialize repositories:
+	// Repositories
 	usersRepository := repositories.NewUsersRepository(databaseConnection)
 	sessionRepository := repositories.NewSessionsRepository(databaseConnection)
 	postsRepository := repositories.NewPostsRepository(databaseConnection)
 	commentsRepository := repositories.NewCommentsRepository(databaseConnection)
 	messageRepository := repositories.NewMessageRepository(databaseConnection)
 
-	// Initialize services:
+	// Services
 	usersServices := services.NewUsersServices(usersRepository)
 	sessionService := services.NewSessionsServices(usersRepository, sessionRepository)
 	postsServices := services.NewPostService(postsRepository, sessionRepository)
 	commentsService := services.NewCommentsServices(commentsRepository, sessionRepository)
-	webSocketService := services.NewWebSocketService(messageRepository, sessionRepository, usersRepository)
+	webSocketService := services.NewWebSocketService(messageRepository, sessionRepository)
 	messagesService := services.NewMessageService(messageRepository, sessionRepository)
 
-	// Initialize handlers:
+	// Handlers
 	usersHandlers := handlers.NewUsersHandlers(usersServices, sessionService)
 	postsHandlers := handlers.NewPostsHandles(postsServices)
 	commentsHandlers := handlers.NewCommentsHandler(commentsService)
 	webSocketHandler := handlers.NewWebSocketHandler(webSocketService)
 	messagesHandler := handlers.NewMessagesHandler(messagesService)
-	// Setup router and routes:
+
+	// Router
 	mainRouter := router.NewRouter(sessionService)
 
-	// User routes:
-	
-	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
-	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)
+	// Routes
+	mainRouter.AddRoute("GET", "/register", usersHandlers.UsersRegistrationHandler)
 	mainRouter.AddRoute("POST", "/login", usersHandlers.UsersLoginHandler)
 	mainRouter.AddRoute("POST", "/logout", usersHandlers.Logout)
 	mainRouter.AddRoute("GET", "/get_users", usersHandlers.GetUsersHandler)
@@ -68,16 +68,13 @@ func main() {
 	mainRouter.AddRoute("GET", "/get_categories", postsHandlers.GetAllCategoriesHandler)
 	mainRouter.AddRoute("POST", "/commenting", commentsHandlers.MakeCommentsHandler)
 	mainRouter.AddRoute("GET", "/get_comments", commentsHandlers.ShowCommentsHandler)
+	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
 	mainRouter.AddRoute("GET", "/ws", webSocketHandler.WebsocketHandler)
-	
-	
 
-	// fmt.Println("Routes registered:", mainRouter.Routes)
-	fmt.Println("Listening on port: http://localhost:8080/")
-
+	// Start Server
+	fmt.Println("🚀 Server is running at: http://localhost:8080/")
 	mainError = http.ListenAndServe(":8080", mainRouter)
 	if mainError != nil {
-		
-		return
+		fmt.Println("Server error:", mainError)
 	}
 }
