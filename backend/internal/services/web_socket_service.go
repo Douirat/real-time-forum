@@ -69,8 +69,6 @@ func (webSoc *WebSocketService) HandleClient(token string, conn net.Conn) {
 			continue
 		}
 
-		// guestUserName := packet["username"].(string)
-
 		var valid bool
 		clientId, valid := webSoc.sessionRepo.GetSessionByToken(token)
 		if !valid {
