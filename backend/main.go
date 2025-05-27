@@ -43,7 +43,7 @@ func main() {
 	sessionService := services.NewSessionsServices(usersRepository, sessionRepository)
 	postsServices := services.NewPostService(postsRepository, sessionRepository)
 	commentsService := services.NewCommentsServices(commentsRepository, sessionRepository)
-	webSocketService := services.NewWebSocketService(messageRepository, sessionRepository, usersRepository)
+	webSocketService := services.NewWebSocketService(messageRepository, sessionRepository)
 	messagesService := services.NewMessageService(messageRepository, sessionRepository)
 
 	// Initialize handlers:
