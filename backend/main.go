@@ -31,6 +31,8 @@ func main() {
 	defer databaseConnection.Close()
 	fmt.Println("Connected successfully to database")
 
+
+
 	// Initialize repositories:
 	usersRepository := repositories.NewUsersRepository(databaseConnection)
 	sessionRepository := repositories.NewSessionsRepository(databaseConnection)
@@ -56,7 +58,9 @@ func main() {
 	mainRouter := router.NewRouter(sessionService)
 
 	// User routes:
-	
+	fmt.Println("websocket handler: ", webSocketHandler.Clients.Clients)
+	go webSocketHandler.Clients.RunWebSocket()
+
 	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
 	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)
 	mainRouter.AddRoute("POST", "/login", usersHandlers.UsersLoginHandler)
@@ -69,15 +73,12 @@ func main() {
 	mainRouter.AddRoute("POST", "/commenting", commentsHandlers.MakeCommentsHandler)
 	mainRouter.AddRoute("GET", "/get_comments", commentsHandlers.ShowCommentsHandler)
 	mainRouter.AddRoute("GET", "/ws", webSocketHandler.WebsocketHandler)
-	
-	
 
 	// fmt.Println("Routes registered:", mainRouter.Routes)
 	fmt.Println("Listening on port: http://localhost:8080/")
 
 	mainError = http.ListenAndServe(":8080", mainRouter)
 	if mainError != nil {
-		
 		return
 	}
 }

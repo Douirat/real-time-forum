@@ -1,20 +1,32 @@
 package handlers
 
 import (
-	"crypto/sha1"
-	"encoding/base64"
+	"fmt"
 	"log"
 	"net/http"
 	"real_time_forum/internal/services"
+
+	"github.com/gorilla/websocket"
 )
+
+// webSocket upgrader:
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		// TODO Allow connections from any origin (fix this later)
+		return true
+	},
+}
 
 type WebSocketHandler struct {
 	webServ services.WebSocketServiceLayer
+	Clients *services.Hub
 }
 
 // Instantiate the websocket object to ease working:
-func NewWebSocketHandler(ws *services.WebSocketService) *WebSocketHandler {
-	return &WebSocketHandler{webServ: ws}
+func NewWebSocketHandler(webSer *services.WebSocketService) *WebSocketHandler {
+	return &WebSocketHandler{webServ: webSer, Clients: services.NewHub()}
 }
 
 // Create a handler to handle the duplex comunication between clients:
@@ -24,43 +36,34 @@ func (webSoc *WebSocketHandler) WebsocketHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if r.Header.Get("Upgrade") != "websocket" {
-		http.Error(w, "Not WebSocket", http.StatusBadRequest)
-		return
-	}
+	fmt.Println("called ...")
 
-	key := r.Header.Get("Sec-WebSocket-Key")
-	accept := webSoc.computeAcceptKey(key)
-
-	hijacker, ok := w.(http.Hijacker)
-	if !ok {
-		http.Error(w, "Hijack not supported", http.StatusInternalServerError)
-		return
-	}
-
-	conn, _, err := hijacker.Hijack()
-	if err != nil {
-		log.Println("Hijack error:", err)
-		return
-	}
-
-	response := "HTTP/1.1 101 Switching Protocols\r\n" +
-		"Upgrade: websocket\r\n" +
-		"Connection: Upgrade\r\n" +
-		"Sec-WebSocket-Accept: " + accept + "\r\n\r\n"
-	conn.Write([]byte(response))
-	cookie, err := r.Cookie("session_token")
+	// Authentificate the user:
+	user, err := webSoc.webServ.AuthenticateUser(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	token := cookie.Value
-	go webSoc.webServ.HandleClient(token, conn)
-}
+	// Upgrade the http connection to websocket:
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Printf("WebSocket upgrade failed: %v", err)
+		http.Error(w, "Failed to upgrade to WebSocket", http.StatusBadRequest)
+		return
+	}
 
-func (webSoc *WebSocketHandler) computeAcceptKey(key string) string {
-	magic := "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-	h := sha1.New()
-	h.Write([]byte(key + magic))
-	return base64.StdEncoding.EncodeToString(h.Sum(nil))
+	// Create a clent to ease working the chat app:
+	client := &services.Client{
+		NickName: user.NickName,
+		UserId:   user.Id,
+		Con:      conn,
+		Send:     make(chan []byte, 256),
+	}
+
+	// TODO Register the user:
+	webSoc.Clients.Register <- client
+
+	// triger the go routines to writ into the connection and write to it:
+	go client.WritePump()
+	go client.ReadPump(webSoc.Clients)
 }

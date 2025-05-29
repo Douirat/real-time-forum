@@ -1,6 +1,6 @@
-import {create_web_socket, sendMessage } from "../web_socket.js"
+import { MyWebSocketClient } from "../web_socket.js";
 
-export function render_left_aside(web_socket) {
+export function render_left_aside() {
   return /*html*/`
 <aside id="left_aside" class="left">
    <!-- Chat Container -->
@@ -25,6 +25,12 @@ export function render_left_aside(web_socket) {
 
 // Create a function to fil the left asside with other users to chat with:
 export function display_chat_users() {
+
+// Start the websocket here to make it easy for a  chat to happen:
+  let web_socket = new MyWebSocketClient()
+  web_socket.createWebSocket()
+
+
   let left_side = document.getElementById("users-list")
   let friends_container = document.createElement("div")
   friends_container.setAttribute("id", "friends_container")
@@ -46,7 +52,7 @@ export function display_chat_users() {
         chat.append(live_flag, live_user)
         chat.addEventListener("click", () => {
           console.log("I want to chat with this user: ", user.nick_name);
-          create_chat_room(user)
+          create_chat_room(user, web_socket)
         })
         friends_container.appendChild(chat)
       })
@@ -56,12 +62,11 @@ export function display_chat_users() {
 }
 
 // Create a chat room between tow users:
-function create_chat_room(user = {}) {
-  let socket = create_web_socket(user.nick_name)
+function create_chat_room(user = {}, web_socket) {
   // Bring all the messages between tow clints:
   fetch(`http://localhost:8080/get_chat?user_id=${user.id}`)
     .then(function (response) {
-      return response.json(); // Convert the response to JSON
+      return response.json(); // Convert the response to JSON 
     })
     .then(function (data) {
       console.log(data); // Handle the data received from the API
@@ -97,7 +102,7 @@ function create_chat_room(user = {}) {
           return
         }
         console.log("The client wants to chat with: ", user.id);
-        sendMessage(socket, user.id, content)
+        web_socket.sendMessage(user.id, content)
       })
 
       // Append input and button to the inputDiv

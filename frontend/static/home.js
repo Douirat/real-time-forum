@@ -7,6 +7,7 @@ import { post_form } from "./components/forms.js";
 import { fetch_categories, show_posts } from "./post.js";
 import { navigateTo } from "./script.js";
 
+
 // Declare global variable to control how many posts to extract each call from database:
 var offset = 0;
 var limit = 10;
@@ -15,6 +16,7 @@ var limit = 10;
 let categoriesData = [];
 
 export function render_home_page() {
+
   fetch("http://localhost:8080/is_logged", {
     method: "GET",
     headers: {
@@ -64,6 +66,7 @@ export function render_home_page() {
           // Initialize posts and scroll listener
           initialize_posts_with_scroll();
           display_chat_users();
+
           logout();
         })
         .catch((error) => {

@@ -1,28 +1,20 @@
 package services
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
-	"net"
+	"net/http"
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/repositories"
 	"sync"
-	"time"
-)
 
-// Declare the global varibles:
-var (
-	clients   = make(map[string]*Client) // username -> client
-	clientsMu sync.Mutex
+	"github.com/gorilla/websocket"
 )
 
 // Create an interface for the websocket service:
 type WebSocketServiceLayer interface {
-	HandleClient(token string, conn net.Conn)
-	readMessage(r *bufio.Reader) (string, error)
-	writeMessage(w *bufio.Writer, message string) error
+	AuthenticateUser(r *http.Request) (*models.User, error)
 }
 
 // Create a contractor the implement the websocket layer:
@@ -30,6 +22,42 @@ type WebSocketService struct {
 	messRepo    repositories.MessageRepositoryLayer
 	sessionRepo repositories.SessionsRepositoryLayer
 	userRepo    repositories.UsersRepositoryLayer
+}
+
+// create an object to repesent the clint:
+type Client struct {
+	NickName string
+	UserId   int
+	Con      *websocket.Conn
+	Send     chan []byte
+}
+
+// Create a structure to represent the message:
+type Message struct {
+	Sender   int    `json:"sender"`
+	Receiver int    `json:"receiver"`
+	Content  string `json:"content"`
+	Type     string `json:"type"`
+}
+
+// Create a hub for clients togather to ease the chat process:
+type Hub struct {
+	Clients    map[int]*Client // username -> client
+	Register   chan *Client
+	Unregister chan *Client
+	Broadcast  chan *Message
+	clientsMu  sync.RWMutex
+}
+
+// Method to instantiate a new Hub:
+func NewHub() *Hub {
+	clients := &Hub{
+		Clients:    make(map[int]*Client),
+		Register:   make(chan *Client),
+		Unregister: make(chan *Client),
+		Broadcast:  make(chan *Message),
+	}
+	return clients
 }
 
 // Instantiate the websocket service:
@@ -41,158 +69,130 @@ func NewWebSocketService(mesRepo *repositories.MessageRepository, sessRep *repos
 	}
 }
 
-// create an object to repesent the clint:
-type Client struct {
-	username string
-	userId   int
-	conn     net.Conn
-	writer   *bufio.Writer
+// Authentificate user from the websocket:
+func (webSoc *WebSocketService) AuthenticateUser(r *http.Request) (*models.User, error) {
+	var token string
+	// Get session from cookie:
+	if cookie, err := r.Cookie("session_token"); err == nil {
+		token = cookie.Value
+	}
+
+	// validate session and get user id from db.
+	userId, valid := webSoc.sessionRepo.GetSessionByToken(token)
+	if !valid {
+		log.Println("invalid session")
+		return nil, fmt.Errorf("invalid session")
+	}
+
+	// Get user details;
+	user, err := webSoc.userRepo.GetUserByID(userId)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return user, nil
 }
 
-func (webSoc *WebSocketService) HandleClient(token string, conn net.Conn) {
-	var (
-		username string
-	)
-	reader := bufio.NewReader(conn)
-	writer := bufio.NewWriter(conn)
-
+// Run the web socket:
+func (clients *Hub) RunWebSocket() {
 	for {
-		msg, err := webSoc.readMessage(reader)
-		if err != nil {
-			log.Println("Read error:", err)
+		select {
+		case client := <-clients.Register:
+			clients.clientsMu.Lock()
+			clients.Clients[client.UserId] = client
+			fmt.Println(clients)
+			clients.clientsMu.Unlock()
+			clients.NotifyAllEccept(client.UserId, fmt.Sprintf("%s is online", client.NickName))
+		case client := <-clients.Unregister:
+			clients.clientsMu.Lock()
+			if _, ok := clients.Clients[client.UserId]; ok {
+				delete(clients.Clients, client.UserId)
+				close(client.Send)
+				clients.NotifyAllEccept(client.UserId, fmt.Sprintf("%s has left", client.NickName))
+			}
+			clients.clientsMu.Unlock()
+
+		case message := <-clients.Broadcast:
+			fmt.Println("Message ...")
+			clients.HandleMessage(message, clients)
+		}
+	}
+}
+
+// Create a function to write into the network:
+func (client *Client) WritePump() {
+	defer client.Con.Close()
+	for message := range client.Send {
+		if err := client.Con.WriteMessage(websocket.TextMessage, message); err != nil {
+			log.Println(err)
 			break
 		}
-
-		var packet map[string]interface{}
-		if err := json.Unmarshal([]byte(msg), &packet); err != nil {
-			log.Println("Invalid JSON packet:", err)
-			continue
-		}
-
-		// guestUserName := packet["username"].(string)
-
-		var valid bool
-		clientId, valid := webSoc.sessionRepo.GetSessionByToken(token)
-		if !valid {
-			log.Println("Invalid session token for", token)
-			return
-		}
-
-		switch packet["type"] {
-		case "register":
-			// Get user by id from data base:
-			user, err := webSoc.userRepo.GetUserByID(clientId)
-			if err != nil {
-				log.Println("Error finding the client: ", err)
-				return
-			}
-			clientsMu.Lock()
-			clients[username] = &Client{
-				username: user.NickName,
-				userId:   user.Id,
-				conn:     conn,
-				writer:   writer,
-			}
-			clientsMu.Unlock()
-
-			log.Println(username, "registered with ID", user.Id)
-
-		case "message":
-			guestId := packet["to"].(float64)
-			content := packet["content"].(string)
-
-			// Get the guest from database by it's id:
-			guest, err := webSoc.userRepo.GetUserByID(int(guestId))
-			if err != nil {
-				fmt.Println("error retiriving the client from database: ", err)
-				return
-			}
-
-			clientsMu.Lock()
-			recipient, recipientOnline := clients[guest.NickName]
-			sender := clients[username]
-			clientsMu.Unlock()
-
-			if sender == nil {
-				log.Println("Sender not found in clients map")
-				continue
-			}
-
-			// Build message model
-			message := &models.Message{
-				Content:    content,
-				SenderId:   sender.userId,
-				RecieverId: guest.Id,
-				IsRead:     recipientOnline,
-				CreatedAt:  time.Now(),
-			}
-			if recipientOnline {
-				message.RecieverId = recipient.userId
-			} else {
-				log.Println("Recipient", guest.NickName, "not online")
-				// Optionally queue message for later delivery
-			}
-
-			// Save to database
-			if err := webSoc.messRepo.InsertMessage(message); err != nil {
-				log.Println("DB insert error:", err)
-			}
-
-			if recipientOnline {
-				data := map[string]interface{}{
-					"type":    "message",
-					"from":    username,
-					"content": content,
-				}
-				if jsonData, err := json.Marshal(data); err == nil {
-					if err := webSoc.writeMessage(recipient.writer, string(jsonData)); err != nil {
-						log.Println("Error sending message to recipient:", err)
-					}
-				}
-			}
-
-		default:
-			log.Println("Unknown packet type:", packet["type"])
-		}
 	}
-
-	// Handle disconnect
-	clientsMu.Lock()
-	delete(clients, username)
-	clientsMu.Unlock()
-	conn.Close()
-	log.Println(username, "disconnected")
 }
 
-func (webSoc *WebSocketService) readMessage(r *bufio.Reader) (string, error) {
-	header := make([]byte, 2)
-	if _, err := r.Read(header); err != nil {
-		return "", err
-	}
+// Create a function to read from the websocket connection:
+func (client *Client) ReadPump(clients *Hub) {
+	defer func() {
+		clients.Unregister <- client
+		client.Con.Close()
+	}()
 
-	payloadLen := int(header[1] & 127)
-	mask := make([]byte, 4)
-	if _, err := r.Read(mask); err != nil {
-		return "", err
+	for {
+		_, message, err := client.Con.ReadMessage()
+		if err != nil {
+			log.Panicln(err)
+			break
+		}
+		msg := &Message{}
+		if err := json.Unmarshal(message, msg); err == nil {
+			msg.Sender = client.UserId
+			fmt.Println(msg)
+			clients.Broadcast <- msg
+		}
 	}
-
-	data := make([]byte, payloadLen)
-	if _, err := r.Read(data); err != nil {
-		return "", err
-	}
-
-	for i := 0; i < payloadLen; i++ {
-		data[i] ^= mask[i%4]
-	}
-
-	return string(data), nil
 }
 
-func (webSoc *WebSocketService) writeMessage(w *bufio.Writer, message string) error {
-	payload := []byte(message)
-	header := []byte{0x81, byte(len(payload))}
-	w.Write(header)
-	w.Write(payload)
-	w.Flush()
-	return nil
+// Create a function to distribute online status and notification:
+func (clients *Hub) NotifyAllEccept(excluded int, text string) {
+	notification := &Message{
+		Type:     "notification",
+		Sender:   0,
+		Receiver: 0,
+		Content:  text,
+	}
+
+	clients.clientsMu.RLock()
+	defer clients.clientsMu.RUnlock()
+	for id, client := range clients.Clients {
+		if id != excluded {
+			client.Send <- MarshalText(notification)
+		}
+	}
+}
+
+// Marshal text into json:
+func MarshalText(value any) []byte {
+	dataBytes, _ := json.Marshal(value)
+	return dataBytes
+}
+
+// Create a function to handle the messages based on the :
+func (hub *Hub) HandleMessage(message *Message, clients *Hub) {
+	switch message.Type {
+	case "message", "typing":
+		hub.clientsMu.RLock()
+		if target, ok := hub.Clients[message.Receiver]; ok {
+			target.Send <- MarshalText(message)
+		}
+		hub.clientsMu.RUnlock()
+
+	case "logout":
+		hub.clientsMu.Lock()
+		if user, ok := hub.Clients[message.Sender]; ok {
+			delete(hub.Clients, message.Sender)
+			close(user.Send)
+			clients.NotifyAllEccept(message.Sender, fmt.Sprintf("%s has logged out", user.NickName))
+		}
+		hub.clientsMu.Unlock()
+	}
 }
