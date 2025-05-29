@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"real_time_forum/internal/handlers/utils"
 	"real_time_forum/internal/services"
 )
 
@@ -18,12 +19,11 @@ func NewWebSocketHandler(ws services.WebSocketServiceLayer) *WebSocketHandler {
 // Route handler
 func (h *WebSocketHandler) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("WebSocket connection request received")
-	
+
 	// Check if it's a WebSocket upgrade request
 	if r.Header.Get("Upgrade") != "websocket" {
-		http.Error(w, "Expected WebSocket upgrade", http.StatusBadRequest)
+		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "Expected WebSocket upgrade"})
 		return
 	}
-	
 	h.webServ.HandleConnections(w, r)
 }
