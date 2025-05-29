@@ -2,14 +2,14 @@ package services
 
 import (
 	"fmt"
+	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/repositories"
+	"real_time_forum/internal/services/utils"
 	"sync"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 type WebSocketServiceLayer interface {
@@ -36,7 +36,10 @@ type WebSocketMessage struct {
 func NewWebSocketService(messRepo repositories.MessageRepositoryLayer, sessRepo repositories.SessionsRepositoryLayer) *WebSocketService {
 	return &WebSocketService{
 		upgrader: websocket.Upgrader{
-			CheckOrigin: func(r *http.Request) bool { return true },
+			CheckOrigin: func(r *http.Request) bool {
+				origin := r.Header.Get("Origin")
+				return origin == "http://localhost:8080"
+			},
 		},
 		clients:     make(map[int]*websocket.Conn),
 		messageRepo: messRepo,
@@ -82,7 +85,7 @@ func (ws *WebSocketService) HandleConnections(w http.ResponseWriter, r *http.Req
 	}()
 
 	// Send registration confirmation
-	conn.WriteJSON(map[string]interface{}{
+	conn.WriteJSON(map[string]any{
 		"type":    "connected",
 		"message": "Successfully connected to WebSocket",
 		"user_id": userID,
@@ -96,44 +99,38 @@ func (ws *WebSocketService) HandleConnections(w http.ResponseWriter, r *http.Req
 			break
 		}
 
-		log.Printf("Received WebSocket message: Type=%s, Content=%s, From=%d, To=%d", 
+		log.Printf("Received WebSocket message: Type=%s, Content=%s, From=%d, To=%d",
 			wsMsg.Type, wsMsg.Content, userID, wsMsg.To)
 
 		switch wsMsg.Type {
-		case "register":
-			// Handle registration (already done above)
-			conn.WriteJSON(map[string]interface{}{
-				"type":    "registered",
-				"message": "User registered successfully",
-			})
+		// case "register":
+		// 	// Handle registration (already done above)
+		// 	conn.WriteJSON(map[string]interface{}{
+		// 		"type":    "registered",
+		// 		"message": "User registered successfully",
+		// 	})
 
 		case "message":
 			// Handle message sending
 			if wsMsg.Content == "" || wsMsg.To == 0 {
-				conn.WriteJSON(map[string]interface{}{
-					"type":  "error",
-					"error": "Invalid message format",
-				})
+				utils.SendJSON(conn, "error", map[string]any{"error": "Invalid message format"})
 				continue
 			}
 
 			// Create message for database
 			msg := &models.Message{
-				Content:     wsMsg.Content,
-				SenderId:    userID,
-				RecieverId:  wsMsg.To,
-				CreatedAt:   time.Now(),
-				IsRead:      false,
+				Content:    wsMsg.Content,
+				SenderId:   userID,
+				RecieverId: wsMsg.To,
+				CreatedAt:  time.Now(),
+				IsRead:     false,
 			}
 
 			// Store in database
 			err = ws.messageRepo.InsertMessage(msg)
 			if err != nil {
 				log.Printf("Database error: %v", err)
-				conn.WriteJSON(map[string]interface{}{
-					"type":  "error",
-					"error": "Failed to save message",
-				})
+				utils.SendJSON(conn, "error", map[string]any{"error": "Failed to save message"})
 				continue
 			}
 
@@ -167,16 +164,10 @@ func (ws *WebSocketService) HandleConnections(w http.ResponseWriter, r *http.Req
 			}
 
 			// Send confirmation to sender
-			conn.WriteJSON(map[string]interface{}{
-				"type":    "sent",
-				"message": "Message sent successfully",
-			})
+			utils.SendJSON(conn, "sent", map[string]any{"message": "Message sent successfully"})
 
 		default:
-			conn.WriteJSON(map[string]interface{}{
-				"type":  "error",
-				"error": "Unknown message type",
-			})
+			utils.SendJSON(conn, "error", map[string]any{"error": "Unknown message type"})
 		}
 	}
 }

@@ -13,14 +13,14 @@ export function create_web_socket(username) {
     const socket = new WebSocket("ws://localhost:8080/ws");
     globalSocket = socket;
 
-    socket.onopen = function () {
-        console.log("Connected to WebSocket server");
-        // Register user
-        socket.send(JSON.stringify({
-            type: "register",
-            username: username
-        }));
-    };
+    // socket.onopen = function () {
+    //     console.log("Connected to WebSocket server");
+    //     // Register user
+    //     socket.send(JSON.stringify({
+    //         type: "register",
+    //         username: username
+    //     }));
+    // };
 
     socket.onmessage = function (event) {
         try {
@@ -32,9 +32,9 @@ export function create_web_socket(username) {
                     console.log("WebSocket connection confirmed:", data.message);
                     break;
                     
-                case "registered":
-                    console.log("User registration confirmed:", data.message);
-                    break;
+                // case "registered":
+                //     console.log("User registration confirmed:", data.message);
+                //     break;
                     
                 case "message":
                     console.log(`[${data.from}] says: ${data.content}`);
