@@ -47,6 +47,7 @@ export function display_chat_users() {
         chat.setAttribute("class", "user_chat")
         let live_flag = document.createElement("div")
         live_flag.setAttribute("id", "live_flag")
+        live_flag.setAttribute("class", "offline")
         let live_user = document.createElement("small")
         live_user.textContent = user.nick_name
         chat.append(live_flag, live_user)

@@ -18,7 +18,18 @@ export class MyWebSocketClient {
             const data = JSON.parse(event.data);
             if (data.type === "message") {
                 console.log(`[${data.sender}] says: ${data.content}`);
+            } else if (data.type === "live") {
+                let user_chat = document.getElementById(`${data.sender}`);
+                let live_notification = user_chat.getElementsByClassName("offline");
+
+                if (live_notification.length > 0) {
+                    live_notification[0].classList.replace("offline", "live");
+                }
+
+                console.log(user_chat);
+
             } else {
+                console.log("happened ....");
                 console.log("Server:", data);
             }
         };

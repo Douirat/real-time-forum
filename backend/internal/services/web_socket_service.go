@@ -48,7 +48,7 @@ type Hub struct {
 	Unregister chan *Client
 	Broadcast  chan *Message
 	clientsMu  sync.RWMutex
-	Database *sql.DB
+	Database   *sql.DB
 }
 
 // Method to instantiate a new Hub:
@@ -58,7 +58,7 @@ func NewHub(db *sql.DB) *Hub {
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
 		Broadcast:  make(chan *Message),
-		Database: db,
+		Database:   db,
 	}
 	return clients
 }
@@ -98,20 +98,24 @@ func (webSoc *WebSocketService) AuthenticateUser(r *http.Request) (*models.User,
 
 // Run the web socket:
 func (clients *Hub) RunWebSocket() {
+	x := 0
 	for {
 		select {
 		case client := <-clients.Register:
+
 			clients.clientsMu.Lock()
 			clients.Clients[client.UserId] = client
-			fmt.Println("clients: ---->", clients.Clients)
+			// fmt.Println("clients: ---->", clients.Clients)
 			clients.clientsMu.Unlock()
-			clients.NotifyAllEccept(client.UserId, fmt.Sprintf("%s is online", client.NickName))
+			clients.NotifyAllEccept(client.UserId, fmt.Sprintf("%s is online", client.NickName), "live")
+
 		case client := <-clients.Unregister:
+
 			clients.clientsMu.Lock()
 			if _, ok := clients.Clients[client.UserId]; ok {
 				delete(clients.Clients, client.UserId)
 				close(client.Send)
-				clients.NotifyAllEccept(client.UserId, fmt.Sprintf("%s has left", client.NickName))
+				clients.NotifyAllEccept(client.UserId, fmt.Sprintf("%s has left", client.NickName), "offline")
 			}
 			clients.clientsMu.Unlock()
 
@@ -119,6 +123,13 @@ func (clients *Hub) RunWebSocket() {
 			fmt.Println("Message ...")
 			clients.HandleMessage(message, clients)
 		}
+
+		for _, client := range clients.Clients {
+			clients.MarkLiveUsers(client)
+		}
+		fmt.Println("x is: ", x)
+		x++
+
 	}
 }
 
@@ -143,7 +154,7 @@ func (client *Client) ReadPump(clients *Hub) {
 	for {
 		_, message, err := client.Con.ReadMessage()
 		if err != nil {
-			log.Panicln(err)
+			log.Println(err)
 			break
 		}
 		msg := &Message{}
@@ -156,10 +167,10 @@ func (client *Client) ReadPump(clients *Hub) {
 }
 
 // Create a function to distribute online status and notification:
-func (clients *Hub) NotifyAllEccept(excluded int, text string) {
+func (clients *Hub) NotifyAllEccept(excluded int, text string, notifiationType string) {
 	notification := &Message{
-		Type:     "notification",
-		Sender:   0,
+		Type:     notifiationType,
+		Sender:   excluded,
 		Receiver: 0,
 		Content:  text,
 	}
@@ -194,8 +205,23 @@ func (hub *Hub) HandleMessage(message *Message, clients *Hub) {
 		if user, ok := hub.Clients[message.Sender]; ok {
 			delete(hub.Clients, message.Sender)
 			close(user.Send)
-			clients.NotifyAllEccept(message.Sender, fmt.Sprintf("%s has logged out", user.NickName))
+			clients.NotifyAllEccept(message.Sender, fmt.Sprintf("%s has logged out", user.NickName), "logout")
 		}
 		hub.clientsMu.Unlock()
+	}
+}
+
+// mark live users when the user logs in so he can see a tangible evidence of all the users that are live:
+func (hub *Hub) MarkLiveUsers(client *Client) {
+	for id, _ := range hub.Clients {
+		notification := &Message{
+			Type:     "live",
+			Sender:   id,
+			Receiver: 0,
+			Content:  "user loged in",
+		}
+		if client.UserId != id {
+			client.Send <- MarshalText(notification)
+		}
 	}
 }
