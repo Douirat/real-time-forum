@@ -85,11 +85,7 @@ func (ws *WebSocketService) HandleConnections(w http.ResponseWriter, r *http.Req
 	}()
 
 	// Send registration confirmation
-	conn.WriteJSON(map[string]any{
-		"type":    "connected",
-		"message": "Successfully connected to WebSocket",
-		"user_id": userID,
-	})
+	utils.SendJSON(conn, "connected", map[string]any{"message": "Successfully connected to WebSocket","user_id": userID})
 
 	for {
 		var wsMsg WebSocketMessage
@@ -138,7 +134,7 @@ func (ws *WebSocketService) HandleConnections(w http.ResponseWriter, r *http.Req
 			senderName := fmt.Sprintf("User_%d", userID) // You might want to get actual username
 
 			// Prepare message for receiver
-			receiverMsg := map[string]interface{}{
+			receiverMsg := map[string]any{
 				"type":       "message",
 				"content":    msg.Content,
 				"from":       senderName,
