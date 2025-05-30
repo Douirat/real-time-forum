@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -25,8 +26,8 @@ type WebSocketHandler struct {
 }
 
 // Instantiate the websocket object to ease working:
-func NewWebSocketHandler(webSer *services.WebSocketService) *WebSocketHandler {
-	return &WebSocketHandler{webServ: webSer, Clients: services.NewHub()}
+func NewWebSocketHandler(webSer *services.WebSocketService, db *sql.DB) *WebSocketHandler {
+	return &WebSocketHandler{webServ: webSer, Clients: services.NewHub(db)}
 }
 
 // Create a handler to handle the duplex comunication between clients:

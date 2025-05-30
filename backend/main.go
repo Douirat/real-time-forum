@@ -52,7 +52,7 @@ func main() {
 	usersHandlers := handlers.NewUsersHandlers(usersServices, sessionService)
 	postsHandlers := handlers.NewPostsHandles(postsServices)
 	commentsHandlers := handlers.NewCommentsHandler(commentsService)
-	webSocketHandler := handlers.NewWebSocketHandler(webSocketService)
+	webSocketHandler := handlers.NewWebSocketHandler(webSocketService, databaseConnection)
 	messagesHandler := handlers.NewMessagesHandler(messagesService)
 	// Setup router and routes:
 	mainRouter := router.NewRouter(sessionService)

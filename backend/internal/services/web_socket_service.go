@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -47,15 +48,17 @@ type Hub struct {
 	Unregister chan *Client
 	Broadcast  chan *Message
 	clientsMu  sync.RWMutex
+	Database *sql.DB
 }
 
 // Method to instantiate a new Hub:
-func NewHub() *Hub {
+func NewHub(db *sql.DB) *Hub {
 	clients := &Hub{
 		Clients:    make(map[int]*Client),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
 		Broadcast:  make(chan *Message),
+		Database: db,
 	}
 	return clients
 }
@@ -100,7 +103,7 @@ func (clients *Hub) RunWebSocket() {
 		case client := <-clients.Register:
 			clients.clientsMu.Lock()
 			clients.Clients[client.UserId] = client
-			fmt.Println(clients)
+			fmt.Println("clients: ---->", clients.Clients)
 			clients.clientsMu.Unlock()
 			clients.NotifyAllEccept(client.UserId, fmt.Sprintf("%s is online", client.NickName))
 		case client := <-clients.Unregister:
