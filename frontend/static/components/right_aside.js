@@ -62,7 +62,7 @@ export function render_right_aside() {
     `;
 }
 
-// Function to load and display all users in the right aside
+// Function to load and display all users in the right aside with online status
 export function display_all_users() {
     const usersListContainer = document.getElementById("all-users-list");
     const usersCountElement = document.getElementById("users-count");
@@ -101,15 +101,19 @@ export function display_all_users() {
                     // Get first letter of nickname for avatar
                     const avatarLetter = user.nick_name ? user.nick_name.charAt(0).toUpperCase() : "U";
                     
+                    // Determine online status
+                    const onlineStatus = user.is_online ? "Online" : "Offline";
+                    const onlineClass = user.is_online ? "online" : "offline";
+                    
                     userItem.innerHTML = `
                         <div class="friend-avatar">
                             <span>${avatarLetter}</span>
                         </div>
                         <div class="friend-info">
                             <span class="friend-name">${user.nick_name || "Unknown User"}</span>
-                            <span class="friend-status">Online</span>
+                            <span class="friend-status ${onlineClass}">${onlineStatus}</span>
                         </div>
-                        <div class="friend-online-dot"></div>
+                        <div class="friend-online-dot ${onlineClass}"></div>
                     `;
                     
                     // Add click event to start chat with user
@@ -142,4 +146,9 @@ export function display_all_users() {
 // Call this function after the right aside is rendered to populate users
 export function init_right_aside() {
     display_all_users();
+    
+    // Optional: Set up periodic refresh to update online status
+    setInterval(() => {
+        display_all_users();
+    }, 30000); // Refresh every 30 seconds
 }

@@ -208,6 +208,17 @@
     color: #65676b;
 }
 
+/* Online/Offline status styles */
+.friend-status.online {
+    color: #42b883; /* Use the same green as your theme */
+    font-weight: 500;
+}
+
+.friend-status.offline {
+    color: #8a8d91; /* Slightly lighter gray to match theme */
+    font-weight: 400;
+}
+
 .friend-online-dot {
     width: 8px;
     height: 8px;
@@ -217,14 +228,31 @@
     position: relative;
 }
 
+.friend-online-dot.online {
+    background: #42b883;
+}
+
+.friend-online-dot.offline {
+    background: #8a8d91;
+}
+
 .friend-online-dot::before {
     content: '';
     position: absolute;
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #42b883;
+    background: inherit;
     animation: ping 2s infinite;
+}
+
+/* Only animate online dots */
+.friend-online-dot.online::before {
+    animation: ping 2s infinite;
+}
+
+.friend-online-dot.offline::before {
+    animation: none;
 }
 
 .friend-away-dot {
