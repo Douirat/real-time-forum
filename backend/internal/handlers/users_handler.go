@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -161,19 +160,18 @@ func (userHandler *UsersHandlers) IsLogged(w http.ResponseWriter, r *http.Reques
 }
 
 // Get users for chat:
+// Get all users for chat (removed offset and limit):
 func (userHandler *UsersHandlers) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "method not allowed"})
 		return
 	}
 
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-
-	users, err := userHandler.userServ.GetUsersService(offset, limit)
+	// Get all users without pagination
+	users, err := userHandler.userServ.GetUsersService()
 	if err != nil {
-		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "faild to getUser"})
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "failed to get users"})
 		return
 	}
-	utils.ResponseJSON(w, http.StatusCreated, users)
+	utils.ResponseJSON(w, http.StatusOK, users)
 }

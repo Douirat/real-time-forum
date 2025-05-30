@@ -1,6 +1,6 @@
 import { header, logout } from "./components/header.js";
 import { render_left_aside, display_chat_users } from "./components/left_aside.js";
-import { render_right_aside } from "./components/right_aside.js";
+import { render_right_aside, init_right_aside } from "./components/right_aside.js";
 import { post_form } from "./components/forms.js";
 import { fetch_categories, show_posts } from "./post.js";
 import { navigateTo } from "./script.js";
@@ -44,6 +44,7 @@ export function render_home_page() {
                     `;
                 show_posts()
                 display_chat_users()
+                init_right_aside() // Initialize right aside with all users
 
                 logout();
             })

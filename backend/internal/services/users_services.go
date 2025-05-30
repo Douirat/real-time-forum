@@ -11,7 +11,7 @@ import (
 type UsersServicesLayer interface {
 	UserRegestration(user *models.User) error
 	AuthenticateUser(email, password string) (*models.User, error)
-	GetUsersService(offset, limit int) ([]*models.ChatUser, error)
+	GetUsersService() ([]*models.ChatUser, error)
 }
 
 // Create structure to implement the services innterfase:
@@ -63,7 +63,7 @@ func (userServ *UsersServices) AuthenticateUser(email, password string) (*models
 	return user, nil
 }
 
-// Get all user to fill the chat menu:
-func (userServ *UsersServices) GetUsersService(offset, limit int) ([]*models.ChatUser, error) {
-	return userServ.userRepository.GetUsersRepo(offset, limit)
+// Get all users to fill the chat menu (removed offset and limit):
+func (userServ *UsersServices) GetUsersService() ([]*models.ChatUser, error) {
+	return userServ.userRepository.GetUsersRepo()
 }

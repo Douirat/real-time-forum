@@ -36,10 +36,9 @@ export function display_chat_users() {
 
   let friends_container = document.createElement("div")
   friends_container.setAttribute("id", "friends_container")
-  const offset = 0;
-  const limit = 10;
 
-  fetch(`http://localhost:8080/get_users?offset=${offset}&limit=${limit}`)
+  // Remove offset and limit parameters
+  fetch(`http://localhost:8080/get_users`)
     .then(res => {
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
