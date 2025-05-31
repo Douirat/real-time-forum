@@ -62,7 +62,7 @@ export function render_right_aside() {
     `;
 }
 
-// Function to load and display all users in the right aside with online status
+// Function to load and display all users with WebSocket-based online status
 export function display_all_users() {
     const usersListContainer = document.getElementById("all-users-list");
     const usersCountElement = document.getElementById("users-count");
@@ -75,8 +75,8 @@ export function display_all_users() {
     // Clear existing content
     usersListContainer.innerHTML = "";
 
-    // Fetch all users from the backend
-    fetch(`http://localhost:8080/get_users`)
+    // Fetch users with WebSocket-based online status
+    fetch(`http://localhost:8080/ws_users`)
         .then(res => {
             if (!res.ok) {
                 throw new Error(`HTTP error! status: ${res.status}`);
@@ -84,7 +84,7 @@ export function display_all_users() {
             return res.json();
         })
         .then(data => {
-            console.log("All users data:", data);
+            console.log("WebSocket users data:", data);
             
             if (Array.isArray(data)) {
                 // Update users count
@@ -143,12 +143,34 @@ export function display_all_users() {
         });
 }
 
-// Call this function after the right aside is rendered to populate users
+// Update user status in real-time
+export function updateUserStatus(userId, isOnline) {
+    const userItem = document.querySelector(`[data-user-id="${userId}"]`);
+    if (userItem) {
+        const statusElement = userItem.querySelector('.friend-status');
+        const dotElement = userItem.querySelector('.friend-online-dot');
+        
+        if (statusElement && dotElement) {
+            const onlineStatus = isOnline ? "Online" : "Offline";
+            const onlineClass = isOnline ? "online" : "offline";
+            const offlineClass = isOnline ? "offline" : "online";
+            
+            statusElement.textContent = onlineStatus;
+            statusElement.classList.remove(offlineClass);
+            statusElement.classList.add(onlineClass);
+            
+            dotElement.classList.remove(offlineClass);
+            dotElement.classList.add(onlineClass);
+        }
+    }
+}
+
+// Initialize right aside and set up real-time updates
 export function init_right_aside() {
     display_all_users();
     
-    // Optional: Set up periodic refresh to update online status
+    // Set up periodic refresh (less frequent since we have real-time updates)
     setInterval(() => {
         display_all_users();
-    }, 30000); // Refresh every 30 seconds
+    }, 60000); // Refresh every 60 seconds as backup
 }

@@ -4,6 +4,7 @@ import { render_right_aside, init_right_aside } from "./components/right_aside.j
 import { post_form } from "./components/forms.js";
 import { fetch_categories, show_posts } from "./post.js";
 import { navigateTo } from "./script.js";
+import { create_web_socket } from "./web_socket.js";
 
 // Global variable to store categories data
 let categoriesData = [];
@@ -23,6 +24,9 @@ export function render_home_page() {
             return response.json();
         })
         .then(data => {
+            // Initialize WebSocket connection
+            create_web_socket(data.username || "user");
+            
             fetch_categories().then(categories => {
                 categoriesData = categories;
 

@@ -1,4 +1,5 @@
 import { handleIncomingMessage } from "./components/left_aside.js";
+import { updateUserStatus } from "./components/right_aside.js";
 
 // Global WebSocket connection
 let globalSocket = null;
@@ -13,15 +14,6 @@ export function create_web_socket(username) {
     const socket = new WebSocket("ws://localhost:8080/ws");
     globalSocket = socket;
 
-    // socket.onopen = function () {
-    //     console.log("Connected to WebSocket server");
-    //     // Register user
-    //     socket.send(JSON.stringify({
-    //         type: "register",
-    //         username: username
-    //     }));
-    // };
-
     socket.onmessage = function (event) {
         try {
             const data = JSON.parse(event.data);
@@ -30,11 +22,11 @@ export function create_web_socket(username) {
             switch (data.type) {
                 case "connected":
                     console.log("WebSocket connection confirmed:", data.message);
+                    // Refresh user list when connected
+                    if (typeof display_all_users === 'function') {
+                        display_all_users();
+                    }
                     break;
-                    
-                // case "registered":
-                //     console.log("User registration confirmed:", data.message);
-                //     break;
                     
                 case "message":
                     console.log(`[${data.from}] says: ${data.content}`);
@@ -44,6 +36,16 @@ export function create_web_socket(username) {
                     
                 case "sent":
                     console.log("Message sent confirmation:", data.message);
+                    break;
+                    
+                case "user_online":
+                    console.log(`User ${data.user_id} is now online`);
+                    updateUserStatus(data.user_id, true);
+                    break;
+                    
+                case "user_offline":
+                    console.log(`User ${data.user_id} is now offline`);
+                    updateUserStatus(data.user_id, false);
                     break;
                     
                 case "error":

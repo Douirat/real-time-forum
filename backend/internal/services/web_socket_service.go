@@ -14,6 +14,7 @@ import (
 
 type WebSocketServiceLayer interface {
 	HandleConnections(w http.ResponseWriter, r *http.Request)
+	GetAllUsersWithStatus() ([]*models.ChatUser, error)
 }
 
 type WebSocketService struct {
@@ -22,6 +23,7 @@ type WebSocketService struct {
 	mu          sync.Mutex
 	messageRepo repositories.MessageRepositoryLayer
 	sessRepo    repositories.SessionsRepositoryLayer
+	userRepo    repositories.UsersRepositoryLayer
 }
 
 // Message structure for WebSocket communication
@@ -33,7 +35,7 @@ type WebSocketMessage struct {
 }
 
 // Constructor
-func NewWebSocketService(messRepo repositories.MessageRepositoryLayer, sessRepo repositories.SessionsRepositoryLayer) *WebSocketService {
+func NewWebSocketService(messRepo repositories.MessageRepositoryLayer, sessRepo repositories.SessionsRepositoryLayer, userRepo repositories.UsersRepositoryLayer) *WebSocketService {
 	return &WebSocketService{
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
@@ -44,6 +46,7 @@ func NewWebSocketService(messRepo repositories.MessageRepositoryLayer, sessRepo 
 		clients:     make(map[int]*websocket.Conn),
 		messageRepo: messRepo,
 		sessRepo:    sessRepo,
+		userRepo:    userRepo,
 	}
 }
 
@@ -85,7 +88,7 @@ func (ws *WebSocketService) HandleConnections(w http.ResponseWriter, r *http.Req
 	}()
 
 	// Send registration confirmation
-	utils.SendJSON(conn, "connected", map[string]any{"message": "Successfully connected to WebSocket","user_id": userID})
+	utils.SendJSON(conn, "connected", map[string]any{"message": "Successfully connected to WebSocket", "user_id": userID})
 
 	for {
 		var wsMsg WebSocketMessage
@@ -166,4 +169,20 @@ func (ws *WebSocketService) HandleConnections(w http.ResponseWriter, r *http.Req
 			utils.SendJSON(conn, "error", map[string]any{"error": "Unknown message type"})
 		}
 	}
+}
+
+func (ws *WebSocketService) GetAllUsersWithStatus() ([]*models.ChatUser, error) {
+	users, err := ws.userRepo.GetUsersRepo()
+	if err != nil {
+		return nil, err
+	}
+
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+
+	for _, user := range users {
+		_, ok := ws.clients[user.Id]
+		user.IsOnline = ok
+	}
+	return users, nil
 }

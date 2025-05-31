@@ -16,4 +16,5 @@ type User struct {
 type ChatUser struct {
 	Id       int    `json:"id"`
 	NickName string `json:"nick_name"`
+	IsOnline bool   `json:"is_online"`// online/offline
 }

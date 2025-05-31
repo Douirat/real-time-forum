@@ -43,7 +43,7 @@ func main() {
 	sessionService := services.NewSessionsServices(usersRepository, sessionRepository)
 	postsServices := services.NewPostService(postsRepository, sessionRepository)
 	commentsService := services.NewCommentsServices(commentsRepository, sessionRepository)
-	webSocketService := services.NewWebSocketService(messageRepository, sessionRepository)
+	webSocketService := services.NewWebSocketService(messageRepository, sessionRepository,usersRepository)
 	messagesService := services.NewMessageService(messageRepository, sessionRepository)
 
 	// Initialize handlers:
@@ -69,6 +69,7 @@ func main() {
 	mainRouter.AddRoute("POST", "/commenting", commentsHandlers.MakeCommentsHandler)
 	mainRouter.AddRoute("GET", "/get_comments", commentsHandlers.ShowCommentsHandler)
 	mainRouter.AddRoute("GET", "/ws", webSocketHandler.WebsocketHandler)
+	mainRouter.AddRoute("GET", "/ws_users", webSocketHandler.GetUsers)
 	
 	
 

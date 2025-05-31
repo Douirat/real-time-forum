@@ -8,7 +8,7 @@ import (
 )
 
 type WebSocketHandler struct {
-	webServ services.WebSocketServiceLayer
+	webServ  services.WebSocketServiceLayer
 }
 
 // Constructor
@@ -26,4 +26,14 @@ func (h *WebSocketHandler) WebsocketHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	h.webServ.HandleConnections(w, r)
+}
+
+// Get all users with their online status
+func (h *WebSocketHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := h.webServ.GetAllUsersWithStatus()
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"error": "Failed to fetch users"})
+		return
+	}
+	utils.ResponseJSON(w, http.StatusOK, users)
 }
