@@ -79,11 +79,16 @@ func (ws *WebSocketService) HandleConnections(w http.ResponseWriter, r *http.Req
 	ws.clients[userID] = conn
 	ws.mu.Unlock()
 
+	//is online
+	ws.broadcastUserStatus(userID, true)
+
 	defer func() {
 		ws.mu.Lock()
 		delete(ws.clients, userID)
 		ws.mu.Unlock()
 		conn.Close()
+		//ofline
+		ws.broadcastUserStatus(userID, false)
 		fmt.Printf("User %d disconnected from WebSocket\n", userID)
 	}()
 
@@ -185,4 +190,33 @@ func (ws *WebSocketService) GetAllUsersWithStatus() ([]*models.ChatUser, error) 
 		user.IsOnline = ok
 	}
 	return users, nil
+}
+
+
+func (ws *WebSocketService) broadcastUserStatus(userID int, isOnline bool) {
+    statusType := "user_offline"
+    if isOnline {
+        statusType = "user_online"
+    }
+
+    message := map[string]any{
+        "type":    statusType,
+        "user_id": userID,
+    }
+
+    ws.mu.Lock()
+    defer ws.mu.Unlock()
+
+    for clientID, conn := range ws.clients {
+        if clientID != userID {
+            err := conn.WriteJSON(message)
+            if err != nil {
+                log.Printf("Error broadcasting status to user %d: %v", clientID, err)
+                delete(ws.clients, clientID)
+                conn.Close()
+            }
+        }
+    }
+    
+    log.Printf("Broadcasted %s status for user %d to %d clients", statusType, userID, len(ws.clients)-1)
 }
