@@ -11,6 +11,7 @@ import (
 type MessageRepositoryLayer interface {
 	InsertMessage(m *models.Message) error
 	GetChatHistory(client, guest int) ([]*models.Message, error)
+	GetLastMessage(user1ID, user2ID int) (*models.Message, error)
 	// MarkMessagesAsRead(senderID, receiverID int) error
 	// GetUnreadMessageCount(userID int) (int, error)
 	// GetUnreadMessages(userID int) ([]*models.Message, error)
@@ -63,4 +64,35 @@ func (mesRepo *MessageRepository) GetChatHistory(client, guest int) ([]*models.M
 	}
 	fmt.Println(messages)
 	return messages, nil
+}
+
+// Get the LastMessage :
+func (mesRepo *MessageRepository) GetLastMessage(client, guest int) (*models.Message, error) {
+	query := `
+	SELECT ID, content, sender_id, receiver_id, is_read, created_at
+	FROM private_messages
+	WHERE (sender_id = ? AND receiver_id = ?)
+	   OR (sender_id = ? AND receiver_id = ?)
+	ORDER BY created_at DESC
+	LIMIT 1;
+	`
+	row := mesRepo.db.QueryRow(query, client, guest, guest, client)
+
+	msg := &models.Message{}
+	var createdAtStr string
+
+	err := row.Scan(&msg.Id, &msg.Content, &msg.SenderId, &msg.RecieverId, &msg.IsRead, &createdAtStr)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	// Parse created_at
+	if createdAt, parseErr := time.Parse("2006-01-02 15:04:05", createdAtStr); parseErr == nil {
+		msg.CreatedAt = createdAt
+	}
+
+	return msg, nil
 }
