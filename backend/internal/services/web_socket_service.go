@@ -138,6 +138,9 @@ func (ws *WebSocketService) HandleConnections(w http.ResponseWriter, r *http.Req
 				continue
 			}
 
+			// Broadcast the last message to both sender and receiver
+			ws.broadcastLastMessage(userID, wsMsg.To)
+
 			// Get sender info for the message
 			senderName := fmt.Sprintf("User_%d", userID) // You might want to get actual username
 
@@ -192,31 +195,61 @@ func (ws *WebSocketService) GetAllUsersWithStatus() ([]*models.ChatUser, error) 
 	return users, nil
 }
 
-
 func (ws *WebSocketService) broadcastUserStatus(userID int, isOnline bool) {
-    statusType := "user_offline"
-    if isOnline {
-        statusType = "user_online"
-    }
+	statusType := "user_offline"
+	if isOnline {
+		statusType = "user_online"
+	}
 
-    message := map[string]any{
-        "type":    statusType,
-        "user_id": userID,
-    }
+	message := map[string]any{
+		"type":    statusType,
+		"user_id": userID,
+	}
 
-    ws.mu.Lock()
-    defer ws.mu.Unlock()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 
-    for clientID, conn := range ws.clients {
-        if clientID != userID {
-            err := conn.WriteJSON(message)
-            if err != nil {
-                log.Printf("Error broadcasting status to user %d: %v", clientID, err)
-                delete(ws.clients, clientID)
-                conn.Close()
-            }
-        }
-    }
-    
-    log.Printf("Broadcasted %s status for user %d to %d clients", statusType, userID, len(ws.clients)-1)
+	for clientID, conn := range ws.clients {
+		if clientID != userID {
+			err := conn.WriteJSON(message)
+			if err != nil {
+				log.Printf("Error broadcasting status to user %d: %v", clientID, err)
+				delete(ws.clients, clientID)
+				conn.Close()
+			}
+		}
+	}
+
+	log.Printf("Broadcasted %s status for user %d to %d clients", statusType, userID, len(ws.clients)-1)
+}
+
+func (ws *WebSocketService) broadcastLastMessage(senderID, receiverID int) {
+	msg, err := ws.messageRepo.GetLastMessage(senderID, receiverID)
+	if err != nil {
+		log.Printf("Error fetching last message: %v", err)
+		return
+	}
+
+	lastMsg := map[string]any{
+		"type":       "last_message",
+		"message":    msg.Content,
+		"from_id":    msg.SenderId,
+		"to_id":      msg.RecieverId,
+		"is_read":    msg.IsRead,
+		"created_at": msg.CreatedAt.Format("2006-01-02 15:04:05"),
+	}
+
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+
+	for _, id := range []int{senderID, receiverID} {
+		if conn, ok := ws.clients[id]; ok {
+			err := conn.WriteJSON(lastMsg)
+			if err != nil {
+				log.Printf("Error sending last message to user %d: %v", id, err)
+				conn.Close()
+				delete(ws.clients, id)
+			}
+		}
+	}
 }
