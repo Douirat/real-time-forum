@@ -1,3 +1,5 @@
+import { startChatWithUser } from "./left_aside.js";
+
 export function render_right_aside() {
     return /*html*/`
         <aside id="right_aside" class="right">
@@ -62,7 +64,6 @@ export function render_right_aside() {
     `;
 }
 
-// Function to load and display all users with WebSocket-based online status
 export function display_all_users() {
     const usersListContainer = document.getElementById("all-users-list");
     const usersCountElement = document.getElementById("users-count");
@@ -75,7 +76,6 @@ export function display_all_users() {
     // Clear existing content
     usersListContainer.innerHTML = "";
 
-    // Fetch users with WebSocket-based online status
     fetch(`http://localhost:8080/ws_users`)
         .then(res => {
             if (!res.ok) {
@@ -87,21 +87,16 @@ export function display_all_users() {
             console.log("WebSocket users data:", data);
             
             if (Array.isArray(data)) {
-                // Update users count
                 if (usersCountElement) {
                     usersCountElement.textContent = data.length;
                 }
 
-                // Create user elements
                 data.forEach(user => {
                     const userItem = document.createElement("div");
                     userItem.className = "friend-item";
                     userItem.setAttribute("data-user-id", user.id);
                     
-                    // Get first letter of nickname for avatar
                     const avatarLetter = user.nick_name ? user.nick_name.charAt(0).toUpperCase() : "U";
-                    
-                    // Determine online status
                     const onlineStatus = user.is_online ? "Online" : "Offline";
                     const onlineClass = user.is_online ? "online" : "offline";
                     
@@ -116,11 +111,9 @@ export function display_all_users() {
                         <div class="friend-online-dot ${onlineClass}"></div>
                     `;
                     
-                    // Add click event to start chat with user
                     userItem.addEventListener("click", () => {
-                        console.log("Starting chat with user:", user.nick_name);
-                        // You can call your chat function here if needed
-                        // create_chat_room(user);
+                        console.log("Starting chat with user:", user);
+                        startChatWithUser(user);
                     });
                     
                     usersListContainer.appendChild(userItem);
@@ -143,7 +136,6 @@ export function display_all_users() {
         });
 }
 
-// Update user status in real-time
 export function updateUserStatus(userId, isOnline) {
     const userItem = document.querySelector(`[data-user-id="${userId}"]`);
     if (userItem) {
@@ -165,12 +157,7 @@ export function updateUserStatus(userId, isOnline) {
     }
 }
 
-// Initialize right aside and set up real-time updates
 export function init_right_aside() {
     display_all_users();
-    
-    // Set up periodic refresh (less frequent since we have real-time updates)
-    setInterval(() => {
-        display_all_users();
-    }, 60000); // Refresh every 60 seconds as backup
+    setInterval(display_all_users, 60000);
 }

@@ -1,5 +1,8 @@
 import { handleIncomingMessage } from "./components/left_aside.js";
 import { updateUserStatus } from "./components/right_aside.js";
+// Add this import at the top
+
+// Then modify the click handler in display_all_users():
 
 // Global WebSocket connection
 let globalSocket = null;
@@ -14,6 +17,17 @@ export function create_web_socket(username) {
     const socket = new WebSocket("ws://localhost:8080/ws");
     globalSocket = socket;
 
+    socket.onopen = function() {
+        console.log("WebSocket connection established");
+        if (username) {
+            // Send username to server when connection opens
+            socket.send(JSON.stringify({
+                type: "register",
+                username: username
+            }));
+        }
+    };
+
     socket.onmessage = function (event) {
         try {
             const data = JSON.parse(event.data);
@@ -22,10 +36,6 @@ export function create_web_socket(username) {
             switch (data.type) {
                 case "connected":
                     console.log("WebSocket connection confirmed:", data.message);
-                    // Refresh user list when connected
-                    if (typeof display_all_users === 'function') {
-                        display_all_users();
-                    }
                     break;
                     
                 case "message":
@@ -50,7 +60,6 @@ export function create_web_socket(username) {
                     
                 case "error":
                     console.error("WebSocket error:", data.error);
-                    alert("WebSocket error: " + data.error);
                     break;
                     
                 default:
@@ -77,7 +86,6 @@ export function create_web_socket(username) {
 export function sendMessage(socket, to, message) {
     if (!socket || socket.readyState !== WebSocket.OPEN) {
         console.error("WebSocket is not open. Ready state:", socket ? socket.readyState : "null");
-        alert("Connection lost. Please refresh the page.");
         return false;
     }
 
