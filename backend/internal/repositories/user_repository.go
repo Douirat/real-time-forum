@@ -10,7 +10,7 @@ type UsersRepositoryLayer interface {
 	RegisterNewUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
 	GetUserByID(id int) (*models.User, error)
-	GetUsersRepo(offset, limit int) ([]*models.ChatUser, error)
+	GetUsersRepo() ([]*models.ChatUser, error)
 }
 
 // Create a structure to represent to implemente the contract with the repo interface:
@@ -67,9 +67,9 @@ func (userRepo *UsersRepository) GetUserByID(id int) (*models.User, error) {
 }
 
 // Get all users:
-func (userRepo *UsersRepository) GetUsersRepo(offset, limit int) ([]*models.ChatUser, error) {
-	query := `SELECT ID, nick_name FROM users LIMIT ? OFFSET ?`
-	rows, err := userRepo.db.Query(query, limit, offset)
+func (userRepo *UsersRepository) GetUsersRepo() ([]*models.ChatUser, error) {
+	query := `SELECT id, nick_name FROM users`
+	rows, err := userRepo.db.Query(query)
 	if err != nil {
 		return nil, err
 	}

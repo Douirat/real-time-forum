@@ -2,14 +2,12 @@ package repositories
 
 import (
 	"database/sql"
-	"fmt"
-
 	"real_time_forum/internal/models"
 )
 
 type PostsRepositoryLayer interface {
 	CreatePost(post *models.PostUser) error
-	GetAllPostsRepository(offset, limit int) ([]*models.PostUser, error)
+	GetAllPostsRepository() ([]*models.PostUser, error)
 	GetCategories() ([]*models.Categories, error)
 }
 
@@ -27,13 +25,13 @@ func NewPostsRepository(database *sql.DB) *PostsRepository {
 // Function to handle posts creations:
 func (postRepository *PostsRepository) CreatePost(post *models.PostUser) error {
 	query := "INSERT INTO posts(title, content, created_at, user_id) VALUES(?, ?, ?, ?)"
-	fmt.Println("Create post in repo")
+	
 	// Begin a transaction to ensure atomic operations
 	tx, err := postRepository.db.Begin()
 	if err != nil {
 		return err
 	}
-	//check if error return to create
+	//check if error return to create 
 	defer tx.Rollback()
 	// Execute the post creation query
 	result, err := tx.Exec(query, post.Title, post.Content, post.CreatedAt, post.UserId)
@@ -46,7 +44,7 @@ func (postRepository *PostsRepository) CreatePost(post *models.PostUser) error {
 	if err != nil {
 		return err
 	}
-
+	
 	// Insert categories for the post if any are provided
 	if len(post.Categories) > 0 {
 		for _, categoryID := range post.Categories {
@@ -59,30 +57,29 @@ func (postRepository *PostsRepository) CreatePost(post *models.PostUser) error {
 			}
 		}
 	}
-
+	
 	// Commit the transaction
 	return tx.Commit()
 }
 
 // Create a method to get all posts from database:
-func (postRepo *PostsRepository) GetAllPostsRepository(offset, limit int) ([]*models.PostUser, error) {
+func (postRepo *PostsRepository) GetAllPostsRepository() ([]*models.PostUser, error) {
 	query := `
-	SELECT 
-		p.ID,
-		p.title,
-		p.content,
-		p.created_at,
-		u.nick_name,
-		GROUP_CONCAT(c.c_name) AS categories 
-	FROM posts AS p 
-	JOIN users AS u ON p.user_id = u.ID 
-	LEFT JOIN post_categories AS pc ON pc.post_id = p.ID 
-	LEFT JOIN categories AS c ON pc.category_id = c.ID 
-	GROUP BY p.ID
-	LIMIT ? OFFSET ?;
-`
+		SELECT 
+     p.ID,
+     p.title,
+     p.content,
+     p.created_at,
+     u.nick_name,
+     GROUP_CONCAT(c.c_name) AS categories 
+FROM posts AS p 
+JOIN users AS u ON p.user_id = u.ID 
+LEFT JOIN post_categories AS pc ON pc.post_id = p.ID 
+LEFT JOIN categories AS c ON pc.category_id = c.ID 
+GROUP BY p.ID;
+	`
 
-	rows, err := postRepo.db.Query(query, limit, offset)
+	rows, err := postRepo.db.Query(query)
 	if err != nil {
 		return nil, err
 	}

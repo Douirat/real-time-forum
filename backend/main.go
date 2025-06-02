@@ -45,21 +45,21 @@ func main() {
 	sessionService := services.NewSessionsServices(usersRepository, sessionRepository)
 	postsServices := services.NewPostService(postsRepository, sessionRepository)
 	commentsService := services.NewCommentsServices(commentsRepository, sessionRepository)
-	webSocketService := services.NewWebSocketService(messageRepository, sessionRepository, usersRepository)
+	webSocketService := services.NewWebSocketService(messageRepository, sessionRepository,usersRepository)
 	messagesService := services.NewMessageService(messageRepository, sessionRepository)
 
 	// Initialize handlers:
 	usersHandlers := handlers.NewUsersHandlers(usersServices, sessionService)
 	postsHandlers := handlers.NewPostsHandles(postsServices)
 	commentsHandlers := handlers.NewCommentsHandler(commentsService)
-	webSocketHandler := handlers.NewWebSocketHandler(webSocketService, databaseConnection)
+	webSocketHandler := handlers.NewWebSocketHandler(webSocketService)
 	messagesHandler := handlers.NewMessagesHandler(messagesService)
 	// Setup router and routes:
 	mainRouter := router.NewRouter(sessionService)
 
 	// User routes:
-	fmt.Println("websocket handler: ", webSocketHandler.Clients.Clients)
-	go webSocketHandler.Clients.RunWebSocket()
+	// fmt.Println("websocket handler: ", webSocketHandler.Clients.Clients)
+	// go webSocketHandler.Clients.RunWebSocket()
 
 	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
 	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)
@@ -73,6 +73,9 @@ func main() {
 	mainRouter.AddRoute("POST", "/commenting", commentsHandlers.MakeCommentsHandler)
 	mainRouter.AddRoute("GET", "/get_comments", commentsHandlers.ShowCommentsHandler)
 	mainRouter.AddRoute("GET", "/ws", webSocketHandler.WebsocketHandler)
+	mainRouter.AddRoute("GET", "/ws_users", webSocketHandler.GetUsers)
+	
+	
 
 	// fmt.Println("Routes registered:", mainRouter.Routes)
 	fmt.Println("Listening on port: http://localhost:8080/")

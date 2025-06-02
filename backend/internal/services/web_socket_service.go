@@ -1,227 +1,256 @@
 package services
 
 import (
-	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/repositories"
+	"real_time_forum/internal/services/utils"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
 
-// Create an interface for the websocket service:
 type WebSocketServiceLayer interface {
-	AuthenticateUser(r *http.Request) (*models.User, error)
+	HandleConnections(w http.ResponseWriter, r *http.Request)
+	GetAllUsersWithStatus() ([]*models.ChatUser, error)
 }
 
-// Create a contractor the implement the websocket layer:
 type WebSocketService struct {
-	messRepo    repositories.MessageRepositoryLayer
-	sessionRepo repositories.SessionsRepositoryLayer
+	upgrader    websocket.Upgrader
+	clients     map[int]*websocket.Conn
+	mu          sync.Mutex
+	messageRepo repositories.MessageRepositoryLayer
+	sessRepo    repositories.SessionsRepositoryLayer
 	userRepo    repositories.UsersRepositoryLayer
 }
 
-// create an object to repesent the clint:
-type Client struct {
-	NickName string
-	UserId   int
-	Con      *websocket.Conn
-	Send     chan []byte
+// Message structure for WebSocket communication
+type WebSocketMessage struct {
+	Type    string `json:"type"`
+	To      int    `json:"to"`
+	Content string `json:"content"`
+	From    string `json:"from,omitempty"`
 }
 
-// Create a structure to represent the message:
-type Message struct {
-	Sender   int    `json:"sender"`
-	Receiver int    `json:"receiver"`
-	Content  string `json:"content"`
-	Type     string `json:"type"`
-}
-
-// Create a hub for clients togather to ease the chat process:
-type Hub struct {
-	Clients    map[int]*Client // username -> client
-	Register   chan *Client
-	Unregister chan *Client
-	Broadcast  chan *Message
-	clientsMu  sync.RWMutex
-	Database   *sql.DB
-}
-
-// Method to instantiate a new Hub:
-func NewHub(db *sql.DB) *Hub {
-	clients := &Hub{
-		Clients:    make(map[int]*Client),
-		Register:   make(chan *Client),
-		Unregister: make(chan *Client),
-		Broadcast:  make(chan *Message),
-		Database:   db,
-	}
-	return clients
-}
-
-// Instantiate the websocket service:
-func NewWebSocketService(mesRepo *repositories.MessageRepository, sessRep *repositories.SessionsRepository, userRepo *repositories.UsersRepository) *WebSocketService {
+// Constructor
+func NewWebSocketService(messRepo repositories.MessageRepositoryLayer, sessRepo repositories.SessionsRepositoryLayer, userRepo repositories.UsersRepositoryLayer) *WebSocketService {
 	return &WebSocketService{
-		messRepo:    mesRepo,
-		sessionRepo: sessRep,
+		upgrader: websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				origin := r.Header.Get("Origin")
+				return origin == "http://localhost:8080"
+			},
+		},
+		clients:     make(map[int]*websocket.Conn),
+		messageRepo: messRepo,
+		sessRepo:    sessRepo,
 		userRepo:    userRepo,
 	}
 }
 
-// Authentificate user from the websocket:
-func (webSoc *WebSocketService) AuthenticateUser(r *http.Request) (*models.User, error) {
-	var token string
-	// Get session from cookie:
-	if cookie, err := r.Cookie("session_token"); err == nil {
-		token = cookie.Value
-	}
-
-	// validate session and get user id from db.
-	userId, valid := webSoc.sessionRepo.GetSessionByToken(token)
-	if !valid {
-		log.Println("invalid session")
-		return nil, fmt.Errorf("invalid session")
-	}
-
-	// Get user details;
-	user, err := webSoc.userRepo.GetUserByID(userId)
+// Handle WebSocket connection
+func (ws *WebSocketService) HandleConnections(w http.ResponseWriter, r *http.Request) {
+	// Get session token from cookie
+	cookie, err := r.Cookie("session_token")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		http.Error(w, "Missing session token", http.StatusUnauthorized)
+		return
 	}
-	return user, nil
-}
+	sessionToken := cookie.Value
 
-// Run the web socket:
-func (clients *Hub) RunWebSocket() {
-	x := 0
-	for {
-		select {
-		case client := <-clients.Register:
-
-			clients.clientsMu.Lock()
-			clients.Clients[client.UserId] = client
-			// fmt.Println("clients: ---->", clients.Clients)
-			clients.clientsMu.Unlock()
-			clients.NotifyAllEccept(client.UserId, fmt.Sprintf("%s is online", client.NickName), "live")
-
-		case client := <-clients.Unregister:
-
-			clients.clientsMu.Lock()
-			if _, ok := clients.Clients[client.UserId]; ok {
-				delete(clients.Clients, client.UserId)
-				close(client.Send)
-				clients.NotifyAllEccept(client.UserId, fmt.Sprintf("%s has left", client.NickName), "offline")
-			}
-			clients.clientsMu.Unlock()
-
-		case message := <-clients.Broadcast:
-			fmt.Println("Message ...")
-			clients.HandleMessage(message, clients)
-		}
-
-		for _, client := range clients.Clients {
-			clients.MarkLiveUsers(client)
-		}
-		fmt.Println("x is: ", x)
-		x++
-
+	userID, ok := ws.sessRepo.GetSessionByToken(sessionToken)
+	if !ok {
+		http.Error(w, "Invalid session token", http.StatusUnauthorized)
+		return
 	}
-}
 
-// Create a function to write into the network:
-func (client *Client) WritePump() {
-	defer client.Con.Close()
-	for message := range client.Send {
-		if err := client.Con.WriteMessage(websocket.TextMessage, message); err != nil {
-			log.Println(err)
-			break
-		}
+	fmt.Printf("User %d connected to WebSocket\n", userID)
+
+	conn, err := ws.upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println("Upgrade error:", err)
+		return
 	}
-}
 
-// Create a function to read from the websocket connection:
-func (client *Client) ReadPump(clients *Hub) {
+	// Register client
+	ws.mu.Lock()
+	ws.clients[userID] = conn
+	ws.mu.Unlock()
+
+	//is online
+	ws.broadcastUserStatus(userID, true)
+
 	defer func() {
-		clients.Unregister <- client
-		client.Con.Close()
+		ws.mu.Lock()
+		delete(ws.clients, userID)
+		ws.mu.Unlock()
+		conn.Close()
+		//ofline
+		ws.broadcastUserStatus(userID, false)
+		fmt.Printf("User %d disconnected from WebSocket\n", userID)
 	}()
 
+	// Send registration confirmation
+	utils.SendJSON(conn, "connected", map[string]any{"message": "Successfully connected to WebSocket", "user_id": userID})
+
 	for {
-		_, message, err := client.Con.ReadMessage()
+		var wsMsg WebSocketMessage
+		err := conn.ReadJSON(&wsMsg)
 		if err != nil {
-			log.Println(err)
+			log.Println("Read error:", err)
 			break
 		}
-		msg := &Message{}
-		if err := json.Unmarshal(message, msg); err == nil {
-			msg.Sender = client.UserId
-			fmt.Println(msg)
-			clients.Broadcast <- msg
+
+		log.Printf("Received WebSocket message: Type=%s, Content=%s, From=%d, To=%d",
+			wsMsg.Type, wsMsg.Content, userID, wsMsg.To)
+
+		switch wsMsg.Type {
+		// case "register":
+		// 	// Handle registration (already done above)
+		// 	conn.WriteJSON(map[string]interface{}{
+		// 		"type":    "registered",
+		// 		"message": "User registered successfully",
+		// 	})
+
+		case "message":
+			// Handle message sending
+			if wsMsg.Content == "" || wsMsg.To == 0 {
+				utils.SendJSON(conn, "error", map[string]any{"error": "Invalid message format"})
+				continue
+			}
+
+			// Create message for database
+			msg := &models.Message{
+				Content:    wsMsg.Content,
+				SenderId:   userID,
+				RecieverId: wsMsg.To,
+				CreatedAt:  time.Now(),
+				IsRead:     false,
+			}
+
+			// Store in database
+			err = ws.messageRepo.InsertMessage(msg)
+			if err != nil {
+				log.Printf("Database error: %v", err)
+				utils.SendJSON(conn, "error", map[string]any{"error": "Failed to save message"})
+				continue
+			}
+
+			// Broadcast the last message to both sender and receiver
+			ws.broadcastLastMessage(userID, wsMsg.To)
+
+			// Get sender info for the message
+			senderName := fmt.Sprintf("User_%d", userID) // You might want to get actual username
+
+			// Prepare message for receiver
+			receiverMsg := map[string]any{
+				"type":       "message",
+				"content":    msg.Content,
+				"from":       senderName,
+				"from_id":    userID,
+				"to":         wsMsg.To,
+				"created_at": msg.CreatedAt.Format("2006-01-02 15:04:05"),
+			}
+
+			// Send to receiver if connected
+			ws.mu.Lock()
+			receiverConn, exists := ws.clients[wsMsg.To]
+			ws.mu.Unlock()
+
+			if exists {
+				err = receiverConn.WriteJSON(receiverMsg)
+				if err != nil {
+					log.Printf("Error sending to receiver %d: %v", wsMsg.To, err)
+				} else {
+					log.Printf("Message sent to user %d", wsMsg.To)
+				}
+			} else {
+				log.Printf("Receiver %d is not connected", wsMsg.To)
+			}
+
+			// Send confirmation to sender
+			utils.SendJSON(conn, "sent", map[string]any{"message": "Message sent successfully"})
+
+		default:
+			utils.SendJSON(conn, "error", map[string]any{"error": "Unknown message type"})
 		}
 	}
 }
 
-// Create a function to distribute online status and notification:
-func (clients *Hub) NotifyAllEccept(excluded int, text string, notifiationType string) {
-	notification := &Message{
-		Type:     notifiationType,
-		Sender:   excluded,
-		Receiver: 0,
-		Content:  text,
+func (ws *WebSocketService) GetAllUsersWithStatus() ([]*models.ChatUser, error) {
+	users, err := ws.userRepo.GetUsersRepo()
+	if err != nil {
+		return nil, err
 	}
 
-	clients.clientsMu.RLock()
-	defer clients.clientsMu.RUnlock()
-	for id, client := range clients.Clients {
-		if id != excluded {
-			client.Send <- MarshalText(notification)
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+
+	for _, user := range users {
+		_, ok := ws.clients[user.Id]
+		user.IsOnline = ok
+	}
+	return users, nil
+}
+
+func (ws *WebSocketService) broadcastUserStatus(userID int, isOnline bool) {
+	statusType := "user_offline"
+	if isOnline {
+		statusType = "user_online"
+	}
+
+	message := map[string]any{
+		"type":    statusType,
+		"user_id": userID,
+	}
+
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+
+	for clientID, conn := range ws.clients {
+		if clientID != userID {
+			err := conn.WriteJSON(message)
+			if err != nil {
+				log.Printf("Error broadcasting status to user %d: %v", clientID, err)
+				delete(ws.clients, clientID)
+				conn.Close()
+			}
 		}
 	}
+
+	log.Printf("Broadcasted %s status for user %d to %d clients", statusType, userID, len(ws.clients)-1)
 }
 
-// Marshal text into json:
-func MarshalText(value any) []byte {
-	dataBytes, _ := json.Marshal(value)
-	return dataBytes
-}
-
-// Create a function to handle the messages based on the :
-func (hub *Hub) HandleMessage(message *Message, clients *Hub) {
-	switch message.Type {
-	case "message", "typing":
-		hub.clientsMu.RLock()
-		if target, ok := hub.Clients[message.Receiver]; ok {
-			target.Send <- MarshalText(message)
-		}
-		hub.clientsMu.RUnlock()
-
-	case "logout":
-		hub.clientsMu.Lock()
-		if user, ok := hub.Clients[message.Sender]; ok {
-			delete(hub.Clients, message.Sender)
-			close(user.Send)
-			clients.NotifyAllEccept(message.Sender, fmt.Sprintf("%s has logged out", user.NickName), "logout")
-		}
-		hub.clientsMu.Unlock()
+func (ws *WebSocketService) broadcastLastMessage(senderID, receiverID int) {
+	msg, err := ws.messageRepo.GetLastMessage(senderID, receiverID)
+	if err != nil {
+		log.Printf("Error fetching last message: %v", err)
+		return
 	}
-}
 
-// mark live users when the user logs in so he can see a tangible evidence of all the users that are live:
-func (hub *Hub) MarkLiveUsers(client *Client) {
-	for id, _ := range hub.Clients {
-		notification := &Message{
-			Type:     "live",
-			Sender:   id,
-			Receiver: 0,
-			Content:  "user loged in",
-		}
-		if client.UserId != id {
-			client.Send <- MarshalText(notification)
+	lastMsg := map[string]any{
+		"type":       "last_message",
+		"message":    msg.Content,
+		"from_id":    msg.SenderId,
+		"to_id":      msg.RecieverId,
+		"is_read":    msg.IsRead,
+		"created_at": msg.CreatedAt.Format("2006-01-02 15:04:05"),
+	}
+
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+
+	for _, id := range []int{senderID, receiverID} {
+		if conn, ok := ws.clients[id]; ok {
+			err := conn.WriteJSON(lastMsg)
+			if err != nil {
+				log.Printf("Error sending last message to user %d: %v", id, err)
+				conn.Close()
+				delete(ws.clients, id)
+			}
 		}
 	}
 }

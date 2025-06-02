@@ -7,6 +7,7 @@ export function navigateTo(url) {
   history.pushState(null, null, url);
   router();
 }
+
 async function router() {
   let routers = [
     { path: "/", view: render_home_page },
@@ -30,58 +31,40 @@ async function router() {
   if (match.route.view) {
     match.route.view.apply();
   }
-  render_events_handlers();
 }
 
-// run my progrqm when the DOM is loaded:
+// Use event delegation - add ONE listener to document.body that handles all form submissions
 document.addEventListener("DOMContentLoaded", () => {
   router();
 
+  // Handle navigation clicks
   document.body.addEventListener("click", (e) => {
     if (e.target.closest('a')) {
-    e.preventDefault();
-    navigateTo(e.target.href);
+      e.preventDefault();
+      navigateTo(e.target.href);
     }
+  });
 
+  // Handle all form submissions using event delegation
+  document.body.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    // Check which form was submitted based on its ID
+    switch (e.target.id) {
+      case "registration_form":
+        register_new_user();
+        break;
+
+      case "login_form":
+        login_user();
+        break;
+
+      case "posts_form":
+        add_new_post();
+        break;
+
+      default:
+        console.warn("Unknown form submitted:", e.target.id);
+    }
   });
 });
-
-// Render events handler:
-function render_events_handlers() {
-  switch (location.pathname) {
-    case "/register":
-      setTimeout(() => {
-        let registration_form = document.getElementById("registration_form");
-        if (registration_form) {
-          registration_form.addEventListener("submit", (event) => {
-            event.preventDefault();
-            register_new_user();
-          });
-        }
-      }, 0);
-      break;
-    case "/login":
-      setTimeout(() => {
-        let login_form = document.getElementById("login_form");
-        if (login_form) {
-          login_form.addEventListener("submit", (event) => {
-            event.preventDefault();
-            login_user();
-          });
-        }
-      }, 0);
-      break;
-
-    case "/":
-      setTimeout(() => {
-        let posts_form = document.getElementById("posts_form");
-        if (posts_form) {
-          posts_form.addEventListener("submit", (event) => {
-            event.preventDefault();
-            add_new_post();
-          });
-        }
-      }, 200);
-      break;
-  }
-}

@@ -16,4 +16,11 @@ type User struct {
 type ChatUser struct {
 	Id       int    `json:"id"`
 	NickName string `json:"nick_name"`
+	IsOnline bool   `json:"is_online"`// online/offline
+}
+
+type UserProfile struct {
+    Username       string `json:"username"`
+    TotalPosts     int    `json:"total_posts"`
+    TotalComments  int    `json:"total_comments"`
 }

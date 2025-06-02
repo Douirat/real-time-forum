@@ -1,5 +1,7 @@
+@import url("asideleft.css");
+@import url("asideright.css");
 @import url("users.css");
-@import url("posts.css");
+/* @import url("posts.css"); */
 
 * {
     box-sizing: border-box;

@@ -1,136 +1,161 @@
-import { MyWebSocketClient } from "../web_socket.js";
+import { create_web_socket, sendMessage, getCurrentSocket } from "../web_socket.js";
 
 export function render_left_aside() {
-  return /*html*/`
-<aside id="left_aside" class="left">
-   <!-- Chat Container -->
- <div id="chat-container" class="chat-container">
-            <div class="chat-header">
-            </div>
-            <div class="chat-area">
-                <div class="users-list" id="users-list">
-                    <h4>Users</h4>
-                    <!-- Users will be dynamically added here -->
+    return /*html*/`
+        <aside id="left_aside" class="left">
+            <div id="chat-container" class="chat-container">
+                <div class="chat-header">
+                    <h3>Chat</h3>
+                    <div id="current-chat-user">Select a user to chat with</div>
                 </div>
-                <div id="message-area">
+                <div class="chat-area">
+                    <div id="messages-container" class="messages-container">
+                        <!-- Messages will appear here -->
+                    </div>
+                    <div class="message-input-container">
+                        <input type="text" id="message-input" placeholder="Select a user to chat..." disabled>
+                        <button id="send-button" disabled>Send</button>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-    </aside>
-    `
+        </aside>
+    `;
 }
 
+let currentChatUserId = null;
 
-// Create a function to fil the left asside with other users to chat with:
-export function display_chat_users() {
+export function init_chat() {
+    const messageInput = document.getElementById("message-input");
+    const sendButton = document.getElementById("send-button");
+    
+    if (sendButton) {
+        sendButton.addEventListener("click", sendCurrentMessage);
+    }
+    
+    if (messageInput) {
+        messageInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                sendCurrentMessage();
+            }
+        });
+    }
+}
 
-// Start the websocket here to make it easy for a  chat to happen:
-  let web_socket = new MyWebSocketClient()
-  web_socket.createWebSocket()
+export function startChatWithUser(user) {
+    if (!user || !user.id) {
+        console.error("Invalid user data");
+        return;
+    }
 
+    currentChatUserId = user.id;
 
-  let left_side = document.getElementById("users-list")
-  let friends_container = document.createElement("div")
-  friends_container.setAttribute("id", "friends_container")
-  const offset = 0;
-  const limit = 10;
+    const chatUserElement = document.getElementById("current-chat-user");
+    const messageInput = document.getElementById("message-input");
+    const sendButton = document.getElementById("send-button");
 
-  fetch(`http://localhost:8080/get_users?offset=${offset}&limit=${limit}`)
-    .then(res => res.json())
-    .then(data => {
-      console.log(data)
-      data.forEach(user => {
-        let chat = document.createElement("div")
-        chat.setAttribute("id", user.id)
-        chat.setAttribute("class", "user_chat")
-        let live_flag = document.createElement("div")
-        live_flag.setAttribute("id", "live_flag")
-        live_flag.setAttribute("class", "offline")
-        let live_user = document.createElement("small")
-        live_user.textContent = user.nick_name
-        chat.append(live_flag, live_user)
-        chat.addEventListener("click", () => {
-          console.log("I want to chat with this user: ", user.nick_name);
-          create_chat_room(user, web_socket)
+    if (chatUserElement) {
+        chatUserElement.textContent = `Chatting with: ${user.nick_name || "Unknown User"}`;
+    }
+
+    if (messageInput && sendButton) {
+        messageInput.disabled = false;
+        messageInput.placeholder = "Type a message...";
+        sendButton.disabled = false;
+    }
+
+    fetchChatHistory(user.id);
+}
+
+function fetchChatHistory(userId) {
+    fetch(`http://localhost:8080/get_chat?user_id=${userId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
         })
-        friends_container.appendChild(chat)
-      })
-      left_side.appendChild(friends_container)
-    })
-    .catch(err => console.error(err));
+        .then(messages => {
+            displayMessages(messages, userId);
+        })
+        .catch(error => {
+            console.error('Error fetching chat:', error);
+            displayError("Failed to load chat history");
+        });
 }
 
-// Create a chat room between tow users:
-function create_chat_room(user = {}, web_socket) {
-  // Bring all the messages between tow clints:
-  fetch(`http://localhost:8080/get_chat?user_id=${user.id}`)
-    .then(function (response) {
-      return response.json(); // Convert the response to JSON 
-    })
-    .then(function (data) {
-      console.log(data); // Handle the data received from the API
-      // Find the parent container where you want to insert the chat UI
-      const container = document.getElementById("message-area");
+function displayMessages(messages, userId) {
+    const messagesContainer = document.getElementById("messages-container");
+    if (!messagesContainer) return;
 
-      // Clear any existing content if needed
-      container.innerHTML = "";
+    messagesContainer.innerHTML = "";
 
-      // Create the messages container div
-      const messagesDiv = document.createElement("div");
-      messagesDiv.className = "messages";
-      messagesDiv.id = "messages";
+    if (Array.isArray(messages)) {
+        messages.forEach(message => {
+            const isCurrentUser = message.sender_id == userId;
+            addMessageToUI(
+                message.content, 
+                isCurrentUser ? "received" : "sent",
+                isCurrentUser ? (message.sender_name || "User") : "You"
+            );
+        });
+    }
 
-      // Create the message input container
-      const inputDiv = document.createElement("div");
-      inputDiv.className = "message-input";
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
 
-      // Create the text input
-      const input = document.createElement("input");
-      input.type = "text";
-      input.id = "message-input";
-      input.placeholder = "Type a message...";
+function addMessageToUI(content, type = "received", senderName = "") {
+    const messagesContainer = document.getElementById("messages-container");
+    if (!messagesContainer) return;
 
-      // Create the send button
-      const sendButton = document.createElement("button");
-      sendButton.id = "send-button";
-      sendButton.textContent = "Send";
+    const messageElement = document.createElement("div");
+    messageElement.className = `message ${type}`;
+    
+    const senderElement = document.createElement("span");
+    senderElement.className = "sender";
+    senderElement.textContent = senderName + ": ";
+    messageElement.appendChild(senderElement);
+    
+    const contentElement = document.createElement("span");
+    contentElement.className = "content";
+    contentElement.textContent = content;
+    messageElement.appendChild(contentElement);
+    
+    messagesContainer.appendChild(messageElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
 
-      sendButton.addEventListener("click", () => {
-        let content = document.getElementById("message-input").value
-        if (content === "") {
-          return
-        }
-        console.log("The client wants to chat with: ", user.id);
-        web_socket.sendMessage(user.id, content)
-      })
+function sendCurrentMessage() {
+    const messageInput = document.getElementById("message-input");
+    if (!messageInput) return;
+    
+    const content = messageInput.value.trim();
+    if (!content || !currentChatUserId) return;
 
-      // Append input and button to the inputDiv
-      inputDiv.appendChild(input);
-      inputDiv.appendChild(sendButton);
+    const socket = getCurrentSocket();
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+        console.error("WebSocket not connected");
+        displayError("Connection lost. Please refresh the page.");
+        return;
+    }
 
-      // Append messages div and input div to the container
-      container.appendChild(messagesDiv);
-      container.appendChild(inputDiv);
+    addMessageToUI(content, "sent", "You");
+    messageInput.value = "";
 
-      setTimeout(() => {
-        let message_area = document.getElementById("messages");
-        if (data) {
-          data.forEach(message => {
-            let message_container = document.createElement("div");
-            message_container.setAttribute("class", "message_container"); // fixed typo here
-            let text = document.createElement("p");
-            text.setAttribute("class", "comment_content");
-            text.textContent = message.content;
-            message_container.appendChild(text);
-            message_area.appendChild(message_container);
-          });
-        }
-      }, 0);
+    sendMessage(socket, currentChatUserId, content);
+}
 
-    })
-    .catch(function (error) {
-      console.error('Error fetching:', error); // Handle errors
-    });
+function displayError(message) {
+    const messagesContainer = document.getElementById("messages-container");
+    if (!messagesContainer) return;
+
+    const errorElement = document.createElement("div");
+    errorElement.className = "error";
+    errorElement.textContent = message;
+    messagesContainer.appendChild(errorElement);
+}
+
+export function handleIncomingMessage(data) {
+    if (currentChatUserId && data.from == currentChatUserId) {
+        addMessageToUI(data.content, "received", data.from_name || "User");
+    }
 }

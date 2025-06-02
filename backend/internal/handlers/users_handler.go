@@ -3,13 +3,12 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/services"
-	"real_time_forum/internal/services/utils"
+	"real_time_forum/internal/handlers/utils"
 )
 
 // UsersHandlersLayer defines the contract for user handlers
@@ -142,8 +141,7 @@ func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request)
 	utils.ResponseJSON(w, http.StatusCreated, map[string]string{"message": "User logged out successfully"})
 }
 
-// logout user:
-// logout user:
+// IsLogged user:
 func (userHandler *UsersHandlers) IsLogged(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session_token")
 	if err != nil {
@@ -162,19 +160,18 @@ func (userHandler *UsersHandlers) IsLogged(w http.ResponseWriter, r *http.Reques
 }
 
 // Get users for chat:
+// Get all users for chat (removed offset and limit):
 func (userHandler *UsersHandlers) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "method not allowed"})
 		return
 	}
 
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-
-	users, err := userHandler.userServ.GetUsersService(offset, limit)
+	// Get all users without pagination
+	users, err := userHandler.userServ.GetUsersService()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "failed to get users"})
 		return
 	}
-	json.NewEncoder(w).Encode(users)
+	utils.ResponseJSON(w, http.StatusOK, users)
 }

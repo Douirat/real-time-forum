@@ -7,7 +7,7 @@ import (
 
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/services"
-	"real_time_forum/internal/services/utils"
+	"real_time_forum/internal/handlers/utils"
 )
 
 // Create a structure to represent the comments handler:
