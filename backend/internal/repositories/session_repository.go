@@ -3,6 +3,7 @@ package repositories
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -10,6 +11,7 @@ type SessionsRepositoryLayer interface {
 	CreateSession(userID int, token string, expiresAt time.Time) error
 	DeleteSessionByToken(token string) error
 	GetSessionByToken(tocke string) (int, bool)
+	SessionExists(userID int) bool
 }
 
 type SessionsRepository struct {
@@ -54,4 +56,13 @@ func (sessionRepo *SessionsRepository) GetSessionByToken(token string) (int, boo
 	var userId int
 	err := sessionRepo.db.QueryRow(query, token).Scan(&userId)
 	return userId, (err == nil)
+}
+func (sr *SessionsRepository) SessionExists(userID int) bool {
+	var exists bool
+	err := sr.db.QueryRow("SELECT EXISTS(SELECT 1 FROM sessions WHERE user_id = ?)", userID).Scan(&exists)
+	if err != nil {
+		log.Printf("Error checking session existence: %v", err)
+		return false
+	}
+	return exists
 }
