@@ -1,16 +1,14 @@
 import { handleIncomingMessage } from "./components/left_aside.js";
 import { updateUserStatus } from "./components/right_aside.js";
-// Add this import at the top
-
-// Then modify the click handler in display_all_users():
 
 // Global WebSocket connection
-let globalSocket = null;
+export let globalSocket = null;
 
 // Establish the WebSocket connection
 export function create_web_socket(username) {
-    // Close existing connection if any
+    // CRITICAL FIX: Close existing connection if any
     if (globalSocket && globalSocket.readyState === WebSocket.OPEN) {
+        console.log("Closing existing WebSocket connection");
         globalSocket.close();
     }
 
@@ -19,13 +17,6 @@ export function create_web_socket(username) {
 
     socket.onopen = function() {
         console.log("WebSocket connection established");
-        if (username) {
-            // Send username to server when connection opens
-            socket.send(JSON.stringify({
-                type: "register",
-                username: username
-            }));
-        }
     };
 
     socket.onmessage = function (event) {
@@ -40,7 +31,6 @@ export function create_web_socket(username) {
                     
                 case "message":
                     console.log(`[${data.from}] says: ${data.content}`);
-                    // Handle incoming message in the UI
                     handleIncomingMessage(data);
                     break;
                     
@@ -73,6 +63,16 @@ export function create_web_socket(username) {
     socket.onclose = function (event) {
         console.log("WebSocket connection closed", event.code, event.reason);
         globalSocket = null;
+        
+        // Optional: Attempt to reconnect after a delay if connection was lost unexpectedly
+        if (event.code !== 1000) { // 1000 = normal closure
+            console.log("Attempting to reconnect in 3 seconds...");
+            setTimeout(() => {
+                if (!globalSocket || globalSocket.readyState === WebSocket.CLOSED) {
+                    create_web_socket(username);
+                }
+            }, 3000);
+        }
     };
 
     socket.onerror = function (error) {
@@ -115,4 +115,12 @@ export function getCurrentSocket() {
 // Check if WebSocket is connected
 export function isWebSocketConnected() {
     return globalSocket && globalSocket.readyState === WebSocket.OPEN;
+}
+
+// Additional helper function to ensure single connection
+export function ensureWebSocketConnection(username) {
+    if (!globalSocket || globalSocket.readyState === WebSocket.CLOSED) {
+        return create_web_socket(username);
+    }
+    return globalSocket;
 }

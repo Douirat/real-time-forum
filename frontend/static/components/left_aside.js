@@ -1,4 +1,4 @@
-import { create_web_socket, sendMessage, getCurrentSocket } from "../web_socket.js";
+import {sendMessage, getCurrentSocket } from "../web_socket.js";
 
 export function render_left_aside() {
     return /*html*/`
@@ -23,6 +23,7 @@ export function render_left_aside() {
 }
 
 let currentChatUserId = null;
+let messageCache = new Map(); // Cache messages for each user
 
 export function init_chat() {
     const messageInput = document.getElementById("message-input");
@@ -90,6 +91,11 @@ function displayMessages(messages, userId) {
     messagesContainer.innerHTML = "";
 
     if (Array.isArray(messages)) {
+        // Store messages in cache
+        if (!messageCache.has(userId)) {
+            messageCache.set(userId, []);
+        }
+        
         messages.forEach(message => {
             const isCurrentUser = message.sender_id == userId;
             addMessageToUI(
@@ -98,6 +104,15 @@ function displayMessages(messages, userId) {
                 isCurrentUser ? (message.sender_name || "User") : "You"
             );
         });
+        
+        // Add any cached messages that arrived while not chatting with this user
+        const cachedMessages = messageCache.get(userId) || [];
+        cachedMessages.forEach(msg => {
+            addMessageToUI(msg.content, "received", msg.from_name || "User");
+        });
+        
+        // Clear cache for this user since we've displayed them
+        messageCache.set(userId, []);
     }
 
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -116,7 +131,6 @@ function addMessageToUI(content, type = "received", senderName = "") {
     messageElement.appendChild(senderElement);
     
     const contentElement = document.createElement("span");
-    contentElement.className = "content";
     contentElement.textContent = content;
     messageElement.appendChild(contentElement);
     
@@ -154,8 +168,46 @@ function displayError(message) {
     messagesContainer.appendChild(errorElement);
 }
 
+// FIXED: Handle incoming messages properly
 export function handleIncomingMessage(data) {
-    if (currentChatUserId && data.from == currentChatUserId) {
-        addMessageToUI(data.content, "received", data.from_name || "User");
+    const fromUserId = parseInt(data.from_id || data.from);
+    
+    if (currentChatUserId && currentChatUserId === fromUserId) {
+        // If we're currently chatting with this user, show the message immediately
+        addMessageToUI(data.content, "received", data.from_name || data.from || "User");
+    } else {
+        // If we're not currently chatting with this user, cache the message
+        if (!messageCache.has(fromUserId)) {
+            messageCache.set(fromUserId, []);
+        }
+        messageCache.get(fromUserId).push({
+            content: data.content,
+            from_name: data.from_name || data.from || "User",
+            timestamp: new Date()
+        });
+        
+        // Optional: Show a notification or indicator that there's a new message
+        showNewMessageIndicator(fromUserId, data.from_name || data.from || "User");
+    }
+}
+
+// Optional: Function to show new message indicators
+function showNewMessageIndicator(userId, userName) {
+    // You can implement a notification system here
+    console.log(`New message from ${userName} (ID: ${userId})`);
+    
+    // Example: Add a badge or highlight to the user in the users list
+    const userElement = document.querySelector(`[data-user-id="${userId}"]`);
+    if (userElement) {
+        userElement.classList.add('has-new-message');
+        // You can add a CSS class to show a badge or different styling
+    }
+}
+
+// Function to clear new message indicator when user opens chat
+export function clearNewMessageIndicator(userId) {
+    const userElement = document.querySelector(`[data-user-id="${userId}"]`);
+    if (userElement) {
+        userElement.classList.remove('has-new-message');
     }
 }
