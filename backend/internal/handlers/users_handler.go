@@ -120,6 +120,7 @@ func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		token = cookie.Value
+		
 	}
 
 	// delete session from database :

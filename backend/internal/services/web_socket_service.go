@@ -1,17 +1,18 @@
 package services
 
 import (
+	"errors"
 	"log"
-	"sync"
-
+	"net/http"
 	"real_time_forum/internal/repositories"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
 
 // Create a service layer for the web service:
 type WebSocketServiceLayer interface {
-	NewChatBroker()
+	CreateNewWebSocket(w http.ResponseWriter, r *http.Request) error
 }
 
 // Create a struct to implement the websocket service:
@@ -25,23 +26,23 @@ type WebSocketService struct {
 // create a struct to represent the message:
 type WebSocketMessage struct {
 	MessageType string `json:"type"`
-	Sender      string `json:"sender"`
-	Recipient   string `json:"recipient"`
+	Sender      int    `json:"sender"`
+	Recipient   int    `json:"recipient"`
 	Content     string `json:"content"`
 }
 
 // create a client to represent the connected user with their websocket
 // connection and a chanel to ease sending messages to that client withing the goroutine.
 type Client struct {
-	UserName string
-	Conn     *websocket.Conn
-	Send     chan *WebSocketMessage
+	UserId int
+	Conn   *websocket.Conn
+	Send   chan *WebSocketMessage
 }
 
 // Create a hub to maintain the set of active clients and broadcasts messages to them
 // it acts as a central coordinator for all chat operations:
 type Hub struct {
-	Clients map[string]*Client
+	Clients map[int]*Client
 
 	// A mutex to control the race condition:
 	mu sync.Mutex
@@ -56,20 +57,35 @@ type Hub struct {
 	Broadcast chan *WebSocketMessage
 }
 
+// upgrade:
+// WebSocket upgrader configuration
+// This handles the HTTP to WebSocket protocol upgrade
+var upgrader = websocket.Upgrader{
+	// Buffer sizes for read/write operations
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	// Allow connections from any origin (disable CORS for simplicity)
+	// In production, you should specify allowed origins
+	CheckOrigin: func(r *http.Request) bool {
+		origin := r.Header.Get("Origin")
+		return origin == "http://localhost:8080"
+	},
+}
+
 // Create qn instance from webSocket:
-func NewWebSocketService(broker *Hub, messRepo repositories.MessageRepositoryLayer, sessRepo repositories.SessionsRepositoryLayer, userRepo repositories.UsersRepositoryLayer)*WebSocketService{
-	    return &WebSocketService{
-        chatBroker: broker,
-        messageRepo: messRepo,
-        sessRepo:    sessRepo,
-        userRepo:    userRepo,
-    }
+func NewWebSocketService(broker *Hub, messRepo repositories.MessageRepositoryLayer, sessRepo repositories.SessionsRepositoryLayer, userRepo repositories.UsersRepositoryLayer) *WebSocketService {
+	return &WebSocketService{
+		chatBroker:  broker,
+		messageRepo: messRepo,
+		sessRepo:    sessRepo,
+		userRepo:    userRepo,
+	}
 }
 
 // Instantiate the hub:
-func (websoc *WebSocketService) NewChatBroker() {
-	websoc.chatBroker = &Hub{
-		Clients:    make(map[string]*Client),
+func NewChatBroker() *Hub {
+	return &Hub{
+		Clients:    make(map[int]*Client),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
 		Broadcast:  make(chan *WebSocketMessage),
@@ -83,17 +99,17 @@ func (hub *Hub) Run() {
 		// Handle the new client's registration:
 		case client := <-hub.Register:
 			// Add the client to our registry:
-			hub.Clients[client.UserName] = client
-			log.Printf("Client %s connected. Total clients: %d", client.UserName, len(hub.Clients))
+			hub.Clients[client.UserId] = client
+			log.Printf("Client %s connected. Total clients: %d", client.UserId, len(hub.Clients))
 
 			onlineMessage := &WebSocketMessage{
 				MessageType: "online",
-				Sender:      client.UserName,
+				Sender:      client.UserId,
 				Content:     "joined chat",
 			}
 
 			// Broadcast to all the clients except the one who just joined:
-			hub.BroadcastToOthers(onlineMessage, client.UserName)
+			hub.BroadcastToOthers(onlineMessage, client.UserId)
 
 			// Handle client disconnection:
 		case client := <-hub.Unregister:
@@ -122,7 +138,7 @@ func (hub *Hub) Run() {
 }
 
 // Broadcast to all except the client in that  specific goroutine:
-func (hub *Hub) BroadcastToOthers(message *WebSocketMessage, excluded string) {
+func (hub *Hub) BroadcastToOthers(message *WebSocketMessage, excluded int) {
 	for username, client := range hub.Clients {
 		if username != excluded {
 			select {
@@ -143,13 +159,13 @@ func (hub *Hub) BoadcastToAll(message *WebSocketMessage) {
 		case client.Send <- message:
 		default:
 			close(client.Send)
-			delete(hub.Clients, client.UserName)
+			delete(hub.Clients, client.UserId)
 		}
 	}
 }
 
 // Broadcast a message to a specific client:
-func (hub *Hub) SendToClient(message *WebSocketMessage, receiver string) {
+func (hub *Hub) SendToClient(message *WebSocketMessage, receiver int) {
 	if client, exist := hub.Clients[receiver]; exist {
 		select {
 		case client.Send <- message:
@@ -160,4 +176,39 @@ func (hub *Hub) SendToClient(message *WebSocketMessage, receiver string) {
 			close(client.Send)
 		}
 	}
+}
+
+// create a new websocket :
+func (soc *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *http.Request) error {
+	// Check if it's a WebSocket upgrade request
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		http.Error(w, "Missing session token", http.StatusUnauthorized)
+		return err
+	}
+	sessionToken := cookie.Value
+
+	userId, ok := soc.sessRepo.GetSessionByToken(sessionToken)
+	if !ok {
+		return errors.New("session error")
+	}
+
+	// 	Create client:
+	client := &Client{
+		UserId: userId,
+		Conn:   conn,
+		Send:   make(chan *WebSocketMessage),
+	}
+
+	// Register a new client to the hub:
+	soc.chatBroker.Register <- client
+
+	return nil
 }
