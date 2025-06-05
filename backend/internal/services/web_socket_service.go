@@ -4,6 +4,8 @@ import (
 	"log"
 	"sync"
 
+	"real_time_forum/internal/repositories"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -14,7 +16,10 @@ type WebSocketServiceLayer interface {
 
 // Create a struct to implement the websocket service:
 type WebSocketService struct {
-	chatBroker *Hub
+	chatBroker  *Hub
+	messageRepo repositories.MessageRepositoryLayer
+	sessRepo    repositories.SessionsRepositoryLayer
+	userRepo    repositories.UsersRepositoryLayer
 }
 
 // create a struct to represent the message:
@@ -49,6 +54,16 @@ type Hub struct {
 
 	// Create a channel for broadcasting messages:
 	Broadcast chan *WebSocketMessage
+}
+
+// Create qn instance from webSocket:
+func NewWebSocketService(broker *Hub, messRepo repositories.MessageRepositoryLayer, sessRepo repositories.SessionsRepositoryLayer, userRepo repositories.UsersRepositoryLayer)*WebSocketService{
+	    return &WebSocketService{
+        chatBroker: broker,
+        messageRepo: messRepo,
+        sessRepo:    sessRepo,
+        userRepo:    userRepo,
+    }
 }
 
 // Instantiate the hub:
