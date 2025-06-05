@@ -114,14 +114,14 @@ func (hub *Hub) Run() {
 			// Handle client disconnection:
 		case client := <-hub.Unregister:
 			// Check if client's exists in our registry:
-			if _, ok := hub.Clients[client.UserName]; ok {
-				delete(hub.Clients, client.UserName)
+			if _, ok := hub.Clients[client.UserId]; ok {
+				delete(hub.Clients, client.UserId)
 				close(client.Send)
-				log.Printf("Client %s disconnected. Total clients: %d", client.UserName, len(hub.Clients))
+				log.Printf("Client %s disconnected. Total clients: %d", client.UserId, len(hub.Clients))
 				// Notify all remaining clients that this user went offline:
 				offlineMessage := &WebSocketMessage{
 					MessageType: "offline",
-					Sender:      client.UserName,
+					Sender:      client.UserId,
 					Content:     "joined chat",
 				}
 
