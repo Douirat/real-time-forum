@@ -4,8 +4,9 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"real_time_forum/internal/repositories"
 	"sync"
+
+	"real_time_forum/internal/repositories"
 
 	"github.com/gorilla/websocket"
 )
@@ -100,7 +101,7 @@ func (hub *Hub) Run() {
 		case client := <-hub.Register:
 			// Add the client to our registry:
 			hub.Clients[client.UserId] = client
-			log.Printf("Client %s connected. Total clients: %d", client.UserId, len(hub.Clients))
+			log.Printf("Client %d connected. Total clients: %d", client.UserId, len(hub.Clients))
 
 			onlineMessage := &WebSocketMessage{
 				MessageType: "online",
@@ -117,7 +118,7 @@ func (hub *Hub) Run() {
 			if _, ok := hub.Clients[client.UserId]; ok {
 				delete(hub.Clients, client.UserId)
 				close(client.Send)
-				log.Printf("Client %s disconnected. Total clients: %d", client.UserId, len(hub.Clients))
+				log.Printf("Client %d disconnected. Total clients: %d", client.UserId, len(hub.Clients))
 				// Notify all remaining clients that this user went offline:
 				offlineMessage := &WebSocketMessage{
 					MessageType: "offline",
