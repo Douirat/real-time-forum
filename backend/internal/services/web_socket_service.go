@@ -211,6 +211,9 @@ func (soc *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *http.R
 	// Register a new client to the hub:
 	soc.chatBroker.Register <- client
 
+	//
+	go client.readPump(soc.chatBroker)
+	go client.writePump()
 	return nil
 }
 
