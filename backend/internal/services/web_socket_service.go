@@ -215,17 +215,17 @@ func (soc *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *http.R
 }
 
 // /////////////////////////////////
-func (c *Client) readPump(hub *Hub) {
+func (client *Client) readPump(hub *Hub) {
 	// Ensure connection cleanup when this goroutine exits
 	defer func() {
-		hub.Unregister <- c
-		c.Conn.Close()
+		hub.Unregister <- client
+		client.Conn.Close()
 	}()
 
 	// Configure connection parameters
-	c.Conn.SetReadLimit(512) // Max message size
+	client.Conn.SetReadLimit(512) // Max message size
 	// Set read deadline and pong handler for keepalive
-	c.Conn.SetPongHandler(func(string) error {
+	client.Conn.SetPongHandler(func(string) error {
 		return nil
 	})
 
@@ -233,44 +233,44 @@ func (c *Client) readPump(hub *Hub) {
 	for {
 		var msg = &WebSocketMessage{}
 		// Read and decode JSON message from WebSocket
-		err := c.Conn.ReadJSON(msg)
+		err := client.Conn.ReadJSON(msg)
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("WebSocket error for %d: %v", c.UserId, err)
+				log.Printf("WebSocket error for %d: %v", client.UserId, err)
 			}
 			break
 		}
 
 		// Set sender to this client's username (prevent spoofing)
-		msg.Sender = c.UserId
+		msg.Sender = client.UserId
 
-		log.Printf("Received message from %d: %+v", c.UserId, msg)
+		log.Printf("Received message from %d: %+v", client.UserId, msg)
 
 		// Send message to hub for routing
 		hub.Broadcast <- msg
 	}
 }
 
-func (c *Client) writePump() {
-	defer c.Conn.Close()
+func (client *Client) writePump() {
+	defer client.Conn.Close()
 
 	for {
 		select {
 		// Wait for message on send channel
-		case message, ok := <-c.Send:
+		case message, ok := <-client.Send:
 			if !ok {
 				// Channel closed - send close message and exit
-				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				client.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
 			// Send JSON message to client
-			if err := c.Conn.WriteJSON(message); err != nil {
-				log.Printf("Write error for %d: %v", c.UserId, err)
+			if err := client.Conn.WriteJSON(message); err != nil {
+				log.Printf("Write error for %d: %v", client.UserId, err)
 				return
 			}
 			
-			log.Printf("Sent message to %d: %+v", c.UserId, message)
+			log.Printf("Sent message to %d: %+v", client.UserId, message)
 		}
 	}
 }
