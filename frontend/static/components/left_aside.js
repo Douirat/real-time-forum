@@ -156,6 +156,6 @@ function displayError(message) {
 
 export function handleIncomingMessage(data) {
     if (currentChatUserId && data.from == currentChatUserId) {
-        addMessageToUI(data.content, "received", data.from_name || "User");
+        addMessageToUI(data.content, "received", data.sender || "User");
     }
 }

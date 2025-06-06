@@ -8,60 +8,60 @@ import { updateUserStatus } from "./components/right_aside.js";
 let globalSocket = null;
 
 // Establish the WebSocket connection
-export function create_web_socket(username) {
-    // Close existing connection if any
-    if (globalSocket && globalSocket.readyState === WebSocket.OPEN) {
-        globalSocket.close();
-    }
+export function create_web_socket() {
+    // // Close existing connection if any
+    // if (globalSocket && globalSocket.readyState === WebSocket.OPEN) {
+    //     globalSocket.close();
+    // }
 
     const socket = new WebSocket("ws://localhost:8080/ws");
     globalSocket = socket;
 
-    socket.onopen = function() {
-        console.log("WebSocket connection established");
-        if (username) {
-            // Send username to server when connection opens
-            socket.send(JSON.stringify({
-                type: "register",
-                username: username
-            }));
-        }
+    socket.onopen = function (event) {
+        console.log('WebSocket connection opened:', event);
+        // if (username) {
+        //     // Send username to server when connection opens
+        //     socket.send(JSON.stringify({
+        //         type: "register",
+        //         username: username
+        //     }));
+        // }
     };
 
     socket.onmessage = function (event) {
         try {
             const data = JSON.parse(event.data);
             console.log("Received WebSocket message:", data);
-            
+
             switch (data.type) {
-                case "connected":
-                    console.log("WebSocket connection confirmed:", data.message);
-                    break;
-                    
+                // case "connected":
+                //     console.log("WebSocket connection confirmed:", data.message);
+                //     break;
+
                 case "message":
-                    console.log(`[${data.from}] says: ${data.content}`);
+                    console.log(`[${data.sender}] says: ${data.content}`);
                     // Handle incoming message in the UI
                     handleIncomingMessage(data);
                     break;
-                    
-                case "sent":
-                    console.log("Message sent confirmation:", data.message);
-                    break;
-                    
-                case "user_online":
+
+                // case "sent":
+                //     console.log("Message sent confirmation:", data.message);
+                //     break;
+
+                case "online":
                     console.log(`User ${data.user_id} is now online`);
                     updateUserStatus(data.user_id, true);
                     break;
-                    
-                case "user_offline":
+
+                case "offline":
                     console.log(`User ${data.user_id} is now offline`);
                     updateUserStatus(data.user_id, false);
                     break;
-                    
+
                 case "error":
                     console.error("WebSocket error:", data.error);
                     break;
-                    
+
                 default:
                     console.log("Unknown message type:", data);
             }
@@ -97,7 +97,7 @@ export function sendMessage(socket, to, message) {
     try {
         socket.send(JSON.stringify({
             type: "message",
-            to: parseInt(to),
+            recipient: parseInt(to),
             content: message.trim()
         }));
         return true;
