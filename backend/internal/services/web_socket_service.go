@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sync"
 
+	"real_time_forum/internal/models"
 	"real_time_forum/internal/repositories"
 
 	"github.com/gorilla/websocket"
@@ -14,6 +15,7 @@ import (
 // Create a service layer for the web service:
 type WebSocketServiceLayer interface {
 	CreateNewWebSocket(w http.ResponseWriter, r *http.Request) error
+	GetAllUsersWithStatus() ([]*models.ChatUser, error)
 }
 
 // Create a struct to implement the websocket service:
@@ -272,8 +274,40 @@ func (client *Client) writePump() {
 				log.Printf("Write error for %d: %v", client.UserId, err)
 				return
 			}
-			
+
 			log.Printf("Sent message to %d: %+v", client.UserId, message)
 		}
 	}
+}
+
+func (soc *WebSocketService) GetAllUsersWithStatus() ([]*models.ChatUser, error) {
+	// جلب جميع المستخدمين من قاعدة البيانات
+	users, err := soc.userRepo.GetUsersRepo()
+	if err != nil {
+		return nil, err
+	}
+
+	var chatUsers []*models.ChatUser
+
+	// قفل الخريطة أثناء التعديل
+	soc.chatBroker.mu.Lock()
+	defer soc.chatBroker.mu.Unlock()
+
+	// تحويل المستخدمين إلى ChatUser مع حالة الاتصال
+	for _, user := range users {
+		chatUser := &models.ChatUser{
+			Id:       user.Id,
+			NickName: user.NickName,
+			IsOnline: false, // القيمة الافتراضية
+		}
+
+		// التحقق إذا كان المستخدم متصلاً
+		if _, exists := soc.chatBroker.Clients[user.Id]; exists {
+			chatUser.IsOnline = true
+		}
+
+		chatUsers = append(chatUsers, chatUser)
+	}
+
+	return chatUsers, nil
 }
