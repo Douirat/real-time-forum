@@ -2,9 +2,11 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/repositories"
@@ -32,11 +34,13 @@ type WebSocketMessage struct {
 	Sender      int    `json:"sender"`
 	Recipient   int    `json:"recipient"`
 	Content     string `json:"content"`
+	UserID      int    `json:"user_id,omitempty"`
 }
 
 // create a client to represent the connected user with their websocket
 // connection and a chanel to ease sending messages to that client withing the goroutine.
 type Client struct {
+	ID     string // Unique connection ID (UUID or timestamp-based)
 	UserId int
 	Conn   *websocket.Conn
 	Send   chan *WebSocketMessage
@@ -45,10 +49,14 @@ type Client struct {
 // Create a hub to maintain the set of active clients and broadcasts messages to them
 // it acts as a central coordinator for all chat operations:
 type Hub struct {
-	Clients map[int]*Client
+	// Map of connection ID to client
+	Clients map[string]*Client
+
+	// Map of user ID to list of their connection IDs (for multiple tabs/windows)
+	UserConnections map[int][]string
 
 	// A mutex to control the race condition:
-	mu sync.Mutex
+	mu sync.RWMutex
 
 	// A channel for registring a new client:
 	Register chan *Client
@@ -62,20 +70,16 @@ type Hub struct {
 
 // upgrade:
 // WebSocket upgrader configuration
-// This handles the HTTP to WebSocket protocol upgrade
 var upgrader = websocket.Upgrader{
-	// Buffer sizes for read/write operations
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	// Allow connections from any origin (disable CORS for simplicity)
-	// In production, you should specify allowed origins
 	CheckOrigin: func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
 		return origin == "http://localhost:8080"
 	},
 }
 
-// Create qn instance from webSocket:
+// Create an instance from webSocket:
 func NewWebSocketService(broker *Hub, messRepo repositories.MessageRepositoryLayer, sessRepo repositories.SessionsRepositoryLayer, userRepo repositories.UsersRepositoryLayer) *WebSocketService {
 	return &WebSocketService{
 		chatBroker:  broker,
@@ -88,103 +92,206 @@ func NewWebSocketService(broker *Hub, messRepo repositories.MessageRepositoryLay
 // Instantiate the hub:
 func NewChatBroker() *Hub {
 	return &Hub{
-		Clients:    make(map[int]*Client),
-		Register:   make(chan *Client),
-		Unregister: make(chan *Client),
-		Broadcast:  make(chan *WebSocketMessage),
+		Clients:         make(map[string]*Client),
+		UserConnections: make(map[int][]string),
+		Register:        make(chan *Client),
+		Unregister:      make(chan *Client),
+		Broadcast:       make(chan *WebSocketMessage),
 	}
 }
 
-// a function to run the main hub loop that handles all client management:
+// Generate unique connection ID
+func generateConnectionID(userID int) string {
+	return fmt.Sprintf("%d_%d", userID, time.Now().UnixNano())
+}
+
+// Check if user has any active connections
+func (hub *Hub) isUserOnline(userID int) bool {
+	hub.mu.RLock()
+	defer hub.mu.RUnlock()
+	connections, exists := hub.UserConnections[userID]
+	return exists && len(connections) > 0
+}
+
+// Get all connection IDs for a user
+func (hub *Hub) getUserConnections(userID int) []string {
+	hub.mu.RLock()
+	defer hub.mu.RUnlock()
+	if connections, exists := hub.UserConnections[userID]; exists {
+		// Return a copy to avoid race conditions
+		result := make([]string, len(connections))
+		copy(result, connections)
+		return result
+	}
+	return []string{}
+}
+
+// Add connection for user
+func (hub *Hub) addUserConnection(userID int, connectionID string) {
+	hub.mu.Lock()
+	defer hub.mu.Unlock()
+
+	if connections, exists := hub.UserConnections[userID]; exists {
+		hub.UserConnections[userID] = append(connections, connectionID)
+	} else {
+		hub.UserConnections[userID] = []string{connectionID}
+	}
+}
+
+// Remove connection for user
+func (hub *Hub) removeUserConnection(userID int, connectionID string) {
+	hub.mu.Lock()
+	defer hub.mu.Unlock()
+
+	if connections, exists := hub.UserConnections[userID]; exists {
+		// Remove the connection ID from the slice
+		for i, id := range connections {
+			if id == connectionID {
+				hub.UserConnections[userID] = append(connections[:i], connections[i+1:]...)
+				break
+			}
+		}
+
+		// If no more connections, remove the user entry
+		if len(hub.UserConnections[userID]) == 0 {
+			delete(hub.UserConnections, userID)
+		}
+	}
+}
+
+// Main hub loop that handles all client management:
 func (hub *Hub) Run() {
 	for {
 		select {
 		// Handle the new client's registration:
 		case client := <-hub.Register:
-			// Add the client to our registry:
-			hub.Clients[client.UserId] = client
-			log.Printf("Client %d connected. Total clients: %d", client.UserId, len(hub.Clients))
+			wasOnline := hub.isUserOnline(client.UserId)
 
-			onlineMessage := &WebSocketMessage{
-				MessageType: "online",
-				Sender:      client.UserId,
-				Content:     "joined chat",
-			}
+			hub.mu.Lock()
+			hub.Clients[client.ID] = client
+			hub.mu.Unlock()
 
-			// Broadcast to all the clients except the one who just joined:
-			hub.BroadcastToOthers(onlineMessage, client.UserId)
+			hub.addUserConnection(client.UserId, client.ID)
 
-			// Handle client disconnection:
-		case client := <-hub.Unregister:
-			// Check if client's exists in our registry:
-			if _, ok := hub.Clients[client.UserId]; ok {
-				delete(hub.Clients, client.UserId)
-				close(client.Send)
-				log.Printf("Client %d disconnected. Total clients: %d", client.UserId, len(hub.Clients))
-				// Notify all remaining clients that this user went offline:
-				offlineMessage := &WebSocketMessage{
-					MessageType: "offline",
+			log.Printf("Client %s (User %d) connected. Total clients: %d",
+				client.ID, client.UserId, len(hub.Clients))
+
+			// Only broadcast "user came online" if this is their first connection
+			if !wasOnline {
+				onlineMessage := &WebSocketMessage{
+					MessageType: "user_online",
+					UserID:      client.UserId,
 					Sender:      client.UserId,
 					Content:     "joined chat",
 				}
-
-				// broad cast the status to all users:
-				hub.BoadcastToAll(offlineMessage)
+				hub.BroadcastToOthers(onlineMessage, client.UserId)
 			}
 
-			// Handle message broadcasting:
-		case message := <-hub.Broadcast:
-			hub.SendToClient(message, message.Sender)
+		// Handle client disconnection:
+		case client := <-hub.Unregister:
+			hub.mu.Lock()
+			if _, ok := hub.Clients[client.ID]; ok {
+				delete(hub.Clients, client.ID)
+				close(client.Send)
+			}
+			hub.mu.Unlock()
 
+			hub.removeUserConnection(client.UserId, client.ID)
+
+			log.Printf("Client %s (User %d) disconnected. Total clients: %d",
+				client.ID, client.UserId, len(hub.Clients))
+
+			// Only broadcast "user went offline" if this was their last connection
+			if !hub.isUserOnline(client.UserId) {
+				offlineMessage := &WebSocketMessage{
+					MessageType: "user_offline",
+					UserID:      client.UserId,
+					Sender:      client.UserId,
+					Content:     "left chat",
+				}
+				hub.BroadcastToAll(offlineMessage)
+			}
+
+		// Handle message broadcasting:
+		case message := <-hub.Broadcast:
+			if message.Recipient > 0 {
+				// Send to specific user (all their connections)
+				hub.SendToUser(message, message.Recipient)
+			} else {
+				// Broadcast to all users
+				hub.BroadcastToAll(message)
+			}
 		}
 	}
 }
 
-// Broadcast to all except the client in that  specific goroutine:
-func (hub *Hub) BroadcastToOthers(message *WebSocketMessage, excluded int) {
-	for username, client := range hub.Clients {
-		if username != excluded {
+// Broadcast to all users except the specified user
+func (hub *Hub) BroadcastToOthers(message *WebSocketMessage, excludedUserID int) {
+	hub.mu.RLock()
+	defer hub.mu.RUnlock()
+
+	for _, client := range hub.Clients {
+		if client.UserId != excludedUserID {
 			select {
 			case client.Send <- message:
-				// Message sent successfully:
+				// Message sent successfully
 			default:
-				close(client.Send)
-				delete(hub.Clients, username)
+				// Client channel is full or closed, clean up
+				go hub.cleanupClient(client)
 			}
 		}
 	}
 }
 
-// Bradcast a message to all users:
-func (hub *Hub) BoadcastToAll(message *WebSocketMessage) {
+// Broadcast a message to all users
+func (hub *Hub) BroadcastToAll(message *WebSocketMessage) {
+	hub.mu.RLock()
+	defer hub.mu.RUnlock()
+
 	for _, client := range hub.Clients {
 		select {
 		case client.Send <- message:
 		default:
-			close(client.Send)
-			delete(hub.Clients, client.UserId)
+			// Client channel is full or closed, clean up
+			go hub.cleanupClient(client)
 		}
 	}
 }
 
-// Broadcast a message to a specific client:
-func (hub *Hub) SendToClient(message *WebSocketMessage, receiver int) {
-	if client, exist := hub.Clients[receiver]; exist {
-		select {
-		case client.Send <- message:
-			// Message sent successfully:
-		default:
-			// Client unavailable clean up.
-			delete(hub.Clients, receiver)
-			close(client.Send)
+// Send message to all connections of a specific user
+func (hub *Hub) SendToUser(message *WebSocketMessage, userID int) {
+	connectionIDs := hub.getUserConnections(userID)
+
+	hub.mu.RLock()
+	defer hub.mu.RUnlock()
+
+	for _, connectionID := range connectionIDs {
+		if client, exists := hub.Clients[connectionID]; exists {
+			select {
+			case client.Send <- message:
+				// Message sent successfully
+			default:
+				// Client channel is full or closed, clean up
+				go hub.cleanupClient(client)
+			}
 		}
 	}
 }
 
-// create a new websocket :
+// Clean up a problematic client connection
+func (hub *Hub) cleanupClient(client *Client) {
+	hub.mu.Lock()
+	defer hub.mu.Unlock()
+
+	if _, exists := hub.Clients[client.ID]; exists {
+		delete(hub.Clients, client.ID)
+		close(client.Send)
+		hub.removeUserConnection(client.UserId, client.ID)
+	}
+}
+
+// create a new websocket:
 func (soc *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *http.Request) error {
-	// Check if it's a WebSocket upgrade request
-
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -193,65 +300,62 @@ func (soc *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *http.R
 
 	cookie, err := r.Cookie("session_token")
 	if err != nil {
-		http.Error(w, "Missing session token", http.StatusUnauthorized)
-		return err
+		conn.Close()
+		return errors.New("missing session token")
 	}
 	sessionToken := cookie.Value
 
 	userId, ok := soc.sessRepo.GetSessionByToken(sessionToken)
 	if !ok {
+		conn.Close()
 		return errors.New("session error")
 	}
 
-	// 	Create client:
+	// Generate unique connection ID
+	connectionID := generateConnectionID(userId)
+
+	// Create client with unique ID:
 	client := &Client{
+		ID:     connectionID,
 		UserId: userId,
 		Conn:   conn,
-		Send:   make(chan *WebSocketMessage),
+		Send:   make(chan *WebSocketMessage, 256),
 	}
 
-	// Register a new client to the hub:
+	// Register the new client to the hub:
 	soc.chatBroker.Register <- client
 
-	//
+	// Start goroutines for this client
 	go client.readPump(soc.chatBroker)
 	go client.writePump()
+
 	return nil
 }
 
-// /////////////////////////////////
 func (client *Client) readPump(hub *Hub) {
-	// Ensure connection cleanup when this goroutine exits
 	defer func() {
 		hub.Unregister <- client
 		client.Conn.Close()
 	}()
 
-	// Configure connection parameters
-	client.Conn.SetReadLimit(512) // Max message size
-	// Set read deadline and pong handler for keepalive
+	client.Conn.SetReadLimit(512)
 	client.Conn.SetPongHandler(func(string) error {
 		return nil
 	})
 
-	// Main read loop - continuously read messages from client
 	for {
 		var msg = &WebSocketMessage{}
-		// Read and decode JSON message from WebSocket
 		err := client.Conn.ReadJSON(msg)
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("WebSocket error for %d: %v", client.UserId, err)
+				log.Printf("WebSocket error for %s (User %d): %v", client.ID, client.UserId, err)
 			}
 			break
 		}
 
-		// Set sender to this client's username (prevent spoofing)
 		msg.Sender = client.UserId
+		log.Printf("Received message from %s (User %d): %+v", client.ID, client.UserId, msg)
 
-		log.Printf("Received message from %d: %+v", client.UserId, msg)
-
-		// Send message to hub for routing
 		hub.Broadcast <- msg
 	}
 }
@@ -261,27 +365,23 @@ func (client *Client) writePump() {
 
 	for {
 		select {
-		// Wait for message on send channel
 		case message, ok := <-client.Send:
 			if !ok {
-				// Channel closed - send close message and exit
 				client.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
-			// Send JSON message to client
 			if err := client.Conn.WriteJSON(message); err != nil {
-				log.Printf("Write error for %d: %v", client.UserId, err)
+				log.Printf("Write error for %s (User %d): %v", client.ID, client.UserId, err)
 				return
 			}
 
-			log.Printf("Sent message to %d: %+v", client.UserId, message)
+			log.Printf("Sent message to %s (User %d): %+v", client.ID, client.UserId, message)
 		}
 	}
 }
 
 func (soc *WebSocketService) GetAllUsersWithStatus() ([]*models.ChatUser, error) {
-	// جلب جميع المستخدمين من قاعدة البيانات
 	users, err := soc.userRepo.GetUsersRepo()
 	if err != nil {
 		return nil, err
@@ -289,23 +389,12 @@ func (soc *WebSocketService) GetAllUsersWithStatus() ([]*models.ChatUser, error)
 
 	var chatUsers []*models.ChatUser
 
-	// قفل الخريطة أثناء التعديل
-	soc.chatBroker.mu.Lock()
-	defer soc.chatBroker.mu.Unlock()
-
-	// تحويل المستخدمين إلى ChatUser مع حالة الاتصال
 	for _, user := range users {
 		chatUser := &models.ChatUser{
 			Id:       user.Id,
 			NickName: user.NickName,
-			IsOnline: false, // القيمة الافتراضية
+			IsOnline: soc.chatBroker.isUserOnline(user.Id),
 		}
-
-		// التحقق إذا كان المستخدم متصلاً
-		if _, exists := soc.chatBroker.Clients[user.Id]; exists {
-			chatUser.IsOnline = true
-		}
-
 		chatUsers = append(chatUsers, chatUser)
 	}
 
