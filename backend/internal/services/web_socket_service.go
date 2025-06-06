@@ -2,10 +2,12 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
 
+	"real_time_forum/internal/models"
 	"real_time_forum/internal/repositories"
 
 	"github.com/gorilla/websocket"
@@ -14,6 +16,7 @@ import (
 // Create a service layer for the web service:
 type WebSocketServiceLayer interface {
 	CreateNewWebSocket(w http.ResponseWriter, r *http.Request) error
+	GetAllUsersWithStatus() ([]*models.ChatUser, error)
 }
 
 // Create a struct to implement the websocket service:
@@ -27,23 +30,25 @@ type WebSocketService struct {
 // create a struct to represent the message:
 type WebSocketMessage struct {
 	MessageType string `json:"type"`
-	Sender      int    `json:"sender"`
-	Recipient   int    `json:"recipient"`
+	UserId      int    `json:"user_id"`
+	Sender      string `json:"sender"`
+	Recipient   string `json:"recipient"`
 	Content     string `json:"content"`
 }
 
 // create a client to represent the connected user with their websocket
 // connection and a chanel to ease sending messages to that client withing the goroutine.
 type Client struct {
-	UserId int
-	Conn   *websocket.Conn
-	Send   chan *WebSocketMessage
+	UserName string
+	UserId   int
+	Conn     *websocket.Conn
+	Send     chan *WebSocketMessage
 }
 
 // Create a hub to maintain the set of active clients and broadcasts messages to them
 // it acts as a central coordinator for all chat operations:
 type Hub struct {
-	Clients map[int]*Client
+	Clients map[string]*Client
 
 	// A mutex to control the race condition:
 	mu sync.Mutex
@@ -86,7 +91,7 @@ func NewWebSocketService(broker *Hub, messRepo repositories.MessageRepositoryLay
 // Instantiate the hub:
 func NewChatBroker() *Hub {
 	return &Hub{
-		Clients:    make(map[int]*Client),
+		Clients:    make(map[string]*Client),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
 		Broadcast:  make(chan *WebSocketMessage),
@@ -100,29 +105,31 @@ func (hub *Hub) Run() {
 		// Handle the new client's registration:
 		case client := <-hub.Register:
 			// Add the client to our registry:
-			hub.Clients[client.UserId] = client
-			log.Printf("Client %d connected. Total clients: %d", client.UserId, len(hub.Clients))
+			hub.Clients[client.UserName] = client
+			log.Printf("Client %s connected. Total clients: %d", client.UserName, len(hub.Clients))
 
 			onlineMessage := &WebSocketMessage{
 				MessageType: "online",
-				Sender:      client.UserId,
+				UserId:      client.UserId,
+				Sender:      client.UserName,
 				Content:     "joined chat",
 			}
 
 			// Broadcast to all the clients except the one who just joined:
-			hub.BroadcastToOthers(onlineMessage, client.UserId)
+			hub.BroadcastToOthers(onlineMessage, client.UserName)
 
 			// Handle client disconnection:
 		case client := <-hub.Unregister:
 			// Check if client's exists in our registry:
-			if _, ok := hub.Clients[client.UserId]; ok {
-				delete(hub.Clients, client.UserId)
+			if _, ok := hub.Clients[client.UserName]; ok {
+				delete(hub.Clients, client.UserName)
 				close(client.Send)
-				log.Printf("Client %d disconnected. Total clients: %d", client.UserId, len(hub.Clients))
+				log.Printf("Client %s disconnected. Total clients: %d", client.UserName, len(hub.Clients))
 				// Notify all remaining clients that this user went offline:
 				offlineMessage := &WebSocketMessage{
 					MessageType: "offline",
-					Sender:      client.UserId,
+					UserId:      client.UserId,
+					Sender:      client.UserName,
 					Content:     "joined chat",
 				}
 
@@ -132,6 +139,7 @@ func (hub *Hub) Run() {
 
 			// Handle message broadcasting:
 		case message := <-hub.Broadcast:
+			fmt.Println("Message: ", message)
 			hub.SendToClient(message, message.Sender)
 
 		}
@@ -139,7 +147,7 @@ func (hub *Hub) Run() {
 }
 
 // Broadcast to all except the client in that  specific goroutine:
-func (hub *Hub) BroadcastToOthers(message *WebSocketMessage, excluded int) {
+func (hub *Hub) BroadcastToOthers(message *WebSocketMessage, excluded string) {
 	for username, client := range hub.Clients {
 		if username != excluded {
 			select {
@@ -160,13 +168,13 @@ func (hub *Hub) BoadcastToAll(message *WebSocketMessage) {
 		case client.Send <- message:
 		default:
 			close(client.Send)
-			delete(hub.Clients, client.UserId)
+			delete(hub.Clients, client.UserName)
 		}
 	}
 }
 
 // Broadcast a message to a specific client:
-func (hub *Hub) SendToClient(message *WebSocketMessage, receiver int) {
+func (hub *Hub) SendToClient(message *WebSocketMessage, receiver string) {
 	if client, exist := hub.Clients[receiver]; exist {
 		select {
 		case client.Send <- message:
@@ -201,11 +209,18 @@ func (soc *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *http.R
 		return errors.New("session error")
 	}
 
+	//TODO: Get the user from database:
+	user, err := soc.userRepo.GetUserByID(userId)
+	if !ok {
+		return errors.New("user doesn't exist")
+	}
+
 	// 	Create client:
 	client := &Client{
-		UserId: userId,
-		Conn:   conn,
-		Send:   make(chan *WebSocketMessage),
+		UserName: user.NickName,
+		UserId:   user.Id,
+		Conn:     conn,
+		Send:     make(chan *WebSocketMessage),
 	}
 
 	// Register a new client to the hub:
@@ -239,15 +254,15 @@ func (client *Client) readPump(hub *Hub) {
 		err := client.Conn.ReadJSON(msg)
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("WebSocket error for %d: %v", client.UserId, err)
+				log.Printf("WebSocket error for %s: %v", client.UserName, err)
 			}
 			break
 		}
 
 		// Set sender to this client's username (prevent spoofing)
-		msg.Sender = client.UserId
+		msg.Sender = client.UserName
 
-		log.Printf("Received message from %d: %+v", client.UserId, msg)
+		log.Printf("Received message from %s: %+v", client.UserName, msg)
 
 		// Send message to hub for routing
 		hub.Broadcast <- msg
@@ -269,11 +284,26 @@ func (client *Client) writePump() {
 
 			// Send JSON message to client
 			if err := client.Conn.WriteJSON(message); err != nil {
-				log.Printf("Write error for %d: %v", client.UserId, err)
+				log.Printf("Write error for %s: %v", client.UserName, err)
 				return
 			}
-			
-			log.Printf("Sent message to %d: %+v", client.UserId, message)
+
+			log.Printf("Sent message to %s: %+v", client.UserName, message)
 		}
 	}
+}
+
+func (ws *WebSocketService) GetAllUsersWithStatus() ([]*models.ChatUser, error) {
+	users, err := ws.userRepo.GetUsersRepo()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, user := range users {
+		ws.chatBroker.mu.Lock()
+		_, ok := ws.chatBroker.Clients[user.NickName]
+		defer ws.chatBroker.mu.Unlock()
+		user.IsOnline = ok
+	}
+	return users, nil
 }

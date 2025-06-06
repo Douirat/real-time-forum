@@ -31,3 +31,13 @@ func (soc *WebSocketHandler) SocketHandler(w http.ResponseWriter, r *http.Reques
 
 	}
 }
+
+// Get all users with their online status
+func (soc *WebSocketHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := soc.socketService.GetAllUsersWithStatus()
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"error": "Failed to fetch users"})
+		return
+	}
+	utils.ResponseJSON(w, http.StatusOK, users)
+}
