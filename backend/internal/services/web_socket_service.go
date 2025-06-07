@@ -17,6 +17,7 @@ import (
 type WebSocketServiceLayer interface {
 	CreateNewWebSocket(w http.ResponseWriter, r *http.Request) error
 	GetAllUsersWithStatus() ([]*models.ChatUser, error)
+	WebSocketLogout(token string) error
 }
 
 // Create a struct to implement the websocket service:
@@ -134,7 +135,7 @@ func (hub *Hub) Run() {
 				}
 
 				// broad cast the status to all users:
-				hub.BoadcastToAll(offlineMessage)
+				hub.BroadcastToAll(offlineMessage)
 			}
 
 			// Handle message broadcasting:
@@ -162,7 +163,7 @@ func (hub *Hub) BroadcastToOthers(message *WebSocketMessage, excluded string) {
 }
 
 // Bradcast a message to all users:
-func (hub *Hub) BoadcastToAll(message *WebSocketMessage) {
+func (hub *Hub) BroadcastToAll(message *WebSocketMessage) {
 	for _, client := range hub.Clients {
 		select {
 		case client.Send <- message:
@@ -172,6 +173,7 @@ func (hub *Hub) BoadcastToAll(message *WebSocketMessage) {
 		}
 	}
 }
+
 
 // Broadcast a message to a specific client:
 func (hub *Hub) SendToClient(message *WebSocketMessage, receiver string) {
@@ -210,7 +212,7 @@ func (soc *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *http.R
 		return errors.New("session error")
 	}
 
-	//TODO: Get the user from database:
+	// Get the user from database:
 	user, err := soc.userRepo.GetUserByID(userId)
 	if !ok {
 		return errors.New("user doesn't exist")
@@ -233,7 +235,7 @@ func (soc *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *http.R
 	return nil
 }
 
-// /////////////////////////////////
+// read from the connection:
 func (client *Client) readPump(hub *Hub) {
 	// Ensure connection cleanup when this goroutine exits
 	defer func() {
@@ -300,21 +302,45 @@ func (ws *WebSocketService) GetAllUsersWithStatus() ([]*models.ChatUser, error) 
 		return nil, err
 	}
 
-	    // Debug print that shows actual data, not memory addresses:
-    for i, user := range users {
-        fmt.Printf("User %d: ID=%d, Name=%s, Online=%t\n", i, user.Id, user.NickName, user.IsOnline)
-    }
+	// Debug print that shows actual data, not memory addresses:
+	for i, user := range users {
+		fmt.Printf("User %d: ID=%d, Name=%s, Online=%t\n", i, user.Id, user.NickName, user.IsOnline)
+	}
 
 	fmt.Println("all logged users: ", ws.chatBroker.Clients)
-    
-	
-for _, user := range users {
-    ws.chatBroker.mu.Lock()
-    _, ok := ws.chatBroker.Clients[user.NickName]
-    user.IsOnline = ok
-    ws.chatBroker.mu.Unlock()
+
+	for _, user := range users {
+		ws.chatBroker.mu.Lock()
+		_, ok := ws.chatBroker.Clients[user.NickName]
+		user.IsOnline = ok
+		ws.chatBroker.mu.Unlock()
+	}
+	return users, nil
 }
 
+func (ws *WebSocketService) WebSocketLogout(token string) error {
+	userId, ok := ws.sessRepo.GetSessionByToken(token)
+	if !ok {
+		return errors.New("session error")
+	}
 
-	return users, nil
+	// Get the user from database:
+	user, err := ws.userRepo.GetUserByID(userId)
+	if err != nil {
+		return errors.New("user doesn't exist")
+	}
+
+	fmt.Println("the  user wants to logout: ", user)
+
+	// 	Create client:
+	client := &Client{
+		UserName: user.NickName,
+		UserId:   user.Id,
+		Conn:     ws.chatBroker.Clients[user.NickName].Conn,
+		Send:      ws.chatBroker.Clients[user.NickName].Send,
+	}
+
+	ws.chatBroker.Unregister <- client
+
+	return nil
 }

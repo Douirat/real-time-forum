@@ -11,6 +11,7 @@ import (
 // Create the handler for the websocket:
 type WebSocketHandler struct {
 	socketService services.WebSocketServiceLayer
+	chatBroker *services.Hub
 }
 
 // Create a new instance of the websocket handler:

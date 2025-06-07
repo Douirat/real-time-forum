@@ -31,7 +31,7 @@ func main() {
 	defer databaseConnection.Close()
 	fmt.Println("Connected successfully to database")
 
-	// craete Chat Broker :
+	// craete Chat Broker:
 	chatBroker :=services.NewChatBroker()
 	go chatBroker.Run()
 
@@ -51,17 +51,15 @@ func main() {
 	messagesService := services.NewMessageService(messageRepository, sessionRepository)
 
 	// Initialize handlers:
-	usersHandlers := handlers.NewUsersHandlers(usersServices, sessionService)
+	usersHandlers := handlers.NewUsersHandlers(usersServices, sessionService, webSocketService)
 	postsHandlers := handlers.NewPostsHandles(postsServices)
 	commentsHandlers := handlers.NewCommentsHandler(commentsService)
 	webSocketHandler := handlers.NewWebSocketHandler(webSocketService)
 	messagesHandler := handlers.NewMessagesHandler(messagesService)
+
 	// Setup router and routes:
 	mainRouter := router.NewRouter(sessionService)
 
-	// User routes:
-	// fmt.Println("websocket handler: ", webSocketHandler.Clients.Clients)
-	// go webSocketHandler.Clients.RunWebSocket()
 
 	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
 	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)
