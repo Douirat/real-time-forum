@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"real_time_forum/internal/handlers/utils"
 	"real_time_forum/internal/services"
@@ -34,10 +36,17 @@ func (soc *WebSocketHandler) SocketHandler(w http.ResponseWriter, r *http.Reques
 
 // Get all users with their online status
 func (soc *WebSocketHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := soc.socketService.GetAllUsersWithStatus()
-	if err != nil {
-		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"error": "Failed to fetch users"})
-		return
-	}
-	utils.ResponseJSON(w, http.StatusOK, users)
+    users, err := soc.socketService.GetAllUsersWithStatus()
+    if err != nil {
+        utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"error": "Failed to fetch users"})
+        return
+    }
+    
+    // Debug print that shows actual data, not memory addresses:
+    for i, user := range users {
+        fmt.Printf("User %d: ID=%d, Name=%s, Online=%t\n", i, user.Id, user.NickName, user.IsOnline)
+    }
+    
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(users)
 }

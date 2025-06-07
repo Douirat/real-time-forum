@@ -130,7 +130,7 @@ func (hub *Hub) Run() {
 					MessageType: "offline",
 					UserId:      client.UserId,
 					Sender:      client.UserName,
-					Content:     "joined chat",
+					Content:     "left chat",
 				}
 
 				// broad cast the status to all users:
@@ -176,6 +176,7 @@ func (hub *Hub) BoadcastToAll(message *WebSocketMessage) {
 // Broadcast a message to a specific client:
 func (hub *Hub) SendToClient(message *WebSocketMessage, receiver string) {
 	if client, exist := hub.Clients[receiver]; exist {
+		message.Sender = client.UserName
 		select {
 		case client.Send <- message:
 			// Message sent successfully:
@@ -299,11 +300,21 @@ func (ws *WebSocketService) GetAllUsersWithStatus() ([]*models.ChatUser, error) 
 		return nil, err
 	}
 
-	for _, user := range users {
-		ws.chatBroker.mu.Lock()
-		_, ok := ws.chatBroker.Clients[user.NickName]
-		defer ws.chatBroker.mu.Unlock()
-		user.IsOnline = ok
-	}
+	    // Debug print that shows actual data, not memory addresses:
+    for i, user := range users {
+        fmt.Printf("User %d: ID=%d, Name=%s, Online=%t\n", i, user.Id, user.NickName, user.IsOnline)
+    }
+
+	fmt.Println("all logged users: ", ws.chatBroker.Clients)
+    
+	
+for _, user := range users {
+    ws.chatBroker.mu.Lock()
+    _, ok := ws.chatBroker.Clients[user.NickName]
+    user.IsOnline = ok
+    ws.chatBroker.mu.Unlock()
+}
+
+
 	return users, nil
 }

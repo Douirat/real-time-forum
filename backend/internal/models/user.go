@@ -14,9 +14,9 @@ type User struct {
 
 // Create a model to ease working on chat
 type ChatUser struct {
-	Id       int    `json:"id"`
-	NickName string `json:"nick_name"`
-	IsOnline bool   `json:"is_online"`// online/offline
+    Id       int    `json:"id"`
+    NickName string `json:"nick_name"`
+    IsOnline bool   `json:"is_online"`
 }
 
 type UserProfile struct {
