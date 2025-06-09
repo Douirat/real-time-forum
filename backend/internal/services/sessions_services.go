@@ -6,12 +6,14 @@ import (
 
 	"real_time_forum/internal/repositories"
 	"real_time_forum/internal/services/utils"
+
 )
 
 type SessionsServicesLayer interface {
 	CreateSession(userID int) (string, time.Time, error)
 	DestroySession(token string) error
 	IsValidSession(token string) bool
+	GetIdFromSession(token string) (int,error)
 	// CleanupExpiredSessions() error
 }
 
@@ -59,6 +61,13 @@ func (sessionServ *SessionService) DestroySession(token string) error {
 
 // Check if the session is valid:
 func (sessionSev *SessionService) IsValidSession(token string) bool {
-	_, b := sessionSev.SessionRepo.GetSessionByToken(token)
-	return b
+	_, err := sessionSev.SessionRepo.GetSessionByToken(token)
+	if err != nil {	
+		return false
+	}
+	return true
+}
+// Check if the session is valid:
+func (sessionSev *SessionService) GetIdFromSession(token string) (int, error) {
+	return sessionSev.SessionRepo.GetSessionByToken(token)
 }

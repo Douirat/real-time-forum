@@ -9,11 +9,13 @@ import (
 // Create the handler for the websocket:
 type WebSocketHandler struct {
 	socketService services.WebSocketServiceLayer
+	sessionServ services.SessionsServicesLayer
 }
 
 // Create a new instance of the websocket handler:
-func NewWebSocketHandler(socketServ *services.WebSocketService) *WebSocketHandler {
-	return &WebSocketHandler{socketService: socketServ}
+func NewWebSocketHandler(socketServ *services.WebSocketService,sessionServ services.SessionsServicesLayer) *WebSocketHandler {
+	return &WebSocketHandler{socketService: socketServ,
+		sessionServ: sessionServ,}
 }
 
 func (soc *WebSocketHandler) SocketHandler(w http.ResponseWriter, r *http.Request) {
@@ -33,11 +35,23 @@ func (soc *WebSocketHandler) SocketHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (soc *WebSocketHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
-    users, err := soc.socketService.GetAllUsersWithStatus()
-    if err != nil {
-        utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
-        return
-    }
-    
-    utils.ResponseJSON(w, http.StatusOK, users)
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "No session token found"})
+		return
+	}
+
+	userID, err := soc.sessionServ.GetIdFromSession(cookie.Value)
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "Invalid session"})
+		return
+	}
+
+	users, err := soc.socketService.GetAllUsersWithStatus(userID) // مرر userID
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return
+	}
+
+	utils.ResponseJSON(w, http.StatusOK, users)
 }

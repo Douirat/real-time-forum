@@ -28,8 +28,8 @@ func NewMessageService(messRep *repositories.MessageRepository, sessionRepo *rep
 // Get all the messages between the client and the chosen user:
 func (mesSer *MessagesService) GetChatHistoryService(id int, sessionValue string) ([]*models.Message, error) {
 	// Get client ID from session token
-	clientId, ok := mesSer.sessRepo.GetSessionByToken(sessionValue)
-	if !ok {
+	clientId, err := mesSer.sessRepo.GetSessionByToken(sessionValue)
+	if err!=nil {
 		return nil, fmt.Errorf("invalid or expired session token")
 	}
 	// Retrieve chat history between client and selected user

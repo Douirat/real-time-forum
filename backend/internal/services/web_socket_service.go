@@ -15,7 +15,7 @@ import (
 // Service interface
 type WebSocketServiceLayer interface {
 	CreateNewWebSocket(w http.ResponseWriter, r *http.Request) error
-	GetAllUsersWithStatus() ([]*models.ChatUser, error)
+	GetAllUsersWithStatus(id int) ([]*models.ChatUser, error)
 }
 
 // Main service struct
@@ -252,8 +252,8 @@ func (s *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *http.Req
 		return errors.New("missing session token")
 	}
 
-	userID, ok := s.sessRepo.GetSessionByToken(cookie.Value)
-	if !ok {
+	userID, err := s.sessRepo.GetSessionByToken(cookie.Value)
+	if err!=nil {
 		conn.Close()
 		return errors.New("invalid session")
 	}
@@ -307,19 +307,23 @@ func (s *WebSocketService) writePump(client *Client) {
 }
 
 // Get all users with their online status
-func (s *WebSocketService) GetAllUsersWithStatus() ([]*models.ChatUser, error) {
+// Get all users with their online status (excluding self)
+func (s *WebSocketService) GetAllUsersWithStatus(excludeID int) ([]*models.ChatUser, error) {
 	users, err := s.userRepo.GetUsersRepo()
 	if err != nil {
 		return nil, err
 	}
 
-	chatUsers := make([]*models.ChatUser, len(users))
-	for i, user := range users {
-		chatUsers[i] = &models.ChatUser{
+	chatUsers := []*models.ChatUser{}
+	for _, user := range users {
+		if user.Id == excludeID {
+			continue // skip self
+		}
+		chatUsers = append(chatUsers, &models.ChatUser{
 			Id:       user.Id,
 			NickName: user.NickName,
 			IsOnline: s.hub.IsUserOnline(user.Id),
-		}
+		})
 	}
 
 	return chatUsers, nil
