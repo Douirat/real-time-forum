@@ -38,37 +38,23 @@ type WebSocketMessage struct {
 }
 
 // create a client to represent the connected user with their websocket
-// connection and a chanel to ease sending messages to that client withing the goroutine.
 type Client struct {
-	ID     string // Unique connection ID (UUID or timestamp-based)
+	ID     string
 	UserId int
 	Conn   *websocket.Conn
 	Send   chan *WebSocketMessage
 }
 
-// Create a hub to maintain the set of active clients and broadcasts messages to them
 // it acts as a central coordinator for all chat operations:
 type Hub struct {
-	// Map of connection ID to client
 	Clients map[string]*Client
-
-	// Map of user ID to list of their connection IDs (for multiple tabs/windows)
 	UserConnections map[int][]string
-
-	// A mutex to control the race condition:
 	mu sync.RWMutex
-
-	// A channel for registring a new client:
 	Register chan *Client
-
-	// A channel to unregister the user:
 	Unregister chan *Client
-
-	// Create a channel for broadcasting messages:
 	Broadcast chan *WebSocketMessage
 }
 
-// upgrade:
 // WebSocket upgrader configuration
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -118,7 +104,6 @@ func (hub *Hub) getUserConnections(userID int) []string {
 	hub.mu.RLock()
 	defer hub.mu.RUnlock()
 	if connections, exists := hub.UserConnections[userID]; exists {
-		// Return a copy to avoid race conditions
 		result := make([]string, len(connections))
 		copy(result, connections)
 		return result
@@ -144,15 +129,12 @@ func (hub *Hub) removeUserConnection(userID int, connectionID string) {
 	defer hub.mu.Unlock()
 
 	if connections, exists := hub.UserConnections[userID]; exists {
-		// Remove the connection ID from the slice
 		for i, id := range connections {
 			if id == connectionID {
 				hub.UserConnections[userID] = append(connections[:i], connections[i+1:]...)
 				break
 			}
 		}
-
-		// If no more connections, remove the user entry
 		if len(hub.UserConnections[userID]) == 0 {
 			delete(hub.UserConnections, userID)
 		}
@@ -163,7 +145,6 @@ func (hub *Hub) removeUserConnection(userID int, connectionID string) {
 func (hub *Hub) Run() {
 	for {
 		select {
-		// Handle the new client's registration:
 		case client := <-hub.Register:
 			wasOnline := hub.isUserOnline(client.UserId)
 
@@ -175,8 +156,6 @@ func (hub *Hub) Run() {
 
 			log.Printf("Client %s (User %d) connected. Total clients: %d",
 				client.ID, client.UserId, len(hub.Clients))
-
-			// Only broadcast "user came online" if this is their first connection
 			if !wasOnline {
 				onlineMessage := &WebSocketMessage{
 					MessageType: "user_online",
@@ -229,7 +208,6 @@ func (hub *Hub) Run() {
 func (hub *Hub) BroadcastToOthers(message *WebSocketMessage, excludedUserID int) {
 	hub.mu.RLock()
 	defer hub.mu.RUnlock()
-
 	for _, client := range hub.Clients {
 		if client.UserId != excludedUserID {
 			select {
