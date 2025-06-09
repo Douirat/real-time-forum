@@ -47,7 +47,7 @@ func (soc *WebSocketHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := soc.socketService.GetAllUsersWithStatus(userID) // مرر userID
+	users, err := soc.socketService.GetAllUsersWithStatus(userID) 
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 		return

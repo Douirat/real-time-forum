@@ -144,7 +144,7 @@ func (h *Hub) notifyUserOffline(userID int) {
 		Sender:  userID,
 		Content: "left chat",
 	}
-	h.broadcastToAll(msg)
+	h.broadcastToOthers(msg, userID)
 }
 
 // ========== MESSAGE BROADCASTING (SIMPLIFIED) ==========
