@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/repositories"
@@ -26,11 +27,13 @@ type WebSocketService struct {
 	userRepo    repositories.UsersRepositoryLayer
 }
 
-// Message structure
+// Message structure - Updated to match frontend
 type WebSocketMessage struct {
 	Type      string `json:"type"`
-	Sender    int    `json:"sender"`
-	Recipient int    `json:"recipient"`
+	From      int    `json:"from"`      // Frontend uses 'from'
+	To        int    `json:"to"`        // Frontend uses 'to'
+	Sender    int    `json:"sender"`    // Backend compatibility
+	Recipient int    `json:"recipient"` // Backend compatibility
 	Content   string `json:"content"`
 	UserID    int    `json:"user_id,omitempty"`
 }
@@ -83,7 +86,7 @@ func NewChatBroker() *Hub {
 	}
 }
 
-// ========== ONLINE/OFFLINE MANAGEMENT (SIMPLIFIED) ==========
+// ========== ONLINE/OFFLINE MANAGEMENT ==========
 
 // Check if user is online (has any connections)
 func (h *Hub) IsUserOnline(userID int) bool {
@@ -105,10 +108,7 @@ func (h *Hub) removeClient(client *Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	// kanjib lclients dyal dak user
 	clients := h.users[client.UserID]
-
-	// kanjib clients jdod ghira li ma chi howa dak client
 	newClients := []*Client{}
 	for _, c := range clients {
 		if c != client {
@@ -116,11 +116,9 @@ func (h *Hub) removeClient(client *Client) {
 		}
 	}
 
-	// kanupdate lmap bclients jdod
 	if len(newClients) > 0 {
 		h.users[client.UserID] = newClients
 	} else {
-		// ila ma b9a hata client, kan7aydo user mn lmap
 		delete(h.users, client.UserID)
 	}
 }
@@ -130,6 +128,7 @@ func (h *Hub) notifyUserOnline(userID int) {
 	msg := &WebSocketMessage{
 		Type:    "user_online",
 		UserID:  userID,
+		From:    userID,
 		Sender:  userID,
 		Content: "joined chat",
 	}
@@ -141,13 +140,14 @@ func (h *Hub) notifyUserOffline(userID int) {
 	msg := &WebSocketMessage{
 		Type:    "user_offline",
 		UserID:  userID,
+		From:    userID,
 		Sender:  userID,
 		Content: "left chat",
 	}
 	h.broadcastToOthers(msg, userID)
 }
 
-// ========== MESSAGE BROADCASTING (SIMPLIFIED) ==========
+// ========== MESSAGE BROADCASTING ==========
 
 // Send to all users except one
 func (h *Hub) broadcastToOthers(msg *WebSocketMessage, excludeUserID int) {
@@ -193,7 +193,7 @@ func (h *Hub) sendToUserClients(clients []*Client, msg *WebSocketMessage) {
 	}
 }
 
-// ========== MAIN HUB LOOP (SIMPLIFIED) ==========
+// ========== MAIN HUB LOOP ==========
 
 func (h *Hub) Run() {
 	for {
@@ -225,11 +225,24 @@ func (h *Hub) Run() {
 			}
 
 		case msg := <-h.broadcast:
-			if msg.Recipient > 0 {
-				// Private message
-				h.sendToUser(msg, msg.Recipient)
-			} else {
-				// Public message
+			switch msg.Type {
+			case "message": // Handle frontend's "message" type
+				// This is a private message if To/Recipient is specified
+				if msg.To > 0 || msg.Recipient > 0 {
+					recipientID := msg.To
+					if recipientID == 0 {
+						recipientID = msg.Recipient
+					}
+					// Send to recipient
+					h.sendToUser(msg, recipientID)
+					// Send back to sender for confirmation
+					h.sendToUser(msg, msg.From)
+				} else {
+					// Public message - broadcast to all
+					h.broadcastToAll(msg)
+				}
+			default:
+				// Default behavior - broadcast to all
 				h.broadcastToAll(msg)
 			}
 		}
@@ -253,7 +266,7 @@ func (s *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *http.Req
 	}
 
 	userID, err := s.sessRepo.GetSessionByToken(cookie.Value)
-	if err!=nil {
+	if err != nil {
 		conn.Close()
 		return errors.New("invalid session")
 	}
@@ -267,46 +280,114 @@ func (s *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *http.Req
 
 	// Register and start handling
 	s.hub.register <- client
-	go s.handleClient(client)
+	
+	// Start both pumps
+	go s.writePump(client)
+	go s.readPump(client)
 
 	return nil
 }
 
-// Handle client connection (read and write)
-func (s *WebSocketService) handleClient(client *Client) {
+// READ PUMP - Handle incoming messages from client
+func (s *WebSocketService) readPump(client *Client) {
 	defer func() {
 		s.hub.unregister <- client
 		client.Conn.Close()
 	}()
 
-	// Start write pump in goroutine
-	go s.writePump(client)
-
-	// Read messages in main thread
+	// Set read limit and deadlines
 	client.Conn.SetReadLimit(512)
+	client.Conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	client.Conn.SetPongHandler(func(string) error {
+		client.Conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		return nil
+	})
+
 	for {
 		var msg WebSocketMessage
 		if err := client.Conn.ReadJSON(&msg); err != nil {
+			log.Printf("Error reading message from client %d: %v", client.UserID, err)
 			break
 		}
 
+		// Set sender information
+		msg.From = client.UserID
 		msg.Sender = client.UserID
+
+		log.Printf("Received message: Type=%s, From=%d, To=%d, Content=%s", 
+			msg.Type, msg.From, msg.To, msg.Content)
+
+		// **SAVE PRIVATE MESSAGES TO DATABASE**
+		if msg.Type == "message" && (msg.To > 0 || msg.Recipient > 0) {
+			recipientID := msg.To
+			if recipientID == 0 {
+				recipientID = msg.Recipient
+			}
+			
+			if err := s.savePrivateMessage(&msg, recipientID); err != nil {
+				log.Printf("Error saving private message: %v", err)
+				// Continue processing even if save fails
+			}
+		}
+
+		// Send to hub for broadcasting
 		s.hub.broadcast <- &msg
 	}
 }
 
-// Write messages to client
+// WRITE PUMP - Send messages to client
 func (s *WebSocketService) writePump(client *Client) {
-	defer client.Conn.Close()
+	ticker := time.NewTicker(54 * time.Second)
+	defer func() {
+		ticker.Stop()
+		client.Conn.Close()
+	}()
 
-	for msg := range client.Send {
-		if err := client.Conn.WriteJSON(msg); err != nil {
-			break
+	for {
+		select {
+		case msg, ok := <-client.Send:
+			client.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if !ok {
+				// Channel was closed
+				client.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			if err := client.Conn.WriteJSON(msg); err != nil {
+				log.Printf("Error writing message to client %d: %v", client.UserID, err)
+				return
+			}
+
+		case <-ticker.C:
+			client.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if err := client.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
 		}
 	}
 }
 
-// Get all users with their online status
+// Save private message to database
+func (s *WebSocketService) savePrivateMessage(wsMsg *WebSocketMessage, recipientID int) error {
+	// Create message model
+	message := &models.Message{
+		Content:    wsMsg.Content,
+		SenderId:   wsMsg.From, // Use From field from frontend
+		RecieverId: recipientID,
+		IsRead:     false,
+		CreatedAt:  time.Now(),
+	}
+
+	// Save to database
+	if err := s.messageRepo.InsertMessage(message); err != nil {
+		return err
+	}
+
+	log.Printf("Private message saved: from %d to %d, content: %s", 
+		wsMsg.From, recipientID, wsMsg.Content)
+	return nil
+}
+
 // Get all users with their online status (excluding self)
 func (s *WebSocketService) GetAllUsersWithStatus(excludeID int) ([]*models.ChatUser, error) {
 	users, err := s.userRepo.GetUsersRepo()
