@@ -13,7 +13,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Service interface
+// Service interface - Added MarkMessagesAsRead method
 type WebSocketServiceLayer interface {
 	CreateNewWebSocket(w http.ResponseWriter, r *http.Request) error
 	GetAllUsersWithStatus(id int) ([]*models.ChatUser, error)
@@ -27,15 +27,16 @@ type WebSocketService struct {
 	userRepo    repositories.UsersRepositoryLayer
 }
 
-// Message structure - Updated to match frontend
+// Message structure - Updated to include mark_as_read type
 type WebSocketMessage struct {
-	Type      string `json:"type"`
-	From      int    `json:"from"`      // Frontend uses 'from'
-	To        int    `json:"to"`        // Frontend uses 'to'
-	Sender    int    `json:"sender"`    // Backend compatibility
-	Recipient int    `json:"recipient"` // Backend compatibility
-	Content   string `json:"content"`
-	UserID    int    `json:"user_id,omitempty"`
+	Type      string    `json:"type"`
+	From      int       `json:"from"`      // Frontend uses 'from'
+	To        int       `json:"to"`        // Frontend uses 'to'
+	Sender    int       `json:"sender"`    // Backend compatibility
+	Recipient int       `json:"recipient"` // Backend compatibility
+	Content   string    `json:"content"`
+	UserID    int       `json:"user_id,omitempty"`
+	IsRead    bool      `json:"is_read"`
 }
 
 // Client represents a connected user
@@ -84,6 +85,32 @@ func NewChatBroker() *Hub {
 		unregister: make(chan *Client),
 		broadcast:  make(chan *WebSocketMessage),
 	}
+}
+
+// ========== MARK MESSAGES AS READ IMPLEMENTATION ==========
+
+// Internal method to mark messages as read - takes specific parameters
+func (s *WebSocketService) markMessagesAsRead(senderID, receiverID int) error {
+	// Mark messages as read in database
+	if err := s.messageRepo.MarkMessagesAsRead(senderID, receiverID); err != nil {
+		log.Printf("Error marking messages as read in DB: %v", err)
+		return err
+	}
+
+	log.Printf("Messages marked as read: from user %d to user %d", senderID, receiverID)
+	
+	// Optional: Notify sender that their messages were read
+	readNotification := &WebSocketMessage{
+		Type:    "messages_read",
+		From:    receiverID,
+		To:      senderID,
+		Content: "messages_marked_as_read",
+		IsRead:  true,
+	}
+	
+	s.hub.sendToUser(readNotification, senderID)
+	
+	return nil
 }
 
 // ========== ONLINE/OFFLINE MANAGEMENT ==========
@@ -280,7 +307,7 @@ func (s *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *http.Req
 
 	// Register and start handling
 	s.hub.register <- client
-	
+
 	// Start both pumps
 	go s.writePump(client)
 	go s.readPump(client)
@@ -314,8 +341,21 @@ func (s *WebSocketService) readPump(client *Client) {
 		msg.From = client.UserID
 		msg.Sender = client.UserID
 
-		log.Printf("Received message: Type=%s, From=%d, To=%d, Content=%s", 
+		log.Printf("Received message: Type=%s, From=%d, To=%d, Content=%s",
 			msg.Type, msg.From, msg.To, msg.Content)
+
+		// ========== HANDLE MARK AS READ MESSAGE ==========
+		if msg.Type == "mark_as_read" {
+			// When user opens a conversation, mark messages FROM the other user TO current user as read
+			if msg.To > 0 {
+				// client.UserID is the receiver (current user)
+				// msg.To is the sender whose messages we want to mark as read
+				if err := s.markMessagesAsRead(msg.To, client.UserID); err != nil {
+					log.Printf("Error marking messages as read: %v", err)
+				}
+			}
+			continue // Don't broadcast this message type
+		}
 
 		// **SAVE PRIVATE MESSAGES TO DATABASE**
 		if msg.Type == "message" && (msg.To > 0 || msg.Recipient > 0) {
@@ -323,7 +363,8 @@ func (s *WebSocketService) readPump(client *Client) {
 			if recipientID == 0 {
 				recipientID = msg.Recipient
 			}
-			
+
+			// Save message with IsRead: false (recipient hasn't seen it yet)
 			if err := s.savePrivateMessage(&msg, recipientID); err != nil {
 				log.Printf("Error saving private message: %v", err)
 				// Continue processing even if save fails
@@ -334,7 +375,6 @@ func (s *WebSocketService) readPump(client *Client) {
 		s.hub.broadcast <- &msg
 	}
 }
-
 // WRITE PUMP - Send messages to client
 func (s *WebSocketService) writePump(client *Client) {
 	ticker := time.NewTicker(54 * time.Second)
@@ -369,12 +409,12 @@ func (s *WebSocketService) writePump(client *Client) {
 
 // Save private message to database
 func (s *WebSocketService) savePrivateMessage(wsMsg *WebSocketMessage, recipientID int) error {
-	// Create message model
+	// Create message model with IsRead: false (recipient hasn't seen it yet)
 	message := &models.Message{
 		Content:    wsMsg.Content,
 		SenderId:   wsMsg.From, // Use From field from frontend
 		RecieverId: recipientID,
-		IsRead:     false,
+		IsRead:     false, // Always false when saving - only true when recipient marks as read
 		CreatedAt:  time.Now(),
 	}
 
@@ -383,8 +423,8 @@ func (s *WebSocketService) savePrivateMessage(wsMsg *WebSocketMessage, recipient
 		return err
 	}
 
-	log.Printf("Private message saved: from %d to %d, content: %s", 
-		wsMsg.From, recipientID, wsMsg.Content)
+	log.Printf("Private message saved: from %d to %d, content: %s, isRead: %t",
+		wsMsg.From, recipientID, wsMsg.Content, message.IsRead)
 	return nil
 }
 

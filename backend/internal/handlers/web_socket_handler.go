@@ -9,13 +9,20 @@ import (
 // Create the handler for the websocket:
 type WebSocketHandler struct {
 	socketService services.WebSocketServiceLayer
-	sessionServ services.SessionsServicesLayer
+	sessionServ   services.SessionsServicesLayer
 }
 
 // Create a new instance of the websocket handler:
-func NewWebSocketHandler(socketServ *services.WebSocketService,sessionServ services.SessionsServicesLayer) *WebSocketHandler {
-	return &WebSocketHandler{socketService: socketServ,
-		sessionServ: sessionServ,}
+func NewWebSocketHandler(socketServ *services.WebSocketService, sessionServ services.SessionsServicesLayer) *WebSocketHandler {
+	return &WebSocketHandler{
+		socketService: socketServ,
+		sessionServ:   sessionServ,
+	}
+}
+
+// Request structure for marking messages as read
+type MarkAsReadRequest struct {
+	SenderID int `json:"sender_id"`
 }
 
 func (soc *WebSocketHandler) SocketHandler(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +37,6 @@ func (soc *WebSocketHandler) SocketHandler(w http.ResponseWriter, r *http.Reques
 	if err := soc.socketService.CreateNewWebSocket(w, r); err != nil {
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "failed to create websocket"})
 		return
-
 	}
 }
 
@@ -47,7 +53,7 @@ func (soc *WebSocketHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := soc.socketService.GetAllUsersWithStatus(userID) 
+	users, err := soc.socketService.GetAllUsersWithStatus(userID)
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 		return
