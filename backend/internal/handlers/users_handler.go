@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"real_time_forum/internal/handlers/utils"
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/services"
+	"real_time_forum/internal/handlers/utils"
 )
 
 // UsersHandlersLayer defines the contract for user handlers
@@ -19,9 +19,8 @@ type UsersHandlersLayer interface {
 
 // UsersHandlers implements the user handlers contract
 type UsersHandlers struct {
-	userServ         services.UsersServicesLayer
-	sessionServ      services.SessionsServicesLayer
-	websocketService services.WebSocketServiceLayer
+	userServ    services.UsersServicesLayer
+	sessionServ services.SessionsServicesLayer
 }
 
 // A structure to represent the login credentials:
@@ -37,11 +36,10 @@ type Edge struct {
 }
 
 // NewUsersHandlers creates a new user handler
-func NewUsersHandlers(userServ services.UsersServicesLayer, sessionServ services.SessionsServicesLayer, sock *services.WebSocketService) *UsersHandlers {
+func NewUsersHandlers(userServ services.UsersServicesLayer, sessionServ services.SessionsServicesLayer) *UsersHandlers {
 	return &UsersHandlers{
-		userServ:         userServ,
-		sessionServ:      sessionServ,
-		websocketService: sock,
+		userServ:    userServ,
+		sessionServ: sessionServ,
 	}
 }
 
@@ -122,17 +120,11 @@ func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		token = cookie.Value
-	}
-
-	// Handle the logout from the websocket as well:
-	err := userHandler.websocketService.WebSocketLogout(token)
-	if err != nil {
-		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "websocket logout error"})
-		return
+		
 	}
 
 	// delete session from database :
-	err = userHandler.sessionServ.DestroySession(token)
+	err := userHandler.sessionServ.DestroySession(token)
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "faild to logout"})
 		return

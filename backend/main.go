@@ -31,7 +31,7 @@ func main() {
 	defer databaseConnection.Close()
 	fmt.Println("Connected successfully to database")
 
-	// craete Chat Broker:
+	// craete Chat Broker :
 	chatBroker :=services.NewChatBroker()
 	go chatBroker.Run()
 
@@ -47,19 +47,21 @@ func main() {
 	sessionService := services.NewSessionsServices(usersRepository, sessionRepository)
 	postsServices := services.NewPostService(postsRepository, sessionRepository)
 	commentsService := services.NewCommentsServices(commentsRepository, sessionRepository)
-	webSocketService := services.NewWebSocketService(chatBroker, messageRepository, sessionRepository,usersRepository)
+	webSocketService := services.NewWebSocketService(chatBroker,messageRepository, sessionRepository,usersRepository)
 	messagesService := services.NewMessageService(messageRepository, sessionRepository)
 
 	// Initialize handlers:
-	usersHandlers := handlers.NewUsersHandlers(usersServices, sessionService, webSocketService)
+	usersHandlers := handlers.NewUsersHandlers(usersServices, sessionService)
 	postsHandlers := handlers.NewPostsHandles(postsServices)
 	commentsHandlers := handlers.NewCommentsHandler(commentsService)
-	webSocketHandler := handlers.NewWebSocketHandler(webSocketService)
+	webSocketHandler := handlers.NewWebSocketHandler(webSocketService, sessionService)
 	messagesHandler := handlers.NewMessagesHandler(messagesService)
-
 	// Setup router and routes:
 	mainRouter := router.NewRouter(sessionService)
 
+	// User routes:
+	// fmt.Println("websocket handler: ", webSocketHandler.Clients.Clients)
+	// go webSocketHandler.Clients.RunWebSocket()
 
 	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
 	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)

@@ -1,4 +1,4 @@
-import { create_web_socket, sendMessage, getCurrentSocket } from "../web_socket.js";
+import { create_web_socket, sendMessage, getCurrentSocket, markMessagesAsRead } from "../web_socket.js";
 
 export function render_left_aside() {
     return /*html*/`
@@ -23,10 +23,14 @@ export function render_left_aside() {
 }
 
 let currentChatUserId = null;
+let currentUserId = null; // Add this to track the current user's ID
 
 export function init_chat() {
     const messageInput = document.getElementById("message-input");
     const sendButton = document.getElementById("send-button");
+    
+    // Get current user ID from somewhere (session, API call, etc.)
+    getCurrentUserId();
     
     if (sendButton) {
         sendButton.addEventListener("click", sendCurrentMessage);
@@ -39,6 +43,20 @@ export function init_chat() {
             }
         });
     }
+}
+
+// Function to get current user ID - adjust based on your authentication system
+function getCurrentUserId() {
+    // You might get this from a session API or stored user data
+    fetch('/api/current-user') // Adjust this endpoint as needed
+        .then(response => response.json())
+        .then(data => {
+            currentUserId = data.user_id;
+        })
+        .catch(error => {
+            console.error('Error getting current user ID:', error);
+            // You might have the user ID stored elsewhere, adjust as needed
+        });
 }
 
 export function startChatWithUser(user) {
@@ -61,6 +79,15 @@ export function startChatWithUser(user) {
         messageInput.disabled = false;
         messageInput.placeholder = "Type a message...";
         sendButton.disabled = false;
+    }
+
+    // Mark messages as read when starting chat with this user
+    // This should ONLY mark messages FROM the other user TO current user as read
+    const socket = getCurrentSocket();
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        markMessagesAsRead(socket, user.id);
+    } else {
+        console.warn("WebSocket not connected, cannot mark messages as read");
     }
 
     fetchChatHistory(user.id);
@@ -91,11 +118,12 @@ function displayMessages(messages, userId) {
 
     if (Array.isArray(messages)) {
         messages.forEach(message => {
-            const isCurrentUser = message.sender_id == userId;
+            // Fix the logic here - check who sent the message
+            const isFromCurrentUser = message.sender_id == currentUserId;
             addMessageToUI(
                 message.content, 
-                isCurrentUser ? "received" : "sent",
-                isCurrentUser ? (message.sender_name || "User") : "You"
+                isFromCurrentUser ? "sent" : "received",
+                isFromCurrentUser ? "You" : (message.sender_name || "User")
             );
         });
     }
@@ -138,9 +166,11 @@ function sendCurrentMessage() {
         return;
     }
 
+    // Add message to UI immediately for better UX
     addMessageToUI(content, "sent", "You");
     messageInput.value = "";
 
+    // Send the message via WebSocket
     sendMessage(socket, currentChatUserId, content);
 }
 
@@ -155,7 +185,20 @@ function displayError(message) {
 }
 
 export function handleIncomingMessage(data) {
+    // Only handle messages if we're currently chatting with the sender
     if (currentChatUserId && data.from == currentChatUserId) {
-        addMessageToUI(data.content, "received", data.from_name || "User");
+        // Only add to UI if this is NOT our own message being echoed back
+        if (data.from != currentUserId) {
+            addMessageToUI(data.content, "received", data.from_name || "User");
+            
+            // ONLY mark as read if the message is FROM the other user TO us
+            // and we're currently viewing their conversation
+            const socket = getCurrentSocket();
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                markMessagesAsRead(socket, data.from);
+            }
+        }
+        // If it's our own message being echoed back, we don't need to do anything
+        // because we already added it to the UI when sending
     }
 }

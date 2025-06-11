@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"real_time_forum/internal/handlers/utils"
 	"real_time_forum/internal/services"
@@ -11,12 +9,20 @@ import (
 // Create the handler for the websocket:
 type WebSocketHandler struct {
 	socketService services.WebSocketServiceLayer
-	chatBroker *services.Hub
+	sessionServ   services.SessionsServicesLayer
 }
 
 // Create a new instance of the websocket handler:
-func NewWebSocketHandler(socketServ *services.WebSocketService) *WebSocketHandler {
-	return &WebSocketHandler{socketService: socketServ}
+func NewWebSocketHandler(socketServ *services.WebSocketService, sessionServ services.SessionsServicesLayer) *WebSocketHandler {
+	return &WebSocketHandler{
+		socketService: socketServ,
+		sessionServ:   sessionServ,
+	}
+}
+
+// Request structure for marking messages as read
+type MarkAsReadRequest struct {
+	SenderID int `json:"sender_id"`
 }
 
 func (soc *WebSocketHandler) SocketHandler(w http.ResponseWriter, r *http.Request) {
@@ -31,23 +37,27 @@ func (soc *WebSocketHandler) SocketHandler(w http.ResponseWriter, r *http.Reques
 	if err := soc.socketService.CreateNewWebSocket(w, r); err != nil {
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "failed to create websocket"})
 		return
-
 	}
 }
 
-// Get all users with their online status
 func (soc *WebSocketHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
-    users, err := soc.socketService.GetAllUsersWithStatus()
-    if err != nil {
-        utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"error": "Failed to fetch users"})
-        return
-    }
-    
-    // Debug print that shows actual data, not memory addresses:
-    for i, user := range users {
-        fmt.Printf("User %d: ID=%d, Name=%s, Online=%t\n", i, user.Id, user.NickName, user.IsOnline)
-    }
-    
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(users)
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "No session token found"})
+		return
+	}
+
+	userID, err := soc.sessionServ.GetIdFromSession(cookie.Value)
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "Invalid session"})
+		return
+	}
+
+	users, err := soc.socketService.GetAllUsersWithStatus(userID)
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return
+	}
+
+	utils.ResponseJSON(w, http.StatusOK, users)
 }

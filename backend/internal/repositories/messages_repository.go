@@ -12,9 +12,9 @@ type MessageRepositoryLayer interface {
 	InsertMessage(m *models.Message) error
 	GetChatHistory(client, guest int) ([]*models.Message, error)
 	GetLastMessage(user1ID, user2ID int) (*models.Message, error)
-	// MarkMessagesAsRead(senderID, receiverID int) error
-	// GetUnreadMessageCount(userID int) (int, error)
-	// GetUnreadMessages(userID int) ([]*models.Message, error)
+	MarkMessagesAsRead(senderID, receiverID int) error
+	GetUnreadMessageCount(userID int) (int, error)
+	GetUnreadMessages(userID int) ([]*models.Message, error)
 }
 
 // Create a struct to implement the messages contract:
@@ -95,4 +95,67 @@ func (mesRepo *MessageRepository) GetLastMessage(client, guest int) (*models.Mes
 	}
 
 	return msg, nil
+}
+
+// Mark messages as read between two users
+func (mesRepo *MessageRepository) MarkMessagesAsRead(senderID, receiverID int) error {
+	query := `
+	UPDATE private_messages 
+	SET is_read = 1 
+	WHERE sender_id = ? AND receiver_id = ? AND is_read = 0
+	`
+	_, err := mesRepo.db.Exec(query, senderID, receiverID)
+	if err != nil {
+		return fmt.Errorf("failed to mark messages as read: %w", err)
+	}
+	
+	return nil
+}
+
+// Get count of unread messages for a user
+func (mesRepo *MessageRepository) GetUnreadMessageCount(userID int) (int, error) {
+	query := `
+	SELECT COUNT(*) 
+	FROM private_messages 
+	WHERE receiver_id = ? AND is_read = 0
+	`
+	var count int
+	err := mesRepo.db.QueryRow(query, userID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get unread message count: %w", err)
+	}
+	
+	return count, nil
+}
+
+// Get all unread messages for a user
+func (mesRepo *MessageRepository) GetUnreadMessages(userID int) ([]*models.Message, error) {
+	query := `
+	SELECT ID, content, sender_id, receiver_id, is_read, created_at 
+	FROM private_messages 
+	WHERE receiver_id = ? AND is_read = 0 
+	ORDER BY created_at ASC
+	`
+	rows, err := mesRepo.db.Query(query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get unread messages: %w", err)
+	}
+	defer rows.Close()
+	
+	var messages []*models.Message
+	for rows.Next() {
+		msg := &models.Message{}
+		var createdAtStr string
+		if err := rows.Scan(&msg.Id, &msg.Content, &msg.SenderId, &msg.RecieverId, &msg.IsRead, &createdAtStr); err != nil {
+			return nil, err
+		}
+		
+		// Parse the timestamp
+		if createdAt, parseErr := time.Parse("2006-01-02 15:04:05", createdAtStr); parseErr == nil {
+			msg.CreatedAt = createdAt
+		}
+		messages = append(messages, msg)
+	}
+	
+	return messages, nil
 }

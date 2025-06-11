@@ -1,8 +1,5 @@
 import { handleIncomingMessage } from "./components/left_aside.js";
 import { updateUserStatus } from "./components/right_aside.js";
-// Add this import at the top
-
-// Then modify the click handler in display_all_users():
 
 // Global WebSocket connection
 let globalSocket = null;
@@ -58,6 +55,11 @@ export function create_web_socket(username) {
                     updateUserStatus(data.user_id, false);
                     break;
                     
+                case "messages_read":
+                    console.log("Messages marked as read:", data);
+                    // Optional: Handle read receipt confirmation
+                    break;
+                    
                 case "error":
                     console.error("WebSocket error:", data.error);
                     break;
@@ -103,6 +105,31 @@ export function sendMessage(socket, to, message) {
         return true;
     } catch (error) {
         console.error("Error sending message:", error);
+        return false;
+    }
+}
+
+// Mark messages as read when user opens a conversation
+export function markMessagesAsRead(socket, userId) {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+        console.error("WebSocket is not open. Ready state:", socket ? socket.readyState : "null");
+        return false;
+    }
+
+    if (!userId) {
+        console.error("Invalid userId for marking messages as read:", userId);
+        return false;
+    }
+
+    try {
+        socket.send(JSON.stringify({
+            type: "mark_as_read",
+            to: parseInt(userId)
+        }));
+        console.log(`Marked messages as read for user ${userId}`);
+        return true;
+    } catch (error) {
+        console.error("Error marking messages as read:", error);
         return false;
     }
 }

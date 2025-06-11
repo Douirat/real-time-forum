@@ -9,7 +9,7 @@ import (
 type SessionsRepositoryLayer interface {
 	CreateSession(userID int, token string, expiresAt time.Time) error
 	DeleteSessionByToken(token string) error
-	GetSessionByToken(tocke string) (int, bool)
+	GetSessionByToken(tocke string) (int, error)
 }
 
 type SessionsRepository struct {
@@ -49,9 +49,12 @@ func (sr *SessionsRepository) DeleteSessionByToken(token string) error {
 }
 
 // Get the session by token:
-func (sessionRepo *SessionsRepository) GetSessionByToken(token string) (int, bool) {
+func (sessionRepo *SessionsRepository) GetSessionByToken(token string) (int, error) {
 	query := `SELECT user_id FROM sessions WHERE session_token = ?`
 	var userId int
 	err := sessionRepo.db.QueryRow(query, token).Scan(&userId)
-	return userId, (err == nil)
+	if err != nil {
+		return 0, err
+	}
+	return userId, nil
 }
