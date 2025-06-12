@@ -30,29 +30,26 @@ type WebSocketService struct {
 // Message structure - Updated to include mark_as_read type
 type WebSocketMessage struct {
 	Type      string `json:"type"`
-	From      int    `json:"from"`      // Frontend uses 'from'
-	To        int    `json:"to"`        // Frontend uses 'to'
-	Sender    int    `json:"sender"`    // Backend compatibility
-	Recipient int    `json:"recipient"` // Backend compatibility
+	From      int    `json:"from"`  
+	To        int    `json:"to"`      
+	Sender    int    `json:"sender"`    
+	Recipient int    `json:"recipient"` 
 	Content   string `json:"content"`
 	UserID    int    `json:"user_id,omitempty"`
 	IsRead    bool   `json:"is_read"`
 }
 
-// Client represents a connected user
+// Client represents a connected user:
 type Client struct {
 	UserID int
 	Conn   *websocket.Conn
 	Send   chan *WebSocketMessage
 }
 
-// Hub manages all connections and online status
+// Hub manages all connections and online status:
 type Hub struct {
-	// Map of userID -> list of clients
 	users map[int][]*Client
 	mu    sync.RWMutex
-
-	// Channels for managing connections
 	register   chan *Client
 	unregister chan *Client
 	broadcast  chan *WebSocketMessage
@@ -88,7 +85,6 @@ func NewChatBroker() *Hub {
 }
 
 // ========== MARK MESSAGES AS READ IMPLEMENTATION ==========
-
 // Internal method to mark messages as read - takes specific parameters
 func (s *WebSocketService) markMessagesAsRead(senderID, receiverID int) error {
 	// Mark messages as read in database
@@ -114,7 +110,6 @@ func (s *WebSocketService) markMessagesAsRead(senderID, receiverID int) error {
 }
 
 // ========== ONLINE/OFFLINE MANAGEMENT ==========
-
 // Check if user is online (has any connections)
 func (h *Hub) IsUserOnline(userID int) bool {
 	h.mu.RLock()
@@ -175,7 +170,6 @@ func (h *Hub) notifyUserOffline(userID int) {
 }
 
 // ========== MESSAGE BROADCASTING ==========
-
 // Send to all users except one
 func (h *Hub) broadcastToOthers(msg *WebSocketMessage, excludeUserID int) {
 	h.mu.RLock()
@@ -354,7 +348,7 @@ func (s *WebSocketService) readPump(client *Client) {
 					log.Printf("Error marking messages as read: %v", err)
 				}
 			}
-			continue // Don't broadcast this message type
+			continue // Don't broadcast this message type:
 		}
 
 		// **SAVE PRIVATE MESSAGES TO DATABASE**
