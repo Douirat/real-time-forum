@@ -5,65 +5,37 @@ import { updateUserStatus } from "./components/right_aside.js";
 let globalSocket = null;
 
 // Establish the WebSocket connection
-export function create_web_socket(username) {
-    // Close existing connection if any
-    if (globalSocket && globalSocket.readyState === WebSocket.OPEN) {
-        globalSocket.close();
-    }
-
+export function create_web_socket() {
     const socket = new WebSocket("ws://localhost:8080/ws");
     globalSocket = socket;
-
-    socket.onopen = function() {
+    socket.onopen = function () {
         console.log("WebSocket connection established");
-        if (username) {
-            // Send username to server when connection opens
-            socket.send(JSON.stringify({
-                type: "register",
-                username: username
-            }));
-        }
+        // Send username to server when connection opens
+        socket.send(JSON.stringify({
+            type: "online",
+        }));
     };
 
     socket.onmessage = function (event) {
         try {
             const data = JSON.parse(event.data);
             console.log("Received WebSocket message:", data);
-            
+
             switch (data.type) {
-                case "connected":
-                    console.log("WebSocket connection confirmed:", data.message);
-                    break;
-                    
                 case "message":
                     console.log(`[${data.from}] says: ${data.content}`);
-                    // Handle incoming message in the UI
                     handleIncomingMessage(data);
                     break;
-                    
-                case "sent":
-                    console.log("Message sent confirmation:", data.message);
-                    break;
-                    
-                case "user_online":
+                case "online":
                     console.log(`User ${data.user_id} is now online`);
                     updateUserStatus(data.user_id, true);
                     break;
-                    
-                case "user_offline":
+
+                case "offline":
                     console.log(`User ${data.user_id} is now offline`);
                     updateUserStatus(data.user_id, false);
                     break;
-                    
-                case "messages_read":
-                    console.log("Messages marked as read:", data);
-                    // Optional: Handle read receipt confirmation
-                    break;
-                    
-                case "error":
-                    console.error("WebSocket error:", data.error);
-                    break;
-                    
+
                 default:
                     console.log("Unknown message type:", data);
             }
@@ -85,61 +57,12 @@ export function create_web_socket(username) {
 }
 
 // Send a message to another user
-export function sendMessage(socket, to, message) {
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-        console.error("WebSocket is not open. Ready state:", socket ? socket.readyState : "null");
-        return false;
-    }
-
-    if (!to || !message.trim()) {
-        console.error("Invalid message parameters:", { to, message });
-        return false;
-    }
-
+export function sendMessage(socket, message) {
     try {
-        socket.send(JSON.stringify({
-            type: "message",
-            to: parseInt(to),
-            content: message.trim()
-        }));
+        socket.send(JSON.stringify(message));
         return true;
     } catch (error) {
         console.error("Error sending message:", error);
         return false;
     }
-}
-
-// Mark messages as read when user opens a conversation
-export function markMessagesAsRead(socket, userId) {
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-        console.error("WebSocket is not open. Ready state:", socket ? socket.readyState : "null");
-        return false;
-    }
-
-    if (!userId) {
-        console.error("Invalid userId for marking messages as read:", userId);
-        return false;
-    }
-
-    try {
-        socket.send(JSON.stringify({
-            type: "mark_as_read",
-            to: parseInt(userId)
-        }));
-        console.log(`Marked messages as read for user ${userId}`);
-        return true;
-    } catch (error) {
-        console.error("Error marking messages as read:", error);
-        return false;
-    }
-}
-
-// Get current WebSocket connection
-export function getCurrentSocket() {
-    return globalSocket;
-}
-
-// Check if WebSocket is connected
-export function isWebSocketConnected() {
-    return globalSocket && globalSocket.readyState === WebSocket.OPEN;
 }

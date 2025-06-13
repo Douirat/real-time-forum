@@ -8,12 +8,12 @@ import (
 
 // Create the handler for the websocket:
 type WebSocketHandler struct {
-	socketService services.WebSocketServiceLayer
+	socketService services.WebsocketSeviceLayer
 	sessionServ   services.SessionsServicesLayer
 }
 
 // Create a new instance of the websocket handler:
-func NewWebSocketHandler(socketServ *services.WebSocketService, sessionServ services.SessionsServicesLayer) *WebSocketHandler {
+func NewWebSocketHandler(socketServ *services.WebsocketSevice, sessionServ services.SessionsServicesLayer) *WebSocketHandler {
 	return &WebSocketHandler{
 		socketService: socketServ,
 		sessionServ:   sessionServ,

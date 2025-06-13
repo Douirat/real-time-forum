@@ -113,7 +113,7 @@ export function display_all_users() {
                     
                     userItem.addEventListener("click", () => {
                         console.log("Starting chat with user:", user);
-                        startChatWithUser(user);
+                        startChatWithUser(user.id);
                     });
                     
                     usersListContainer.appendChild(userItem);

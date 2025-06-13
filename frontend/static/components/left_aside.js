@@ -22,12 +22,12 @@ export function render_left_aside() {
     `;
 }
 
-let currentChatUserId = null;
-let currentUserId = null; // Add this to track the current user's ID
+let currentChatUserId = null
+let currentUserId = null
 
 export function init_chat() {
-    const messageInput = document.getElementById("message-input");
-    const sendButton = document.getElementById("send-button");
+    const messageInput = document.getElementById("message-input")
+    const sendButton = document.getElementById("send-button")
     
     // Get current user ID from somewhere (session, API call, etc.)
     getCurrentUserId();
@@ -51,21 +51,21 @@ function getCurrentUserId() {
     fetch('/api/current-user') // Adjust this endpoint as needed
         .then(response => response.json())
         .then(data => {
-            currentUserId = data.user_id;
+            currentUserId = data.user_id
         })
         .catch(error => {
-            console.error('Error getting current user ID:', error);
+            console.error('Error getting current user ID:', error)
             // You might have the user ID stored elsewhere, adjust as needed
-        });
+        })
 }
 
-export function startChatWithUser(user) {
-    if (!user || !user.id) {
+export function startChatWithUser(user_id) {
+    if (!user.id === 0) {
         console.error("Invalid user data");
         return;
     }
 
-    currentChatUserId = user.id;
+
 
     const chatUserElement = document.getElementById("current-chat-user");
     const messageInput = document.getElementById("message-input");
@@ -76,18 +76,18 @@ export function startChatWithUser(user) {
     }
 
     if (messageInput && sendButton) {
-        messageInput.disabled = false;
-        messageInput.placeholder = "Type a message...";
-        sendButton.disabled = false;
+        messageInput.disabled = false
+        messageInput.placeholder = "Type a message..."
+        sendButton.disabled = false
     }
 
     // Mark messages as read when starting chat with this user
     // This should ONLY mark messages FROM the other user TO current user as read
-    const socket = getCurrentSocket();
+    const socket = getCurrentSocket()
     if (socket && socket.readyState === WebSocket.OPEN) {
-        markMessagesAsRead(socket, user.id);
+        markMessagesAsRead(socket, user.id)
     } else {
-        console.warn("WebSocket not connected, cannot mark messages as read");
+        console.warn("WebSocket not connected, cannot mark messages as read")
     }
 
     fetchChatHistory(user.id);
@@ -198,7 +198,5 @@ export function handleIncomingMessage(data) {
                 markMessagesAsRead(socket, data.from);
             }
         }
-        // If it's our own message being echoed back, we don't need to do anything
-        // because we already added it to the UI when sending
     }
 }

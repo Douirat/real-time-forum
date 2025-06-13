@@ -33,7 +33,7 @@ func main() {
 
 	// craete Chat Broker :
 	chatBroker :=services.NewChatBroker()
-	go chatBroker.Run()
+	go chatBroker.RunChatBroker()
 
 	// Initialize repositories:
 	usersRepository := repositories.NewUsersRepository(databaseConnection)
@@ -47,7 +47,7 @@ func main() {
 	sessionService := services.NewSessionsServices(usersRepository, sessionRepository)
 	postsServices := services.NewPostService(postsRepository, sessionRepository)
 	commentsService := services.NewCommentsServices(commentsRepository, sessionRepository)
-	webSocketService := services.NewWebSocketService(chatBroker,messageRepository, sessionRepository,usersRepository)
+	webSocketService := services.NewWebsocketSevice(chatBroker,messageRepository,usersRepository, sessionRepository)
 	messagesService := services.NewMessageService(messageRepository, sessionRepository)
 
 	// Initialize handlers:
