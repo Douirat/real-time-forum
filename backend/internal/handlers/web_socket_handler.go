@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"real_time_forum/internal/handlers/utils"
 	"real_time_forum/internal/services"
@@ -57,6 +58,10 @@ func (soc *WebSocketHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 		return
+	}
+	
+	for i, v := range users {
+		fmt.Println("User %v, is %v\n", i, v)
 	}
 
 	utils.ResponseJSON(w, http.StatusOK, users)

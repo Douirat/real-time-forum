@@ -51,7 +51,7 @@ func main() {
 	messagesService := services.NewMessageService(messageRepository, sessionRepository)
 
 	// Initialize handlers:
-	usersHandlers := handlers.NewUsersHandlers(usersServices, sessionService)
+	usersHandlers := handlers.NewUsersHandlers(chatBroker, usersServices, sessionService)
 	postsHandlers := handlers.NewPostsHandles(postsServices)
 	commentsHandlers := handlers.NewCommentsHandler(commentsService)
 	webSocketHandler := handlers.NewWebSocketHandler(webSocketService, sessionService)
@@ -59,16 +59,14 @@ func main() {
 	// Setup router and routes:
 	mainRouter := router.NewRouter(sessionService)
 
-	// User routes:
-	// fmt.Println("websocket handler: ", webSocketHandler.Clients.Clients)
-	// go webSocketHandler.Clients.RunWebSocket()
+
 
 	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
 	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)
 	mainRouter.AddRoute("POST", "/login", usersHandlers.UsersLoginHandler)
 	mainRouter.AddRoute("POST", "/logout", usersHandlers.Logout)
 	mainRouter.AddRoute("GET", "/get_users", usersHandlers.GetUsersHandler)
-	mainRouter.AddRoute("GET", "/is_logged", usersHandlers.IsLogged)
+	mainRouter.AddRoute("GET", "/logged_user", usersHandlers.IsLogged)
 	mainRouter.AddRoute("POST", "/add_post", postsHandlers.CreatePostsHandler)
 	mainRouter.AddRoute("GET", "/get_posts", postsHandlers.GetAllPostsHandler)
 	mainRouter.AddRoute("GET", "/get_categories", postsHandlers.GetAllCategoriesHandler)
