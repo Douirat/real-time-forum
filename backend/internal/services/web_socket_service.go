@@ -284,66 +284,84 @@ func (hub *ChatBroker) broadcastToOthers(message *WebsocketMessage) {
 }
 
 // broadcastToAll sends a message to all connected clients
+// Fix for the broadcastToAll function - potential deadlock issue
 func (hub *ChatBroker) broadcastToAll(message *WebsocketMessage) {
 	hub.mu.RLock()
-	defer hub.mu.RUnlock()
-
+	
+	// Create a copy of the clients map to avoid holding the lock too long
+	clientsCopy := make(map[int][]*Client)
 	for userID, clients := range hub.Clients {
+		clientsCopy[userID] = make([]*Client, len(clients))
+		copy(clientsCopy[userID], clients)
+	}
+	hub.mu.RUnlock()
+
+	// Now iterate through the copy without holding the lock
+	for userID, clients := range clientsCopy {
 		for i := 0; i < len(clients); {
 			client := clients[i]
 
 			select {
 			case client.Send <- message:
-				// Sent successfully
-				i++
+				i++ // Sent successfully
 			default:
 				// Channel is blocked or closed → cleanup
-				hub.mu.RUnlock()
 				hub.mu.Lock()
-
-				close(client.Send)
-
-				// Remove client from slice
-				hub.Clients[userID] = append(clients[:i], clients[i+1:]...)
-				clients = hub.Clients[userID]
-
-				// Delete map entry if no clients left
-				if len(clients) == 0 {
-					delete(hub.Clients, userID)
+				
+				// Check if client still exists in the current map
+				if currentClients, exists := hub.Clients[userID]; exists {
+					for j, c := range currentClients {
+						if c == client {
+							close(c.Send)
+							hub.Clients[userID] = append(currentClients[:j], currentClients[j+1:]...)
+							if len(hub.Clients[userID]) == 0 {
+								delete(hub.Clients, userID)
+							}
+							break
+						}
+					}
 				}
-
+				
 				hub.mu.Unlock()
-				hub.mu.RLock()
+				i++ 
 			}
 		}
 	}
 }
 
-// sendToClient sends a message to all active clients of a user by userID
+// Fix for the sendToClient function
 func (hub *ChatBroker) sendToClient(message *WebsocketMessage) {
 	hub.mu.RLock()
 	clients, exists := hub.Clients[message.Receiver]
-	hub.mu.RUnlock()
-
 	if !exists {
+		hub.mu.RUnlock()
+		log.Printf("No clients found for user %d", message.Receiver)
 		return
 	}
+	
+	// Make a copy to avoid holding lock during send
+	clientsCopy := make([]*Client, len(clients))
+	copy(clientsCopy, clients)
+	hub.mu.RUnlock()
 
-	for i := 0; i < len(clients); {
-		client := clients[i]
+	for _, client := range clientsCopy {
 		select {
 		case client.Send <- message:
-			i++ // sent successfully
+			log.Printf("Message sent to user %d", message.Receiver)
 		default:
-			// Cleanup if client's channel is blocked
+			// Cleanup if client channel is blocked
 			hub.mu.Lock()
-
-			close(client.Send)
-			hub.Clients[message.Receiver] = append(clients[:i], clients[i+1:]...)
-			clients = hub.Clients[message.Receiver]
-
-			if len(clients) == 0 {
-				delete(hub.Clients, message.Receiver)
+			if currentClients, exists := hub.Clients[message.Receiver]; exists {
+				for i, c := range currentClients {
+					if c == client {
+						close(c.Send)
+						hub.Clients[message.Receiver] = append(currentClients[:i], currentClients[i+1:]...)
+						if len(hub.Clients[message.Receiver]) == 0 {
+							delete(hub.Clients, message.Receiver)
+						}
+						break
+					}
+				}
 			}
 			hub.mu.Unlock()
 		}
@@ -358,8 +376,8 @@ func (webSoc *WebsocketSevice) GetAllUsersWithStatus(excludeID int) ([]*models.C
 	}
 
 	chatUsers := []*models.ChatUser{}
-	webSoc.Hub.mu.RLock()         // 👈 Acquire read lock
-	defer webSoc.Hub.mu.RUnlock() // 👈 Ensure unlock
+	webSoc.Hub.mu.RLock()         
+	defer webSoc.Hub.mu.RUnlock()
 
 	for _, user := range users {
 		if user.Id == excludeID {
