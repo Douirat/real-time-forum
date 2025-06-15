@@ -1,4 +1,11 @@
+import { render_chat_area } from "./components/chat.js";
+import { render_left_aside } from "./components/chat_area.js";
 import { navigateTo } from "./script.js";
+
+// users offset and limit:
+let users_offset = 0
+let users_limit = 10
+let isFetchingUsers = false;
 
 export async function register_new_user() {
   let user = {
@@ -89,4 +96,94 @@ let isValidPassword = (password, confirmation) => {
 function isValidEmail(email) {
   const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return regex.test(email);
+}
+
+// logout logic
+export function logout() {
+  let btn = document.querySelector('.logout')
+  btn.addEventListener('click', () => {
+    fetch("http://localhost:8080/logout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+    })
+      .then(async response => {
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText);
+        }
+
+        navigateTo("/login")
+        return response.json();
+      })
+      .then(data => () => {
+        // console.log(data)
+      })
+      .catch(errorText => console.log("Error:", errorText));
+  })
+}
+
+
+function renderUsers(users) {
+  const container = document.querySelector("#all-users-list");
+  users.forEach(user => {
+    console.log("the chat user: ", user);
+    let user_chat = document.createElement("div")
+    user_chat.classList.add("user_chat")
+    user_chat.setAttribute("id", user.id)
+    const status = document.createElement("div")
+    status.setAttribute("id", "user_status");
+    status.classList.add("offline")
+    let user_name = document.createElement("p")
+    user_name.innerText = user.nick_name;
+    user_chat.append(status, user_name)
+
+    user_chat.addEventListener("click", () => {
+      start_chat_with_user(user.id)
+    })
+    container.appendChild(user_chat)
+  });
+}
+
+function start_chat_with_user(user_id) {
+  // Convert string to DOM node
+  const temp = document.createElement('div');
+
+  temp.innerHTML = render_chat_area();
+
+  const element = temp.firstElementChild;
+  console.log(element);
+  
+  document.body.appendChild(element);
+  console.log("started chat with: ", user_id);
+}
+
+
+export function setupUserScrollListener() {
+  const box = document.querySelector("#users-scroll-box");
+  box.addEventListener("scroll", () => {
+    if (box.scrollTop + box.clientHeight >= box.scrollHeight - 10 && !isFetchingUsers) {
+      loadMoreUsers();
+    }
+  });
+}
+
+export function loadMoreUsers() {
+  isFetchingUsers = true;
+  fetch(`http://localhost:8080/get_users?offset=${users_offset}&limit=${users_limit}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.length > 0) {
+        renderUsers(data);
+        users_offset += data.length;
+      } else {
+        // No more users, remove scroll listener if needed
+        const box = document.querySelector("#users-scroll-box");
+        box.removeEventListener("scroll", handleUserScroll);
+      }
+    })
+    .finally(() => {
+      isFetchingUsers = false;
+    });
 }

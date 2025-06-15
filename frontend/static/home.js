@@ -1,38 +1,42 @@
-import { header, logout } from "./components/header.js";
-import { render_left_aside, init_chat } from "./components/left_aside.js"; // Updated import
-import { render_right_aside, init_right_aside } from "./components/right_aside.js";
+import { header } from "./components/header.js";
+import { render_chat_users } from "./components/chat_users.js";
 import { post_form } from "./components/forms.js";
 import { fetch_categories, show_posts } from "./post.js";
 import { navigateTo } from "./script.js";
-import { create_web_socket } from "./web_socket.js";
+import { loadMoreUsers, logout } from "./users.js";
+import { throttle } from "./utils.js";
+
+
 // Global variable to store categories data
 let categoriesData = [];
 
+
+
+
 export function render_home_page() {
-    fetch("http://localhost:8080/is_logged", {
+    fetch("http://localhost:8080/logged_user", {
         method: "GET",
         headers: {
             "Content-Type": "application/json"
         },
     })
-    .then(async response => {
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText);
-        }
-        return response.json();
-    })
-    .then(data => {
-        // Initialize WebSocket connection
-        create_web_socket(data.username || "user");
-        
-        fetch_categories().then(categories => {
-            categoriesData = categories;
+        .then(async response => {
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log(data);
 
-            // Render the home page with categories
-            document.body.innerHTML = /*html*/`
+            fetch_categories().then(categories => {
+                categoriesData = categories;
+
+                // Render the home page with categories
+                document.body.innerHTML = /*html*/`
                     ${header()}
-                    ${render_left_aside()}
+                    ${render_chat_users()}
                     <main>
                         <section>
                             <div class="postForm">
@@ -43,21 +47,30 @@ export function render_home_page() {
                             </div>
                         </section>
                     </main>
-                    ${render_right_aside()}
                 `;
-            
-            show_posts();
-            init_chat(); // Initialize chat functionality
-            init_right_aside(); // Initialize right aside with all users
 
-            logout();
+                show_posts();
+                // Show posts in a throtled manner:
+                window.addEventListener("scroll", throttle(() => {
+                    const scrollPosition = window.innerHeight + window.scrollY;
+                    const documentHeight = document.body.offsetHeight;
+
+                    if (scrollPosition >= documentHeight - 300) {
+                        show_posts();
+                    }
+                }, 500)); // throttled to once every 500ms
+
+                loadMoreUsers()
+                logout();
+            })
+                .catch(error => {
+                    console.error("Error fetching categories:", error);
+                });
         })
         .catch(error => {
-            console.error("Error fetching categories:", error);
+            console.log("Error:", error.message);
+            navigateTo("/login")
         });
-    })
-    .catch(error => {
-        console.log("Error:", error.message);
-        navigateTo("/login")
-    });
 }
+
+

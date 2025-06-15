@@ -1,6 +1,6 @@
 // Render chat area:
-export function render_chat_area(){
-document.getElementById("chat").innerHTML = /*HTML*/`
+export function render_chat_area() {
+    return /*HTML*/`
  <!-- Chat Container -->
  <div id="chat-container" class="chat-container">
             <div class="chat-header">
