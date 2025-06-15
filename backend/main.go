@@ -74,6 +74,7 @@ func main() {
 	mainRouter.AddRoute("GET", "/get_comments", commentsHandlers.ShowCommentsHandler)
 	mainRouter.AddRoute("GET", "/ws", webSocketHandler.SocketHandler)
 	mainRouter.AddRoute("GET", "/ws_users", webSocketHandler.GetUsers)
+	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
 	
 	
 
