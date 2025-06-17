@@ -116,7 +116,7 @@ func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request)
 	token := cookie.Value
 
 	// Get user ID from session
-	userId, err := userHandler.sessionServ.GetIdFromSession(token)
+	userId, err := userHandler.sessionServ.GetUserIdFromSession(token)
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid session"})
 		return

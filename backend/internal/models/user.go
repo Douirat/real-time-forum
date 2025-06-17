@@ -19,8 +19,3 @@ type ChatUser struct {
     IsOnline bool   `json:"is_online"`
 }
 
-type UserProfile struct {
-    Username       string `json:"username"`
-    TotalPosts     int    `json:"total_posts"`
-    TotalComments  int    `json:"total_comments"`
-}

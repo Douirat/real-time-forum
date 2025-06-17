@@ -14,7 +14,7 @@ type WebSocketHandler struct {
 }
 
 // Create a new instance of the websocket handler:
-func NewWebSocketHandler(socketServ *services.WebsocketSevice, sessionServ services.SessionsServicesLayer) *WebSocketHandler {
+func NewWebSocketHandler(socketServ *services.WebSocketService, sessionServ *services.SessionService) *WebSocketHandler {
 	return &WebSocketHandler{
 		socketService: socketServ,
 		sessionServ:   sessionServ,
@@ -48,7 +48,7 @@ func (soc *WebSocketHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := soc.sessionServ.GetIdFromSession(cookie.Value)
+	userID, err := soc.sessionServ.GetUserIdFromSession(cookie.Value)
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "Invalid session"})
 		return

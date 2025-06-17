@@ -32,7 +32,7 @@ func main() {
 	fmt.Println("Connected successfully to database")
 
 	// craete Chat Broker :
-	chatBroker :=services.NewChatBroker()
+	chatBroker := services.NewChatBroker()
 	go chatBroker.RunChatBroker()
 
 	// Initialize repositories:
@@ -47,7 +47,7 @@ func main() {
 	sessionService := services.NewSessionsServices(usersRepository, sessionRepository)
 	postsServices := services.NewPostService(postsRepository, sessionRepository)
 	commentsService := services.NewCommentsServices(commentsRepository, sessionRepository)
-	webSocketService := services.NewWebsocketSevice(chatBroker,messageRepository,usersRepository, sessionRepository)
+	webSocketService := services.NewWebSocketService(chatBroker, messageRepository, sessionRepository, usersRepository)
 	messagesService := services.NewMessageService(messageRepository, sessionRepository)
 
 	// Initialize handlers:
@@ -58,8 +58,6 @@ func main() {
 	messagesHandler := handlers.NewMessagesHandler(messagesService)
 	// Setup router and routes:
 	mainRouter := router.NewRouter(sessionService)
-
-
 
 	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
 	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)
@@ -75,8 +73,6 @@ func main() {
 	mainRouter.AddRoute("GET", "/ws", webSocketHandler.SocketHandler)
 	mainRouter.AddRoute("GET", "/ws_users", webSocketHandler.GetUsers)
 	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
-	
-	
 
 	// fmt.Println("Routes registered:", mainRouter.Routes)
 	fmt.Println("Listening on port: http://localhost:8080/")

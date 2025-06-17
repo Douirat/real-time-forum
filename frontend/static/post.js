@@ -165,7 +165,6 @@ export function show_posts() {
                     }
                     postDiv.appendChild(commentButton);
                     postDiv.appendChild(commentsSection);
-
                     postsContainer.appendChild(postDiv);
                 });
 
