@@ -1,0 +1,1 @@
+const myWorker = new SharedWorker("./workers/worker.js");
