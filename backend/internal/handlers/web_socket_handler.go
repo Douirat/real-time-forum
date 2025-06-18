@@ -61,7 +61,7 @@ func (soc *WebSocketHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	for i, v := range users {
-		fmt.Println("User %v, is %v\n", i, v)
+		fmt.Println("User %d, is %v\n", i, v)
 	}
 
 	utils.ResponseJSON(w, http.StatusOK, users)

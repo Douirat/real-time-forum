@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/repositories"
@@ -119,46 +120,64 @@ func (client *Client) WritePump() {
 // A function to read data from the websocket:
 // readPump handles incoming messages from the WebSocket connection
 // This runs in its own goroutine per client (e.g., Client A)
-func (client *Client) ReadPump(hub *ChatBroker) {
-	// [Cleanup] Ensures client is unregistered and connection closed on exit
+func (client *Client) ReadPump(hub *ChatBroker, socket *WebSocketService) {
 	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[PANIC] recovered in ReadPump for client %d: %v", client.UserId, r)
+		}
 		hub.Unregister <- client
 		if client.Connection != nil {
 			client.Connection.Close()
 		}
 	}()
 
-	// [Connection Setup] Prevent oversized messages and enable keepalive
 	if client.Connection != nil {
 		client.Connection.SetReadLimit(512)
-		client.Connection.SetPongHandler(func(string) error {
-			return nil // Keep the connection alive on pong
-		})
+		client.Connection.SetPongHandler(func(string) error { return nil })
 	}
 
-	// [Start Listening] Infinite loop to read messages from the client
 	for {
 		msg := &WebsocketMessage{}
 
-		// [ClientA ->> ReadPumpA] Step 1: Read JSON message sent by Client A
 		if client.Connection == nil {
 			break
 		}
-		
+
 		err := client.Connection.ReadJSON(msg)
 		if err != nil {
-			// Handle unexpected close errors
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("WebSocket error for %d: %v", client.UserId, err)
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+				log.Printf("Client %d disconnected normally: %v", client.UserId, err)
+			} else if websocket.IsUnexpectedCloseError(err, websocket.CloseAbnormalClosure) {
+				log.Printf("[ERROR] Unexpected websocket close for client %d: %v", client.UserId, err)
+			} else {
+				log.Printf("[ERROR] ReadJSON error for client %d: %v", client.UserId, err)
 			}
-			break // Exit read loop on error
+			_ = client.Connection.Close() // Close immediately on error
+			break
 		}
 
-		// [ReadPumpA ->> Hub] Step 2: Prepare message and send to hub
-		msg.Sender = client.UserId // Prevent spoofing
+		msg.Sender = client.UserId
 		log.Printf("Received message from %d: %+v", client.UserId, msg)
 
-		hub.Broadcast <- msg // Send message to the central Hub for routing
+		message := &models.Message{
+			Id:         0,
+			Content:    msg.Content,
+			SenderId:   msg.Sender,
+			RecieverId: msg.Receiver,
+			IsRead:     false,
+			// CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
+			CreatedAt: time.Now(),
+		}
+
+		if msg.Type == "message" {
+			err = socket.MessageRepo.InsertMessage(message)
+			if err != nil {
+				log.Printf("[ERROR] Failed to insert message from client %d: %v", client.UserId, err)
+				_ = client.Connection.Close() // Close connection on DB error too
+				break
+			}
+		}
+		hub.Broadcast <- msg
 	}
 }
 
@@ -298,13 +317,13 @@ func safeClose(ch chan *WebsocketMessage) {
 	if ch == nil {
 		return
 	}
-	
+
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("[ERROR] Panic closing channel: %v", r)
 		}
 	}()
-	
+
 	// Close the channel
 	close(ch)
 }
@@ -346,7 +365,7 @@ func (socket *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *htt
 	socket.Hub.Register <- client
 
 	// 6. Start goroutines
-	go client.ReadPump(socket.Hub)
+	go client.ReadPump(socket.Hub, socket)
 	go client.WritePump()
 
 	return nil
@@ -358,8 +377,8 @@ func (socket *WebSocketService) GetAllUsersWithStatus(id int) ([]*models.ChatUse
 	if err != nil {
 		return nil, err
 	}
-	
-	socket.Hub.Mu.RLock() 
+
+	socket.Hub.Mu.RLock()
 	defer socket.Hub.Mu.RUnlock()
 
 	for _, user := range users {
@@ -369,6 +388,6 @@ func (socket *WebSocketService) GetAllUsersWithStatus(id int) ([]*models.ChatUse
 		_, isOnline := socket.Hub.Clients[user.Id]
 		user.IsOnline = isOnline
 	}
-	
+
 	return users, nil
 }
