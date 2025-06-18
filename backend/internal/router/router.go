@@ -69,10 +69,12 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Serve static files
-	if r.Method == "GET" && (strings.HasPrefix(r.URL.Path, "/static/") || strings.HasPrefix(r.URL.Path, "/styles/")) {
-		http.ServeFile(w, r, "../front"+r.URL.Path)
-		return
-	}
+	if r.Method == "GET" {
+    if strings.HasSuffix(r.URL.Path, ".css") || strings.HasSuffix(r.URL.Path, ".js") || strings.HasSuffix(r.URL.Path, ".png") {
+        http.ServeFile(w, r, "../front"+r.URL.Path)
+        return
+    }
+}
 
 	// Handle registered routes
 	route := strings.ToLower(r.Method + ":" + r.URL.Path)
