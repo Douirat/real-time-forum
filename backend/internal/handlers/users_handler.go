@@ -92,6 +92,13 @@ func (userHandler *UsersHandlers) UsersLoginHandler(w http.ResponseWriter, r *ht
 		SameSite: http.SameSiteLaxMode,
 	})
 
+	// register the user in my hub:
+	// client := &services.Client{
+	// 	UserId: user.Id,
+	// }
+
+	// userHandler.chatBroker.Register <- client
+
 	// Create response with user data and session info:
 	response := struct {
 		UserID    int    `json:"user_id"`

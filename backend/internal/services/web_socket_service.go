@@ -84,7 +84,11 @@ func NewWebSocketService(hub *ChatBroker, messRepo *repositories.MessageReposito
 // This runs in its own goroutine per client (e.g., Client B)
 func (client *Client) WritePump() {
 	// [Cleanup] Ensure connection is closed when loop ends
-	defer client.Connection.Close()
+	defer func() {
+		if client.Connection != nil {
+			client.Connection.Close()
+		}
+	}()
 
 	// [Start Sending] Continuously listen on the Send channel
 	for {
@@ -93,17 +97,20 @@ func (client *Client) WritePump() {
 		case message, ok := <-client.Pipe:
 			if !ok {
 				// [Hub signals closure] Send a close message and terminate
-				client.Connection.WriteMessage(websocket.CloseMessage, []byte{})
+				if client.Connection != nil {
+					client.Connection.WriteMessage(websocket.CloseMessage, []byte{})
+				}
 				return
 			}
 
 			// [WritePumpB ->> ClientB] Step 4: Send the message to the browser
-			if err := client.Connection.WriteJSON(message); err != nil {
-				log.Printf("Write error for %d: %v", client.UserId, err)
-				return
+			if client.Connection != nil {
+				if err := client.Connection.WriteJSON(message); err != nil {
+					log.Printf("Write error for %d: %v", client.UserId, err)
+					return
+				}
+				log.Printf("Sent message to %d: %+v", client.UserId, message)
 			}
-
-			log.Printf("Sent message to %d: %+v", client.UserId, message)
 			// [ClientB ->> ClientB] Step 5 happens in browser's JS: `onmessage` event
 		}
 	}
@@ -116,20 +123,28 @@ func (client *Client) ReadPump(hub *ChatBroker) {
 	// [Cleanup] Ensures client is unregistered and connection closed on exit
 	defer func() {
 		hub.Unregister <- client
-		client.Connection.Close()
+		if client.Connection != nil {
+			client.Connection.Close()
+		}
 	}()
 
 	// [Connection Setup] Prevent oversized messages and enable keepalive
-	client.Connection.SetReadLimit(512)
-	client.Connection.SetPongHandler(func(string) error {
-		return nil // Keep the connection alive on pong
-	})
+	if client.Connection != nil {
+		client.Connection.SetReadLimit(512)
+		client.Connection.SetPongHandler(func(string) error {
+			return nil // Keep the connection alive on pong
+		})
+	}
 
 	// [Start Listening] Infinite loop to read messages from the client
 	for {
 		msg := &WebsocketMessage{}
 
 		// [ClientA ->> ReadPumpA] Step 1: Read JSON message sent by Client A
+		if client.Connection == nil {
+			break
+		}
+		
 		err := client.Connection.ReadJSON(msg)
 		if err != nil {
 			// Handle unexpected close errors
@@ -208,6 +223,9 @@ func (broker *ChatBroker) BroadcastToAll(msg *WebsocketMessage) {
 	defer broker.Mu.RUnlock()
 
 	for id, client := range broker.Clients {
+		if client == nil || client.Pipe == nil {
+			continue
+		}
 		select {
 		case client.Pipe <- msg:
 		default:
@@ -223,7 +241,7 @@ func (broker *ChatBroker) BroadcastToOthers(msg *WebsocketMessage, excludeId int
 	defer broker.Mu.RUnlock()
 
 	for id, client := range broker.Clients {
-		if id == excludeId {
+		if id == excludeId || client == nil || client.Pipe == nil {
 			continue
 		}
 		select {
@@ -241,8 +259,8 @@ func (broker *ChatBroker) SendToClient(msg *WebsocketMessage, receiverId int) {
 	client, exists := broker.Clients[receiverId]
 	broker.Mu.RUnlock()
 
-	if !exists {
-		log.Printf("[WARN] Receiver %d not found", receiverId)
+	if !exists || client == nil || client.Pipe == nil {
+		log.Printf("[WARN] Receiver %d not found or invalid", receiverId)
 		return
 	}
 
@@ -263,19 +281,31 @@ func (broker *ChatBroker) RemoveClient(id int) {
 	}
 	broker.Mu.Unlock()
 
-	if exists {
+	if exists && client != nil {
 		log.Printf("[INFO] Cleaning up client %d", id)
+		// Close connection first
+		if client.Connection != nil {
+			client.Connection.Close()
+		}
+		// Then safely close the channel
 		safeClose(client.Pipe)
 	}
 }
 
 // Safe closing for channels:
 func safeClose(ch chan *WebsocketMessage) {
+	// Check if channel is nil before attempting to close
+	if ch == nil {
+		return
+	}
+	
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("[ERROR] Panic closing channel: %v", r)
 		}
 	}()
+	
+	// Close the channel
 	close(ch)
 }
 
@@ -286,36 +316,36 @@ func (socket *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *htt
 		return fmt.Errorf("method not allowed: %s", r.Method)
 	}
 
-	// 2. Upgrade the connection
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		return fmt.Errorf("failed to upgrade connection: %v", err)
-	}
-
-	// Get the user id form the session:
-	// Read session_token from cookie
+	// 2. Get user authentication first (before upgrading connection)
 	cookie, err := r.Cookie("session_token")
 	if err != nil {
-		return err
+		return fmt.Errorf("no session token: %v", err)
 	}
 	token := cookie.Value
 
 	// Get user ID from session
 	userId, err := socket.SessionRepo.GetSessionByToken(token)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid session: %v", err)
 	}
 
-	// 3.Craete the client:
+	// 3. Upgrade the connection only after authentication
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return fmt.Errorf("failed to upgrade connection: %v", err)
+	}
+
+	// 4. Create the client with proper channel initialization
 	client := &Client{
 		UserId:     userId,
 		Connection: conn,
-		Pipe:       make(chan *WebsocketMessage),
+		Pipe:       make(chan *WebsocketMessage, 256), // Add buffer to prevent blocking
 	}
 
-	// 4. register the user to my hub:
+	// 5. Register the user to hub
 	socket.Hub.Register <- client
 
+	// 6. Start goroutines
 	go client.ReadPump(socket.Hub)
 	go client.WritePump()
 
@@ -328,15 +358,17 @@ func (socket *WebSocketService) GetAllUsersWithStatus(id int) ([]*models.ChatUse
 	if err != nil {
 		return nil, err
 	}
+	
 	socket.Hub.Mu.RLock() 
 	defer socket.Hub.Mu.RUnlock()
 
 	for _, user := range users {
-		_, isOnline := socket.Hub.Clients[user.Id]
-
-		if isOnline {
-			user.IsOnline = isOnline
+		if user == nil {
+			continue
 		}
+		_, isOnline := socket.Hub.Clients[user.Id]
+		user.IsOnline = isOnline
 	}
+	
 	return users, nil
 }
