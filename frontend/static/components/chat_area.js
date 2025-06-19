@@ -1,10 +1,10 @@
-export function render_left_aside() {
+export function render_char_area() {
     return /*html*/`
         <div id="chat_area" >
             <div id="chat-container" class="chat-container">
                 <div class="chat-header">
                     <h3>Chat</h3>
-                    <div id="current-chat-user">Select a user to chat with</div>
+                    <button id="cancel_chat">x</button>
                 </div>
                 <div class="chat-area">
                     <div id="messages-container" class="messages-container">

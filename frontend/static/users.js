@@ -1,6 +1,7 @@
-import { render_chat_area } from "./components/chat.js";
-import { render_left_aside } from "./components/chat_area.js";
+import { render_char_area } from "./components/chat_area.js";
 import { navigateTo } from "./script.js";
+import { start_chat_with_user } from "./chat.js"
+import { worker, sendMessage } from "./worker.js";
 
 // users offset and limit:
 let users_offset = 0
@@ -113,7 +114,8 @@ export function logout() {
           const errorText = await response.text();
           throw new Error(errorText);
         }
-
+        worker.port.start()
+        sendMessage(worker, { type: "logout" })
         navigateTo("/login")
         return response.json();
       })
@@ -126,7 +128,8 @@ export function logout() {
 
 
 function renderUsers(users) {
-  const container = document.querySelector("#all-users-list");
+  const container = document.querySelector("#users-list");
+  container.innerHTML = ""
   users.forEach(user => {
     console.log("the chat user: ", user);
     let user_chat = document.createElement("div")
@@ -146,18 +149,7 @@ function renderUsers(users) {
   });
 }
 
-function start_chat_with_user(user_id) {
-  // Convert string to DOM node
-  const temp = document.createElement('div');
 
-  temp.innerHTML = render_chat_area();
-
-  const element = temp.firstElementChild;
-  console.log(element);
-  
-  document.body.appendChild(element);
-  console.log("started chat with: ", user_id);
-}
 
 
 export function setupUserScrollListener() {
