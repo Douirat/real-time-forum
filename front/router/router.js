@@ -1,32 +1,22 @@
-// router.js
 import { render_home_page } from "../views/home.js";
 import { registration_form, login_form } from "../components/forms.js";
 
-const routes = [
-  { path: "/", view: render_home_page },
-  { path: "/register", view: registration_form },
-  { path: "/login", view: login_form },
-];
+const routes = {
+    "/": render_home_page,
+    "/login": login_form,
+    "/register": registration_form
+};
 
 export function navigateTo(url) {
-  history.pushState(null, null, url);
-  router();
+    history.pushState(null, null, url);
+    router();
 }
 
 export function router() {
-  const routesWithMatch = routes.map((route) => ({
-    route,
-    isMatch: location.pathname === route.path,
-  }));
-
-  const match = routesWithMatch.find((r) => r.isMatch);
-
-  if (!match) {
-    console.error("Page not found");
-    return;
-  }
-
-  if (match.route.view) {
-    match.route.view();
-  }
+    const path = window.location.pathname;
+    const route = routes[path] || routes["/login"];
+    route();
 }
+
+// Handle browser back/forward buttons
+window.addEventListener("popstate", router);

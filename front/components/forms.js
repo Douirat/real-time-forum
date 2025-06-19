@@ -8,8 +8,8 @@ export function registration_form() {
                     <input id="first_name" type="text" placeholder="first name..." required>
                     <input id="last_name" type="text" placeholder="last name..." required>
                     <label for="date">Born:</label>
-                    <input id="birth_date" type="date">
-                    <input id="email" type="text" placeholder="email..." required>
+                    <input id="birth_date" type="date" required>
+                    <input id="email" type="email" placeholder="email..." required>
                 </fieldset>
                 <fieldset id="gender">
                     <legend>Select your gender:</legend>
@@ -31,12 +31,11 @@ export function registration_form() {
                         <input type="password" class="password" id="confirmation" placeholder="confirmation..." required />
                     </div>
                 </fieldset>
-                <input id="submit" type="submit">
+                <button type="submit">Register</button>
                 <a href="/login">Login</a>
             </fieldset>
         </form>
     `;
-    // Removed script re-injection - not needed with event delegation
 }
 
 // Login form component:
@@ -51,14 +50,11 @@ export function login_form() {
             <div>
                 <input type="password" class="password" id="password" placeholder="password..." required>
             </div>
-            
-                <button type="submit">Login</button>
-                <a href="/register">Sign-up</a>
-        
+            <button type="submit">Login</button>
+            <a href="/register">Sign-up</a>
         </fieldset>
     </form>
     `;
-    // Removed script re-injection - not needed with event delegation
 }
 
 // Enhanced post creation form with categories:
