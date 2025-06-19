@@ -1,5 +1,6 @@
 import { render_home_page } from "../views/home.js";
 import { registration_form, login_form } from "../components/forms.js";
+import { render_error_page } from "../views/error.js";
 
 const routes = {
     "/": render_home_page,
