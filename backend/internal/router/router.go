@@ -70,11 +70,13 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Serve static files
 	if r.Method == "GET" {
-    if strings.HasSuffix(r.URL.Path, ".css") || strings.HasSuffix(r.URL.Path, ".js") || strings.HasSuffix(r.URL.Path, ".png") {
-        http.ServeFile(w, r, "../front"+r.URL.Path)
-        return
-    }
-}
+		if strings.HasSuffix(r.URL.Path, ".css") || strings.HasSuffix(r.URL.Path, ".js") || strings.HasSuffix(r.URL.Path, ".png") {
+			http.ServeFile(w, r, "../front"+r.URL.Path)
+			return
+		}
+		// http.ServeFile(w, r, "../front/index.html")
+		// return
+	}
 
 	// Handle registered routes
 	route := strings.ToLower(r.Method + ":" + r.URL.Path)
