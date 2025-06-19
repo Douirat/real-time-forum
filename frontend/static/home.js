@@ -1,15 +1,15 @@
 import { header } from "./components/header.js";
-import { render_chat_users } from "./components/chat_users.js";
+import { render_users } from "./components/chat_users.js";
 import { post_form } from "./components/forms.js";
 import { fetch_categories, show_posts } from "./post.js";
 import { navigateTo } from "./script.js";
 import { loadMoreUsers, logout } from "./users.js";
 import { throttle } from "./utils.js";
+import { sendMessage, worker } from "./worker.js";
 
 
 // Global variable to store categories data
 let categoriesData = [];
-
 
 
 
@@ -29,14 +29,15 @@ export function render_home_page() {
         })
         .then(data => {
             console.log(data);
-
+            worker.port.start()
+            sendMessage(worker, {type: "login"})
             fetch_categories().then(categories => {
                 categoriesData = categories;
 
                 // Render the home page with categories
                 document.body.innerHTML = /*html*/`
                     ${header()}
-                    ${render_chat_users()}
+                    ${render_users()}
                     <main>
                         <section>
                             <div class="postForm">
