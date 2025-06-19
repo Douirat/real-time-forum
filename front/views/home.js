@@ -1,6 +1,7 @@
 import { header, logout } from "../components/header.js";
 import { post_form } from "../components/forms.js";
-import { fetch_categories, show_posts } from "./post.js";
+import { fetch_categories } from "./post/fetchCategories.js";
+import { show_posts } from "./post/showPosts.js";
 import { navigateTo } from "../router/router.js";
 
 // Global variable to store categories data
