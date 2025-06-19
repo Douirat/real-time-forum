@@ -16,7 +16,11 @@ export function navigateTo(url) {
 export function router() {
     const path = window.location.pathname;
     const route = routes[path] || routes["/login"];
-    route();
+    if (route) {
+        route();
+    } else {
+        render_error_page(404, "The page you're looking for does not exist.");
+    }
 }
 
 // Handle browser back/forward buttons
