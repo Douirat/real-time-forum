@@ -15,7 +15,7 @@ export function navigateTo(url) {
 
 export function router() {
     const path = window.location.pathname;
-    const route = routes[path] || routes["/login"];
+    const route = routes[path];
     if (route) {
         route();
     } else {

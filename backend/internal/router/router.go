@@ -86,5 +86,5 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Not found
-	http.NotFound(w, r)
+	http.ServeFile(w, r, "../front/index.html")
 }
