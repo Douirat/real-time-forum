@@ -3,12 +3,11 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 	"time"
 
+	"real_time_forum/internal/handlers/utils"
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/services"
-	"real_time_forum/internal/handlers/utils"
 )
 
 // UsersHandlersLayer defines the contract for user handlers
@@ -19,6 +18,7 @@ type UsersHandlersLayer interface {
 
 // UsersHandlers implements the user handlers contract
 type UsersHandlers struct {
+	chatBroker  *services.ChatBroker
 	userServ    services.UsersServicesLayer
 	sessionServ services.SessionsServicesLayer
 }
@@ -36,8 +36,9 @@ type Edge struct {
 }
 
 // NewUsersHandlers creates a new user handler
-func NewUsersHandlers(userServ services.UsersServicesLayer, sessionServ services.SessionsServicesLayer) *UsersHandlers {
+func NewUsersHandlers(chatBro *services.ChatBroker, userServ services.UsersServicesLayer, sessionServ services.SessionsServicesLayer) *UsersHandlers {
 	return &UsersHandlers{
+		chatBroker:  chatBro,
 		userServ:    userServ,
 		sessionServ: sessionServ,
 	}
@@ -91,6 +92,13 @@ func (userHandler *UsersHandlers) UsersLoginHandler(w http.ResponseWriter, r *ht
 		SameSite: http.SameSiteLaxMode,
 	})
 
+	// register the user in my hub:
+	// client := &services.Client{
+	// 	UserId: user.Id,
+	// }
+
+	// userHandler.chatBroker.Register <- client
+
 	// Create response with user data and session info:
 	response := struct {
 		UserID    int    `json:"user_id"`
@@ -105,32 +113,36 @@ func (userHandler *UsersHandlers) UsersLoginHandler(w http.ResponseWriter, r *ht
 	utils.ResponseJSON(w, http.StatusCreated, response)
 }
 
-// logout user:
 func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request) {
-	var token string
-	// read session_token from cookie:
-	authHeader := r.Header.Get("Authorization")
-	if strings.HasPrefix(authHeader, "Bearer") {
-		token = strings.TrimPrefix(authHeader, "Bearer")
-	} else {
-		// fallback => cookie:
-		cookie, err := r.Cookie("session_token")
-		if err != nil {
-			utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid token"})
-			return
-		}
-		token = cookie.Value
-		
-	}
-
-	// delete session from database :
-	err := userHandler.sessionServ.DestroySession(token)
+	// Read session_token from cookie
+	cookie, err := r.Cookie("session_token")
 	if err != nil {
-		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "faild to logout"})
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid token"})
+		return
+	}
+	token := cookie.Value
+
+	// Get user ID from session
+	userId, err := userHandler.sessionServ.GetUserIdFromSession(token)
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid session"})
 		return
 	}
 
-	// emty cookie :
+	// Destroy session
+	err = userHandler.sessionServ.DestroySession(token)
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "failed to logout"})
+		return
+	}
+
+	client := &services.Client{
+		UserId: userId,
+	}
+
+	userHandler.chatBroker.Unregister <- client
+
+	// Clear the cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
 		Value:    "",
@@ -139,6 +151,7 @@ func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request)
 		MaxAge:   -1,
 		HttpOnly: true,
 	})
+
 	utils.ResponseJSON(w, http.StatusCreated, map[string]string{"message": "User logged out successfully"})
 }
 

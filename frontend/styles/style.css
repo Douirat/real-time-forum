@@ -1,7 +1,7 @@
 @import url("left_aside.css");
 @import url("right_aside.css");
 @import url("users.css");
-/* @import url("posts.css"); */
+@import url("chat.css");
 
 * {
     box-sizing: border-box;
@@ -10,82 +10,38 @@
     margin: 0;
 }
 
-body {
-    display: grid;
-    grid-template-columns: 1fr 3fr 1fr;
-    grid-template-rows: 80px 1fr;
-    grid-template-areas:
-        "header header header"
-        "left main right";
-    min-height: 110vh;
-    gap: 10px;
-}
-
-.header {
-    grid-area: header;
-    width: 100%;
-    background-color: #4CAF50;
-    padding: 25px 50px;
-}
-
-.left {
-    grid-area: left;
-    display: flex;
-    flex-direction: column;
-    justify-content: start;
-    align-items: center;
-
-    .friends_container {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-    }
-
-    .user_chat {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-evenly;
-        align-items: center;
-        gap: 5px;
-        width: fit-content;
-        padding: 5px;
-    }
-
-    .user_chat .offline {
-        width: 8px;
-        height: 8px;
-        background-color: red;
-        border-radius: 50%;
-    }
-
-    .user_chat .live {
-        width: 8px;
-        height: 8px;
-        background-color: rgb(11, 189, 11);
-        border-radius: 50%;
-    }
-
-    .user_chat small {
-        color: #888;
-        font-size: 12px;
-    }
-
-    .user_chat:hover {
-        cursor: pointer;
-        background-color: #ddd;
-        border-radius: 5px;
-        color: #555;
-    }
-}
-
-.main {
-    grid-area: main;
+body{
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    gap: 2vmin;
+    position: relative;
 }
 
+.header {
+    /* grid-area: header; */
+    width: 100%;
+    padding: 25px 50px;
+    border: #888;
+    color: #222;
+}
+
+.left {
+    /* grid-area: left; */
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-items: center;
+}
+
+.main {
+    /* grid-area: main; */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+} 
 
 .postForm {
     margin: 15px 0;

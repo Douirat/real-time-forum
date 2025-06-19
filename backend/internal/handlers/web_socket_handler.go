@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"real_time_forum/internal/handlers/utils"
 	"real_time_forum/internal/services"
@@ -8,12 +9,12 @@ import (
 
 // Create the handler for the websocket:
 type WebSocketHandler struct {
-	socketService services.WebSocketServiceLayer
+	socketService services.WebsocketSeviceLayer
 	sessionServ   services.SessionsServicesLayer
 }
 
 // Create a new instance of the websocket handler:
-func NewWebSocketHandler(socketServ *services.WebSocketService, sessionServ services.SessionsServicesLayer) *WebSocketHandler {
+func NewWebSocketHandler(socketServ *services.WebSocketService, sessionServ *services.SessionService) *WebSocketHandler {
 	return &WebSocketHandler{
 		socketService: socketServ,
 		sessionServ:   sessionServ,
@@ -47,7 +48,7 @@ func (soc *WebSocketHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := soc.sessionServ.GetIdFromSession(cookie.Value)
+	userID, err := soc.sessionServ.GetUserIdFromSession(cookie.Value)
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "Invalid session"})
 		return
@@ -57,6 +58,10 @@ func (soc *WebSocketHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 		return
+	}
+	
+	for i, v := range users {
+		fmt.Println("User %d, is %v\n", i, v)
 	}
 
 	utils.ResponseJSON(w, http.StatusOK, users)

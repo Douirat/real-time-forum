@@ -13,8 +13,7 @@ type SessionsServicesLayer interface {
 	CreateSession(userID int) (string, time.Time, error)
 	DestroySession(token string) error
 	IsValidSession(token string) bool
-	GetIdFromSession(token string) (int,error)
-	// CleanupExpiredSessions() error
+	GetUserIdFromSession(token string) (int,error)
 }
 
 type SessionService struct {
@@ -68,6 +67,6 @@ func (sessionSev *SessionService) IsValidSession(token string) bool {
 	return true
 }
 // Check if the session is valid:
-func (sessionSev *SessionService) GetIdFromSession(token string) (int, error) {
+func (sessionSev *SessionService) GetUserIdFromSession(token string) (int, error) {
 	return sessionSev.SessionRepo.GetSessionByToken(token)
 }
