@@ -33,12 +33,12 @@ export function add_new_post() {
         content: document.getElementById("content").value,
         categories: selectedCategories // Add categories to the post data
     }
-   
-    if (post_data.title == "" || post_data.content == "") {
+
+    if (post_data.title.trim() === "" || post_data.content.trim() === "") {
         alert("please fill in all the post fields");
         return;
     }
-    
+
     fetch("http://localhost:8080/add_post", {
         method: "POST",
         headers: {
@@ -57,12 +57,12 @@ export function add_new_post() {
             // Clear input fields
             document.getElementById("title").value = "";
             document.getElementById("content").value = "";
-            
+
             // Uncheck all category checkboxes
             document.querySelectorAll('.category-checkbox:checked').forEach(checkbox => {
                 checkbox.checked = false;
             });
-            
+
             // Reset pagination and refresh posts
             reset_pagination();
             show_posts();
@@ -76,14 +76,14 @@ export function add_new_post() {
 // Enhanced show posts function with category display:
 export function show_posts() {
     console.log(`Fetching posts with offset: ${offset}, limit: ${limit}`);
-    
+
     fetch(`http://localhost:8080/get_posts?offset=${offset}&limit=${limit}`)
         .then(response => {
             return response.json();
         })
         .then(data => {
             let postsContainer = document.querySelector(".posts");
-            
+
             // If this is the first load (offset = 0), clear the container
             if (offset === 0) {
                 postsContainer.innerHTML = "";
@@ -93,17 +93,17 @@ export function show_posts() {
             if (data && data.length > 0) {
                 // Update offset for next batch
                 offset += data.length;
-                
+
                 // Reverse the data to show newest posts first (only for first load)
                 if (offset === data.length) {
                     data.reverse();
                 }
-                
+
                 data.forEach(post => {
                     // Create a new post div
                     let postDiv = document.createElement("div");
                     postDiv.className = "post-item";
-                    
+
                     // Create UserName and timestamp element
                     let userNameElement = document.createElement("h4");
                     userNameElement.textContent = `Posted by: ${post.user_name || "Unknown User"}`;
@@ -119,18 +119,18 @@ export function show_posts() {
                     // Create content element
                     let contentElement = document.createElement("p");
                     contentElement.textContent = post.content;
-                    
+
                     // Create categories element if categories exist
                     let categoriesElement = null;
                     if (post.categories_names) {
                         categoriesElement = document.createElement("div");
                         categoriesElement.className = "post-categories";
-                        
+
                         const categoriesList = post.categories_names.split(',');
                         categoriesElement.innerHTML = `
-                            <small style="color: #666;">Categories: ${categoriesList.map(cat => 
-                                `<span class="category-tag">${cat.trim()}</span>`
-                            ).join('')}</small>
+                            <small style="color: #666;">Categories: ${categoriesList.map(cat =>
+                            `<span class="category-tag">${cat.trim()}</span>`
+                        ).join('')}</small>
                         `;
                     }
 
@@ -191,7 +191,7 @@ export function show_posts() {
                     // Add the post div to the container
                     postsContainer.appendChild(postDiv);
                 });
-                
+
                 console.log(`Loaded ${data.length} posts. New offset: ${offset}`);
             } else {
                 // No more posts to load
