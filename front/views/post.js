@@ -1,5 +1,7 @@
 // Import comment functions
-import { toggle_comments, add_comment } from './comments.js';
+import { add_comment } from './comments/addComment.js';
+import { toggle_comments } from './comments/toggleComments.js';
+
 import { navigateTo } from '../router/router.js';
 
 var offset = 0;
