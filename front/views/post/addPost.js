@@ -1,6 +1,7 @@
 // addPost.js
 import { navigateTo } from '../../router/router.js';
 import { show_posts, reset_pagination } from './showPosts.js';
+import { isEmptyPost ,clearPostForm} from '../../utils/post_validators.js';
 
 export function add_new_post() {
     const selectedCategories = [];
@@ -10,11 +11,10 @@ export function add_new_post() {
     const title = document.getElementById("title").value.trim();
     const content = document.getElementById("content").value.trim();
 
-    if (!title || !content) {
+    if (isEmptyPost(title, content)) {
         alert("Please fill in all the post fields");
         return;
     }
-
     const post_data = { title, content, categories: selectedCategories };
 
     fetch("http://localhost:8080/add_post", {
@@ -27,12 +27,7 @@ export function add_new_post() {
             return res.json();
         })
         .then(() => {
-            // Clear form fields
-            document.getElementById("title").value = "";
-            document.getElementById("content").value = "";
-            document.querySelectorAll('.category-checkbox:checked').forEach(cb => cb.checked = false);
-            
-            // Reset pagination and refresh posts
+            clearPostForm();
             reset_pagination();
             show_posts();
         })

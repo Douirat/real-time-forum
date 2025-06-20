@@ -26,10 +26,12 @@ export function show_posts() {
             data.forEach(post => {
                 const postDiv = document.createElement("div");
                 postDiv.className = "post-item";
-            
+                let date = post.created_at ? new Date(post.created_at) : new Date();
+                let displayDate = post.created_at ? date.toLocaleString() : "Just now";
+                
                 postDiv.innerHTML = `
                     <h4>Posted by: ${post.user_name || "Unknown User"}</h4>
-                    <small>${post.created_at ? new Date(post.created_at).toLocaleString() : ""}</small>
+<small>${displayDate}</small>
                     <h3>${post.title}</h3>
                     <p>${post.content}</p>
                     ${post.categories_names ? `<div class="post-categories">
