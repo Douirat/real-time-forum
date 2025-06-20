@@ -1,11 +1,11 @@
 //  Create the throttle function to display posts:
-export function throttle(func, limit) {
-    let inThrottle;
+export function throttle(callback, delay) {
+    let lastCall = 0;
     return function (...args) {
-        if (!inThrottle) {
-            func.apply(this, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
+        const now = Date.now();
+        if (now - lastCall >= delay) {
+            lastCall = now;
+            callback.apply(this, args);
         }
     };
 }

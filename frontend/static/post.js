@@ -1,10 +1,8 @@
+
 // Import comment functions:
 import { toggle_comments, add_comment } from './comments.js';
 import { navigateTo } from './script.js';
 import { appState } from './state.js';
-
-// let posts_offset = 0;
-// const posts_limit = 10;
 
 // Function to fetch categories:
 export function fetch_categories() {
@@ -64,8 +62,10 @@ export function add_new_post() {
             document.getElementById("content").value = "";
             document.querySelectorAll('.category-checkbox:checked').forEach(cb => cb.checked = false);
 
-            posts_offset = 0;
-            show_posts(); // Instead of navigateTo("/")
+            // ✅ Reset pagination and reload posts
+            appState.posts_offset = 0;
+            appState.noMorePosts = false;
+            show_posts();
         })
         .catch(error => {
             console.error("Error adding post:", error);
@@ -79,9 +79,23 @@ export function add_new_post() {
         });
 }
 
-
-// Enhanced show posts function with category display:
+// ✅ Enhanced show posts function with proper state management:
 export function show_posts() {
+    // Prevent multiple simultaneous requests
+    if (appState.isFetching) {
+        console.log("Already fetching posts, skipping...");
+        return;
+    }
+
+    // Don't fetch if we've reached the end
+    if (appState.noMorePosts) {
+        console.log("No more posts available");
+        return;
+    }
+
+    // Set fetching state
+    appState.isFetching = true;
+
     fetch(`http://localhost:8080/get_posts?offset=${appState.posts_offset}&limit=${appState.posts_limit}`)
         .then(response => response.json())
         .then(data => {
@@ -93,8 +107,14 @@ export function show_posts() {
             }
 
             if (data && data.length > 0) {
-                // ✅ DO NOT reverse data – it's already newest to oldest
-                appState.posts_offset += data.length; 
+                // Update offset
+                appState.posts_offset += data.length;
+
+                // Check if we got fewer posts than requested (end of data)
+                if (data.length < appState.posts_limit) {
+                    appState.noMorePosts = true;
+                    console.log("Reached end of posts");
+                }
 
                 data.forEach(post => {
                     const postDiv = document.createElement("div");
@@ -181,14 +201,19 @@ export function show_posts() {
                 console.log(`Loaded ${data.length} posts. New offset: ${appState.posts_offset}`);
             } else {
                 // No posts found
-                if (posts_offset === 0) {
+                if (appState.posts_offset === 0) {
                     postsContainer.innerHTML = "<p>No posts yet. Be the first to create one!</p>";
                 } else {
                     console.log("No more posts to load");
+                    appState.noMorePosts = true;
                 }
             }
         })
         .catch(error => {
             console.error("Fetch error:", error);
+        })
+        .finally(() => {
+            // ✅ Always reset fetching state
+            appState.isFetching = false;
         });
-}
+    }

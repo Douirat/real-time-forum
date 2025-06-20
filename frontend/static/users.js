@@ -163,8 +163,6 @@ export function setupUserScrollListener() {
 }
 
 export function load_users() {
-  console.log("The offset is: ", appState.users_offset);
-
   isFetchingUsers = true;
   fetch(`http://localhost:8080/get_users?offset=${appState.users_offset}&limit=${appState.users_limit}`)
     .then(response => response.json())

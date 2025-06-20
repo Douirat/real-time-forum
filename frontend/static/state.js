@@ -1,25 +1,15 @@
-// state.js
-
-// Shared SPA state object
 export const appState = {
-  users_offset: 0,
-  users_limit: 10,
-  posts_offset: 0,
-  posts_limit: 10,
-  categoriesData: [],
+    posts_offset: 0,
+    posts_limit: 10,
+    categoriesData: [],
+    isFetching: false,        // ✅ Add this
+    noMorePosts: false,       // ✅ Add this
+    // ... other properties
 };
 
-// Reset only offsets (if you want partial reset)
-export function resetOffsets() {
-  appState.users_offset = 0;
-  appState.posts_offset = 0;
-}
-
-// Full reset on logout
 export function resetAll() {
-  appState.users_offset = 0;
-  appState.users_limit = 10;
-  appState.posts_offset = 0;
-  appState.posts_limit = 10;
-  appState.categoriesData = [];
+    appState.posts_offset = 0;
+    appState.isFetching = false;
+    appState.noMorePosts = false;
+    appState.categoriesData = []
 }
