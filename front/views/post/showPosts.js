@@ -14,7 +14,15 @@ export function reset_pagination() {
 
 export function show_posts() {
     fetch(`http://localhost:8080/get_posts?offset=${offset}&limit=${limit}`)
-        .then(res => res.json())
+        .then(async res => {
+            if (!res.ok) {
+                const errorText = await res.text();
+                const error = new Error(errorText);
+                error.status = res.status;
+                throw error;
+            }
+            return res.json();
+        })
         .then(data => {
             const container = document.querySelector(".posts");
             if (offset === 0) container.innerHTML = "";
@@ -59,7 +67,7 @@ export function show_posts() {
             if (err.status) {
                 render_error_page(err.status, getErrorMessage(err.status));
             } else {
-                render_error_page(500, "Failed to add comment due to an unknown error");
+                render_error_page(500, "Failed to load posts due to an unknown error");
             }
         });
 }

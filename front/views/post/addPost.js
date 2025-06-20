@@ -1,5 +1,4 @@
 // addPost.js
-import { navigateTo } from '../../router/router.js';
 import { show_posts, reset_pagination } from './showPosts.js';
 import { isEmptyPost ,clearPostForm} from '../../utils/post_validators.js';
 import { render_error_page } from "../error.js";
