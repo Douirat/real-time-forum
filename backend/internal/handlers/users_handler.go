@@ -175,17 +175,17 @@ func (userHandler *UsersHandlers) IsLogged(w http.ResponseWriter, r *http.Reques
 
 // Get users for chat:
 // Get all users for chat (removed offset and limit):
-func (userHandler *UsersHandlers) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "method not allowed"})
-		return
-	}
+// func (userHandler *UsersHandlers) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
+// 	if r.Method != http.MethodGet {
+// 		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "method not allowed"})
+// 		return
+// 	}
 
-	// Get all users without pagination
-	users, err := userHandler.userServ.GetUsersService()
-	if err != nil {
-		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "failed to get users"})
-		return
-	}
-	utils.ResponseJSON(w, http.StatusOK, users)
-}
+// 	// Get all users without pagination
+// 	users, err := userHandler.userServ.GetUsersService()
+// 	if err != nil {
+// 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "failed to get users"})
+// 		return
+// 	}
+// 	utils.ResponseJSON(w, http.StatusOK, users)
+// }

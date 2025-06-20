@@ -3,6 +3,8 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strconv"
+
 	"real_time_forum/internal/handlers/utils"
 	"real_time_forum/internal/services"
 )
@@ -54,12 +56,34 @@ func (soc *WebSocketHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := soc.socketService.GetAllUsersWithStatus(userID)
+	// Extract offset and limit from query parameters, with fallback default values:
+	query := r.URL.Query()
+
+	offsetStr := query.Get("offset")
+	limitStr := query.Get("limit")
+
+	// Defaults if query params not provided or invalid
+	offset := 0
+	limit := 20
+
+	if offsetStr != "" {
+		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
+			offset = o
+		}
+	}
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+			limit = l
+		}
+	}
+
+	// Call the service with offset and limit parameters:
+	users, err := soc.socketService.GetAllUsersWithStatus(userID, offset, limit)
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 		return
 	}
-	
+
 	for i, v := range users {
 		fmt.Printf("User %d, is %v\n", i, v)
 	}

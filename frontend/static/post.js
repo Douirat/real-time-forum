@@ -22,21 +22,26 @@ export function fetch_categories() {
 
 // Create a function to add a new post with categories:
 export function add_new_post() {
-    // Get selected categories
     const selectedCategories = [];
     document.querySelectorAll('.category-checkbox:checked').forEach(checkbox => {
         selectedCategories.push(parseInt(checkbox.value));
     });
 
     let post_data = {
-        title: document.getElementById("title").value,
-        content: document.getElementById("content").value,
+        title: document.getElementById("title").value.trim(),
+        content: document.getElementById("content").value.trim(),
         categories: selectedCategories
     }
 
-    if (post_data.title == "" || post_data.content == "") {
-        alert("please fill in all the post fields")
-        return
+    if (post_data.title === "" || post_data.content === "") {
+        alert("Please fill in all the post fields");
+        return;
+    }
+
+    const submitBtn = document.querySelector("#post-form button[type='submit']");
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Posting...";
     }
 
     fetch("http://localhost:8080/add_post", {
@@ -48,65 +53,69 @@ export function add_new_post() {
     })
         .then(async response => {
             if (!response.ok) {
-                let err = await response.json()
-                throw new Error(err)
+                let err = await response.json();
+                throw new Error(err);
             }
             return response.json();
         })
         .then(data => {
-            // Clear input fields
             document.getElementById("title").value = "";
             document.getElementById("content").value = "";
+            document.querySelectorAll('.category-checkbox:checked').forEach(cb => cb.checked = false);
 
-            // Uncheck all category checkboxes
-            document.querySelectorAll('.category-checkbox:checked').forEach(checkbox => {
-                checkbox.checked = false;
-            });
-
-            // Reset pagination and refresh posts
-            offset = 0;
-            navigateTo("/")
+            posts_offset = 0;
+            show_posts(); // Instead of navigateTo("/")
         })
-        .catch(errorText => navigateTo("/login"));
+        .catch(error => {
+            console.error("Error adding post:", error);
+            navigateTo("/login");
+        })
+        .finally(() => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Post";
+            }
+        });
 }
+
 
 // Enhanced show posts function with category display:
 export function show_posts() {
     fetch(`http://localhost:8080/get_posts?offset=${posts_offset}&limit=${posts_limit}`)
         .then(response => response.json())
         .then(data => {
-            let postsContainer = document.querySelector(".posts");
+            const postsContainer = document.querySelector(".posts");
 
+            // If it's the first load, clear the container
             if (posts_offset === 0) {
                 postsContainer.innerHTML = "";
             }
 
             if (data && data.length > 0) {
-                if (posts_offset === 0) {
-                    data.reverse();
-                }
-
-                posts_offset += data.length;
+                // ✅ DO NOT reverse data – it's already newest to oldest
+                posts_offset += data.length; // ✅ Increment offset for next scroll
 
                 data.forEach(post => {
-                    let postDiv = document.createElement("div");
+                    const postDiv = document.createElement("div");
                     postDiv.className = "post-item";
 
-                    let userNameElement = document.createElement("h4");
+                    // Header info
+                    const userNameElement = document.createElement("h4");
                     userNameElement.textContent = `Posted by: ${post.user_name || "Unknown User"}`;
 
-                    let timestampElement = document.createElement("small");
+                    const timestampElement = document.createElement("small");
                     timestampElement.className = "post-timestamp";
                     timestampElement.textContent = post.created_at
                         ? `Posted on: ${new Date(post.created_at).toLocaleString()}`
                         : "";
 
-                    let titleElement = document.createElement("h3");
+                    const titleElement = document.createElement("h3");
                     titleElement.textContent = post.title;
 
-                    let contentElement = document.createElement("p");
+                    const contentElement = document.createElement("p");
                     contentElement.textContent = post.content;
 
+                    // Categories
                     let categoriesElement = null;
                     if (post.categories_names) {
                         categoriesElement = document.createElement("div");
@@ -115,40 +124,39 @@ export function show_posts() {
                         const categoriesList = post.categories_names.split(',');
                         categoriesElement.innerHTML = `
                             <small>Categories: ${categoriesList.map(cat =>
-                            `<span class="category-tag">${cat.trim()}</span>`
-                        ).join('')}</small>
+                                `<span class="category-tag">${cat.trim()}</span>`
+                            ).join('')}</small>
                         `;
                     }
 
-                    let commentButton = document.createElement("button");
+                    // Comments toggle button
+                    const commentButton = document.createElement("button");
                     commentButton.textContent = "Comments";
                     commentButton.className = "comment-btn";
-                    commentButton.onclick = function () {
-                        toggle_comments(post.id);
-                    };
+                    commentButton.onclick = () => toggle_comments(post.id);
 
-                    let commentsSection = document.createElement("div");
+                    // Comments section
+                    const commentsSection = document.createElement("div");
                     commentsSection.id = `comments-section-${post.id}`;
 
-                    let commentsContainer = document.createElement("div");
+                    const commentsContainer = document.createElement("div");
                     commentsContainer.id = `comments-container-${post.id}`;
                     commentsContainer.className = "comments-container";
 
-                    let commentForm = document.createElement("div");
+                    // Add comment form
+                    const commentForm = document.createElement("div");
                     commentForm.className = "comment-form";
 
-                    let commentInput = document.createElement("input");
+                    const commentInput = document.createElement("input");
                     commentInput.id = `comment-input-${post.id}`;
                     commentInput.type = "text";
                     commentInput.placeholder = "Write a comment...";
                     commentInput.className = "comment-input";
 
-                    let submitButton = document.createElement("button");
+                    const submitButton = document.createElement("button");
                     submitButton.textContent = "Submit";
                     submitButton.className = "submit-comment-btn";
-                    submitButton.onclick = function () {
-                        add_comment(post.id);
-                    };
+                    submitButton.onclick = () => add_comment(post.id);
 
                     commentForm.appendChild(commentInput);
                     commentForm.appendChild(submitButton);
@@ -156,24 +164,27 @@ export function show_posts() {
                     commentsSection.appendChild(commentsContainer);
                     commentsSection.appendChild(commentForm);
 
+                    // Append all elements to post
                     postDiv.appendChild(userNameElement);
                     postDiv.appendChild(timestampElement);
                     postDiv.appendChild(titleElement);
                     postDiv.appendChild(contentElement);
-                    if (categoriesElement) {
-                        postDiv.appendChild(categoriesElement);
-                    }
+                    if (categoriesElement) postDiv.appendChild(categoriesElement);
                     postDiv.appendChild(commentButton);
                     postDiv.appendChild(commentsSection);
+
+                    // Append post to DOM
                     postsContainer.appendChild(postDiv);
                 });
 
                 console.log(`Loaded ${data.length} posts. New offset: ${posts_offset}`);
             } else {
+                // No posts found
                 if (posts_offset === 0) {
                     postsContainer.innerHTML = "<p>No posts yet. Be the first to create one!</p>";
+                } else {
+                    console.log("No more posts to load");
                 }
-                console.log("No more posts to load");
             }
         })
         .catch(error => {

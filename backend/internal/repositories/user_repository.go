@@ -10,7 +10,7 @@ type UsersRepositoryLayer interface {
 	RegisterNewUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
 	GetUserByID(id int) (*models.User, error)
-	GetUsersRepo() ([]*models.ChatUser, error)
+	GetUsersRepo(offset, limit int) ([]*models.ChatUser, error)
 }
 
 // Create a structure to represent to implemente the contract with the repo interface:
@@ -67,22 +67,22 @@ func (userRepo *UsersRepository) GetUserByID(id int) (*models.User, error) {
 }
 
 // Get all users:
-func (userRepo *UsersRepository) GetUsersRepo() ([]*models.ChatUser, error) {
-	query := `SELECT id, nick_name FROM users`
-	rows, err := userRepo.db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+func (userRepo *UsersRepository) GetUsersRepo(offset, limit int) ([]*models.ChatUser, error) {
+    query := `SELECT id, nick_name FROM users ORDER BY id LIMIT ? OFFSET ?`
+    rows, err := userRepo.db.Query(query, limit, offset)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
 
-	var users []*models.ChatUser
-	for rows.Next() {
-		chatUser := &models.ChatUser{}
-		err := rows.Scan(&chatUser.Id, &chatUser.NickName)
-		if err != nil {
-			return nil, err
-		}
-		users = append(users, chatUser)
-	}
-	return users, nil
+    var users []*models.ChatUser
+    for rows.Next() {
+        chatUser := &models.ChatUser{}
+        err := rows.Scan(&chatUser.Id, &chatUser.NickName)
+        if err != nil {
+            return nil, err
+        }
+        users = append(users, chatUser)
+    }
+    return users, nil
 }

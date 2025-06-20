@@ -1,21 +1,24 @@
 export function render_char_area() {
-    return /*html*/`
-        <div id="chat_area" >
-            <div id="chat-container" class="chat-container">
-                <div class="chat-header">
-                    <h3>Chat</h3>
-                    <button id="cancel_chat">x</button>
-                </div>
-                <div class="chat-area">
-                    <div id="messages-container" class="messages-container">
-                        <!-- Messages will appear here -->
-                    </div>
-                    <div class="message-input-container">
-                        <input type="text" id="message-input" placeholder="Select a user to chat...">
-                        <button id="send-button">Send</button>
-                    </div>
-                </div>
-            </div>
+  return /*html*/`
+    <div id="chat_area">
+      <div class="chat-container">
+        <div class="chat-header">
+          <h3>Chat</h3>
+          <button id="cancel_chat">x</button>
         </div>
-    `;
+
+        <div id="messages-container" class="messages-container">
+          <!-- Messages will appear here -->
+        </div>
+
+        <!-- Typing indicator placeholder -->
+        <div id="typing-indicator" class="typing-indicator" style="display:none; font-style: italic; color: #555; padding: 5px 10px;"></div>
+
+        <div class="message-input-container">
+          <input type="text" id="message-input" placeholder="Type a message..." />
+          <button id="send-button">Send</button>
+        </div>
+      </div>
+    </div>
+  `;
 }

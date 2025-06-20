@@ -63,7 +63,7 @@ func main() {
 	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)
 	mainRouter.AddRoute("POST", "/login", usersHandlers.UsersLoginHandler)
 	mainRouter.AddRoute("POST", "/logout", usersHandlers.Logout)
-	mainRouter.AddRoute("GET", "/get_users", usersHandlers.GetUsersHandler)
+	// mainRouter.AddRoute("GET", "/get_users", usersHandlers.GetUsersHandler)
 	mainRouter.AddRoute("GET", "/logged_user", usersHandlers.IsLogged)
 	mainRouter.AddRoute("POST", "/add_post", postsHandlers.CreatePostsHandler)
 	mainRouter.AddRoute("GET", "/get_posts", postsHandlers.GetAllPostsHandler)
@@ -71,7 +71,7 @@ func main() {
 	mainRouter.AddRoute("POST", "/commenting", commentsHandlers.MakeCommentsHandler)
 	mainRouter.AddRoute("GET", "/get_comments", commentsHandlers.ShowCommentsHandler)
 	mainRouter.AddRoute("GET", "/ws", webSocketHandler.SocketHandler)
-	mainRouter.AddRoute("GET", "/ws_users", webSocketHandler.GetUsers)
+	mainRouter.AddRoute("GET", "/get_users", webSocketHandler.GetUsers)
 	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
 
 	// fmt.Println("Routes registered:", mainRouter.Routes)

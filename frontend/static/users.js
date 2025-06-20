@@ -161,7 +161,7 @@ export function setupUserScrollListener() {
   });
 }
 
-export function loadMoreUsers() {
+export function load_users() {
   isFetchingUsers = true;
   fetch(`http://localhost:8080/get_users?offset=${users_offset}&limit=${users_limit}`)
     .then(response => response.json())

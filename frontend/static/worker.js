@@ -11,12 +11,12 @@ worker.port.onmessage = (event) => {
       displayMessage(msg);
       break;
 
-    case "typing":
+    case "start_typing":
       showTypingIndicator(msg);
       break;
 
     case "stop_typing":
-      hideTypingIndicator(msg);
+      hideTypingIndicator();
       break;
 
     case "status":
@@ -43,18 +43,34 @@ export function sendMessage(worker, message) {
 }
 
 // Placeholder functions for UI updates:
-
 function displayMessage(msg) {
-  console.log("[Main] Display message:", msg);
-  // TODO: Insert message into chat UI here
+  const container = document.getElementById("messages-container");
+  if (!container) return;
+
+  const msgDiv = document.createElement("div");
+  msgDiv.classList.add("message", "received"); // always "received"
+
+  // Insert message content (you can add timestamp if you have it)
+  msgDiv.innerText = msg.content;
+
+  container.appendChild(msgDiv);
+
+  // Scroll chat to bottom
+  container.scrollTop = container.scrollHeight;
 }
+
 
 function showTypingIndicator(msg) {
-  console.log("[Main] Show typing indicator:", msg);
-  // TODO: Show "User is typing..." in UI
+  const typingElem = document.getElementById("typing-indicator");
+  if (!typingElem) return;
+
+  typingElem.innerText = `User ${msg.sender} is typing...`;
+  typingElem.style.display = "block";
 }
 
-function hideTypingIndicator(msg) {
-  console.log("[Main] Hide typing indicator:", msg);
-  // TODO: Remove typing indicator in UI
+function hideTypingIndicator() {
+  const typingElem = document.getElementById("typing-indicator");
+  if (!typingElem) return;
+
+  typingElem.style.display = "none";
 }

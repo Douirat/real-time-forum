@@ -98,11 +98,6 @@ onconnect = (e) => {
         }
         break;
 
-      case "offline":
-        console.log("[Worker] offline message received: closing WebSocket");
-        if (ws) ws.close();
-        break;
-
       default:
         console.warn("[Worker] Unknown message type:", type);
     }
