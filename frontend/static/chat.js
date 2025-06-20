@@ -31,12 +31,14 @@ function handle_messsage(user_id) {
     let input = inputField.value.trim();
     if (input === "") return;
     console.log("worker: ", worker);
-   
-    sendMessage(worker, {
+    let message = {
       type: "message",
       receiver: user_id,
       content: input
-    });
+    }
+   
+    sendMessage(worker, message);
+    display_sent_message(message)
 
     inputField.value = "";
   });
@@ -112,3 +114,12 @@ function cancel_chat() {
   })
 }
 
+ function display_sent_message(message) {
+  const container = document.getElementById("messages-container");
+  if (!container) return;
+  const msgDiv = document.createElement("div");
+  msgDiv.classList.add("message", "sent");
+  msgDiv.innerText = message.content;
+  container.appendChild(msgDiv);
+  container.scrollTop = container.scrollHeight;
+ }

@@ -1,7 +1,8 @@
 export function render_left_aside() {
-    return /*HTML*/ `
+  return /*HTML*/ `
     <aside id="profile_users">
    <div id="user_profile_container"></div>
+   <div id="notifications"></div>
       <!-- Chat Container -->
       <div id="users_container">
         <div class="users-header">
@@ -14,4 +15,3 @@ export function render_left_aside() {
     </aside>
   `;
 }
-
