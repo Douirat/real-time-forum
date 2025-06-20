@@ -1,6 +1,7 @@
 // showPosts.js
 import { toggle_comments } from '../comments/toggleComments.js';
 import { add_comment } from '../comments/addComment.js';
+import { formatDate,renderCategories } from '../../utils/post_validators.js';
 
 let offset = 0;
 const limit = 10;
@@ -26,18 +27,14 @@ export function show_posts() {
             data.forEach(post => {
                 const postDiv = document.createElement("div");
                 postDiv.className = "post-item";
-                let date = post.created_at ? new Date(post.created_at) : new Date();
-                let displayDate = post.created_at ? date.toLocaleString() : "Just now";
-                
+
                 postDiv.innerHTML = `
                     <h4>Posted by: ${post.user_name || "Unknown User"}</h4>
-<small>${displayDate}</small>
+                    <small>${formatDate(post.created_at)}</small>
                     <h3>${post.title}</h3>
                     <p>${post.content}</p>
                     ${post.categories_names ? `<div class="post-categories">
-                        <small style="color:#666">Categories:
-                            ${post.categories_names.split(',').map(c => `<span class='category-tag'>${c.trim()}</span>`).join('')}
-                        </small>
+                        <small style="color:#666">Categories: ${renderCategories(post.categories_names)}</small>
                     </div>` : ''}
                     <button class="comment-btn">Comments</button>
                     <div id="comments-section-${post.id}" style="display:none">
@@ -48,16 +45,12 @@ export function show_posts() {
                         </div>
                     </div>
                 `;
-            
-                // Attach comment toggle
+
                 postDiv.querySelector(".comment-btn").onclick = () => toggle_comments(post.id);
-            
-                // Attach comment submit handler
                 postDiv.querySelector(".submit-comment-btn").onclick = () => add_comment(post.id);
-            
+
                 container.appendChild(postDiv);
             });
-            
         })
         .catch(err => console.error("Fetch error:", err));
 }
