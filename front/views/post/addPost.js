@@ -2,6 +2,8 @@
 import { navigateTo } from '../../router/router.js';
 import { show_posts, reset_pagination } from './showPosts.js';
 import { isEmptyPost ,clearPostForm} from '../../utils/post_validators.js';
+import { render_error_page } from "../error.js";
+import { getErrorMessage } from "../../utils/error_validators.js";
 
 export function add_new_post() {
     const selectedCategories = [];
@@ -23,7 +25,12 @@ export function add_new_post() {
         body: JSON.stringify(post_data)
     })
         .then(async res => {
-            if (!res.ok) throw new Error(await res.text());
+            if (!res.ok) {
+                const errorText = await res.text();
+                const error = new Error(errorText);
+                error.status = res.status;
+                throw error;
+            }
             return res.json();
         })
         .then(() => {
@@ -33,6 +40,11 @@ export function add_new_post() {
         })
         .catch(err => {
             console.error("Error adding post:", err);
-            navigateTo("/login");
+            console.log(err.status)
+            if (err.status) {
+                render_error_page(err.status, getErrorMessage(err.status));
+            } else {
+                render_error_page(500, "Failed  adding post an unknown error");
+            }
         });
 }
