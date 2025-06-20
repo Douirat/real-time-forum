@@ -30,8 +30,7 @@ export function add_new_post() {
             // Clear form fields
             document.getElementById("title").value = "";
             document.getElementById("content").value = "";
-            document.querySelectorAll('.category-checkbox:checked')
-                .forEach(cb => cb.checked = false);
+            document.querySelectorAll('.category-checkbox:checked').forEach(cb => cb.checked = false);
             
             // Reset pagination and refresh posts
             reset_pagination();

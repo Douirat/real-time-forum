@@ -1,13 +1,14 @@
 import { show_comments_for_post } from './fetchComments.js';
+import { isEmptyInput } from '../../utils/comment_validators.js';
 
 export function add_comment(postId) {
     const commentInput = document.getElementById(`comment-input-${postId}`);
     
-    if (!commentInput || commentInput.value.trim() === "") {
+    //  kyrj3 undefined bla error
+    if (isEmptyInput(commentInput?.value)) {
         alert("Please enter a comment");
         return;
     }
-    
     const commentData = {
         post_id: postId,
         content: commentInput.value.trim()

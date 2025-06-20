@@ -14,10 +14,7 @@ export async function register_new_user() {
         nick_name: "-",
     };
 
-    if (
-        !isValidPassword(user.password, user.confirmation) ||
-        !isValidEmail(user.email)
-    ) {
+    if (!isValidPassword(user.password, user.confirmation) ||!isValidEmail(user.email)) {
         alert("invalid email or password");
         return;
     }

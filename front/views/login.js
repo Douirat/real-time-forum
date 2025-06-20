@@ -7,11 +7,7 @@ export async function login_user() {
         password: document.getElementById("password").value,
     };
 
-    if (
-        !isValidEmail(credentials.email) ||
-        credentials.email === "" ||
-        credentials.password === ""
-    ) {
+    if (!isValidEmail(credentials.email) || credentials.email === "" || credentials.password === "") {
         alert("invalid email or password");
         return;
     }
