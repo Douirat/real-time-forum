@@ -1,19 +1,21 @@
 import { header } from "./components/header.js";
-// import { render_users } from "./components/chat_users.js";
 import { post_form } from "./components/forms.js";
 import { fetch_categories, show_posts, add_new_post } from "./post.js";
 import { navigateTo } from "./script.js";
-import { load_users, logout } from "./users.js";
+import { load_users, logout, } from "./users.js";
 import { throttle } from "./utils.js";
 import { sendMessage, worker } from "./worker.js";
 import { render_left_aside } from "./components/left_aside.js";
+import { appState, resetAll } from "./state.js"
+import { handle_user_profile } from "./components/profile.js"
 
 // Global variable to store categories data
-let categoriesData = [];
+// let categoriesData = [];
 
 
 
 export function render_home_page() {
+    resetAll()
     fetch("http://localhost:8080/logged_user", {
         method: "GET",
         headers: {
@@ -33,7 +35,7 @@ export function render_home_page() {
             sendMessage(worker, { type: "login" })
 
             fetch_categories().then(categories => {
-                categoriesData = categories;
+                appState.categoriesData = categories;
 
                 // Render the home page with categories
                 document.body.innerHTML = /*html*/`
@@ -72,7 +74,9 @@ export function render_home_page() {
                     }
                 }, 500));
 
+
                 load_users();
+                handle_user_profile()
                 logout();
             }).catch(error => {
                 console.error("Error fetching categories:", error);

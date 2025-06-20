@@ -92,13 +92,6 @@ func (userHandler *UsersHandlers) UsersLoginHandler(w http.ResponseWriter, r *ht
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	// register the user in my hub:
-	// client := &services.Client{
-	// 	UserId: user.Id,
-	// }
-
-	// userHandler.chatBroker.Register <- client
-
 	// Create response with user data and session info:
 	response := struct {
 		UserID    int    `json:"user_id"`
@@ -173,19 +166,34 @@ func (userHandler *UsersHandlers) IsLogged(w http.ResponseWriter, r *http.Reques
 	utils.ResponseJSON(w, http.StatusOK, map[string]string{"message": "User logged out successfully"})
 }
 
-// Get users for chat:
-// Get all users for chat (removed offset and limit):
-// func (userHandler *UsersHandlers) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodGet {
-// 		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "method not allowed"})
-// 		return
-// 	}
+// function to get the user profile:
+func (UsersHandler *UsersHandlers) GetProfileHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "invalid method"})
+		return
+	}
 
-// 	// Get all users without pagination
-// 	users, err := userHandler.userServ.GetUsersService()
-// 	if err != nil {
-// 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "failed to get users"})
-// 		return
-// 	}
-// 	utils.ResponseJSON(w, http.StatusOK, users)
-// }
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid token"})
+		return
+	}
+
+	token := cookie.Value
+	userId, err := UsersHandler.sessionServ.GetUserIdFromSession(token)
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "invalid user id"})
+		return
+	}
+
+	// get user by id:
+	user, err := UsersHandler.userServ.GetUserProfile(userId)
+		if err != nil {
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "user does't exist"})
+		return
+	}
+	user.Password = "********"
+
+		w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}

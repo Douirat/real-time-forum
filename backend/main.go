@@ -59,10 +59,11 @@ func main() {
 	// Setup router and routes:
 	mainRouter := router.NewRouter(sessionService)
 
-	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
+	// mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
 	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)
 	mainRouter.AddRoute("POST", "/login", usersHandlers.UsersLoginHandler)
 	mainRouter.AddRoute("POST", "/logout", usersHandlers.Logout)
+	mainRouter.AddRoute("GET", "/get_profile", usersHandlers.GetProfileHandler)
 	// mainRouter.AddRoute("GET", "/get_users", usersHandlers.GetUsersHandler)
 	mainRouter.AddRoute("GET", "/logged_user", usersHandlers.IsLogged)
 	mainRouter.AddRoute("POST", "/add_post", postsHandlers.CreatePostsHandler)

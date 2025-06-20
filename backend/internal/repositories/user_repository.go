@@ -11,6 +11,7 @@ type UsersRepositoryLayer interface {
 	GetUserByEmail(email string) (*models.User, error)
 	GetUserByID(id int) (*models.User, error)
 	GetUsersRepo(offset, limit int) ([]*models.ChatUser, error)
+	
 }
 
 // Create a structure to represent to implemente the contract with the repo interface:

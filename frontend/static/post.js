@@ -1,9 +1,10 @@
 // Import comment functions:
 import { toggle_comments, add_comment } from './comments.js';
 import { navigateTo } from './script.js';
+import { appState } from './state.js';
 
-let posts_offset = 0;
-const posts_limit = 10;
+// let posts_offset = 0;
+// const posts_limit = 10;
 
 // Function to fetch categories:
 export function fetch_categories() {
@@ -81,19 +82,19 @@ export function add_new_post() {
 
 // Enhanced show posts function with category display:
 export function show_posts() {
-    fetch(`http://localhost:8080/get_posts?offset=${posts_offset}&limit=${posts_limit}`)
+    fetch(`http://localhost:8080/get_posts?offset=${appState.posts_offset}&limit=${appState.posts_limit}`)
         .then(response => response.json())
         .then(data => {
             const postsContainer = document.querySelector(".posts");
 
             // If it's the first load, clear the container
-            if (posts_offset === 0) {
+            if (appState.posts_offset === 0) {
                 postsContainer.innerHTML = "";
             }
 
             if (data && data.length > 0) {
                 // ✅ DO NOT reverse data – it's already newest to oldest
-                posts_offset += data.length; // ✅ Increment offset for next scroll
+                appState.posts_offset += data.length; 
 
                 data.forEach(post => {
                     const postDiv = document.createElement("div");
@@ -177,7 +178,7 @@ export function show_posts() {
                     postsContainer.appendChild(postDiv);
                 });
 
-                console.log(`Loaded ${data.length} posts. New offset: ${posts_offset}`);
+                console.log(`Loaded ${data.length} posts. New offset: ${appState.posts_offset}`);
             } else {
                 // No posts found
                 if (posts_offset === 0) {

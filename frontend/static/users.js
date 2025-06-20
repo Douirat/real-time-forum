@@ -1,11 +1,12 @@
-import { render_char_area } from "./components/chat_area.js";
 import { navigateTo } from "./script.js";
 import { start_chat_with_user } from "./chat.js"
 import { worker, sendMessage } from "./worker.js";
+import { appState } from "./state.js";
+
 
 // users offset and limit:
-let users_offset = 0
-let users_limit = 10
+// let users_offset = 0
+// let users_limit = 10
 let isFetchingUsers = false;
 
 export async function register_new_user() {
@@ -162,13 +163,15 @@ export function setupUserScrollListener() {
 }
 
 export function load_users() {
+  console.log("The offset is: ", appState.users_offset);
+
   isFetchingUsers = true;
-  fetch(`http://localhost:8080/get_users?offset=${users_offset}&limit=${users_limit}`)
+  fetch(`http://localhost:8080/get_users?offset=${appState.users_offset}&limit=${appState.users_limit}`)
     .then(response => response.json())
     .then(data => {
       if (data.length > 0) {
         renderUsers(data);
-        users_offset += data.length;
+        appState.users_offset += data.length;
       } else {
         // No more users, remove scroll listener if needed
         const box = document.querySelector("#users-scroll-box");
@@ -179,3 +182,6 @@ export function load_users() {
       isFetchingUsers = false;
     });
 }
+
+
+

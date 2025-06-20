@@ -12,6 +12,7 @@ type UsersServicesLayer interface {
 	UserRegestration(user *models.User) error
 	AuthenticateUser(email, password string) (*models.User, error)
 	GetUsersService(offset, limit int) ([]*models.ChatUser, error)
+	GetUserProfile(userId int)(*models.User, error)
 }
 
 // Create structure to implement the services innterfase:
@@ -66,4 +67,9 @@ func (userServ *UsersServices) AuthenticateUser(email, password string) (*models
 // Get all users to fill the chat menu (removed offset and limit):
 func (userServ *UsersServices) GetUsersService(offset, limit int) ([]*models.ChatUser, error) {
 	return userServ.userRepository.GetUsersRepo(offset, limit)
+}
+
+// extract the user from dataabase:
+func (userServ *UsersServices)GetUserProfile(userId int)(*models.User, error) {
+	return userServ.userRepository.GetUserByID(userId)
 }
