@@ -16,14 +16,20 @@ export function show_comments_for_post(postId) {
         .then(comments => {
             const container = document.getElementById(`comments-container-${postId}`);
             if (!container) return;
+            
+            // Handle different response types
+            if (comments === null || comments === undefined) {
+                container.innerHTML = `<p>No comments yet</p>`;
+                return;
+            }
             container.innerHTML = comments.length === 0 ? `<p>No comments yet</p>` : renderCommentsList(comments.reverse());
         })
         .catch(err => {
-            console.error("Error fetching comments:", err);
+            console.error("ERR DETAILS:", err);
             if (err.status) {
                 render_error_page(err.status, getErrorMessage(err.status));
             } else {
-                render_error_page(500, "Failed to Error fetching comments due to an unknown error");
+                render_error_page(500, "Failed to fetch comments due to an unknown error");
             }
         });
 }
