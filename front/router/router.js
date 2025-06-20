@@ -1,6 +1,7 @@
 import { render_home_page } from "../views/home.js";
 import { registration_form, login_form } from "../components/forms.js";
 import { render_error_page } from "../views/error.js";
+import { getErrorMessage } from "../utils/error_validators.js";
 
 const routes = {
     "/": render_home_page,
@@ -19,8 +20,9 @@ export function router() {
     if (route) {
         route();
     } else {
-        render_error_page(404, "The page you're looking for does not exist.");
-    }
+        const status = 404;
+        const message = getErrorMessage(status);
+        render_error_page(status, message);    }
 }
 
 // Handle browser back/forward buttons
