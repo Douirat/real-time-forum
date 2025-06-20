@@ -1,14 +1,45 @@
 @import url(chat_area.css);
+@import url(left_aside.css);
 
-
-*{
+* {
     box-sizing: border-box;
     background-repeat: no-repeat;
 }
 
-body{
+body {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    /* Aside fixed width, Main takes rest */
+    grid-template-rows: 60px 1fr;
+    /* Header fixed height, rest flexible */
+    height: 100vh;
+    grid-template-areas:
+        "header header"
+        "aside main";
+}
+
+
+header {
+  grid-area: header;
+  background: #333;
+  color: white;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+}
+
+aside {
+  grid-area: aside;
+  background: #f0f0f0;
+  padding: 20px;
+}
+
+main {
+  grid-area: main;
+  background: #ffffff;
+  padding: 20px;
 }

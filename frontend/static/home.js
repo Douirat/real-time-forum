@@ -1,12 +1,12 @@
 import { header } from "./components/header.js";
-import { render_users } from "./components/chat_users.js";
+// import { render_users } from "./components/chat_users.js";
 import { post_form } from "./components/forms.js";
 import { fetch_categories, show_posts, add_new_post } from "./post.js";
 import { navigateTo } from "./script.js";
 import { load_users, logout } from "./users.js";
 import { throttle } from "./utils.js";
 import { sendMessage, worker } from "./worker.js";
-
+import { render_left_aside } from "./components/left_aside.js";
 
 // Global variable to store categories data
 let categoriesData = [];
@@ -38,7 +38,7 @@ export function render_home_page() {
                 // Render the home page with categories
                 document.body.innerHTML = /*html*/`
                     ${header()}
-                    ${render_users()}
+                    ${render_left_aside()}
                     <main>
                         <section>
                             <div class="postForm">
