@@ -1,7 +1,9 @@
 // showPosts.js
 import { toggle_comments } from '../comments/toggleComments.js';
 import { add_comment } from '../comments/addComment.js';
-import { formatDate,renderCategories } from '../../utils/post_validators.js';
+import { formatDate, renderCategories } from '../../utils/post_validators.js';
+import { render_error_page } from "../error.js";
+import { getErrorMessage } from "../../utils/error_validators.js";
 
 let offset = 0;
 const limit = 10;
@@ -52,5 +54,12 @@ export function show_posts() {
                 container.appendChild(postDiv);
             });
         })
-        .catch(err => console.error("Fetch error:", err));
+        .catch(err => {
+            console.error("Fetch error:", err);
+            if (err.status) {
+                render_error_page(err.status, getErrorMessage(err.status));
+            } else {
+                render_error_page(500, "Failed to add comment due to an unknown error");
+            }
+        });
 }
