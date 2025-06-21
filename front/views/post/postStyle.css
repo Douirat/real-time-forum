@@ -74,3 +74,22 @@
     border-radius: 6px;
     font-size: 14px;
 }
+.post-title {
+    background-color: #f0f4ff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a237e;
+}
+
+.post-content {
+    background-color: #fafafa;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 15px;
+    color: #333;
+    line-height: 1.6;
+    margin-bottom: 10px;
+}

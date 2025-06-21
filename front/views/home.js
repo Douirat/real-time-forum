@@ -1,7 +1,8 @@
+// home.js
 import { header, logout } from "../components/header.js";
 import { post_form } from "../components/forms.js";
 import { fetch_categories } from "./post/fetchCategories.js";
-import { show_posts } from "./post/showPosts.js";
+import { show_posts, initScrollListener, reset_pagination } from "./post/showPosts.js";
 import { navigateTo } from "../router/router.js";
 
 // Global variable to store categories data
@@ -25,6 +26,9 @@ export function render_home_page() {
         fetch_categories().then(categories => {
             categoriesData = categories;
 
+            // إعادة تعيين pagination عند دخول الصفحة الرئيسية
+            reset_pagination();
+
             // Render the home page with categories
             document.body.innerHTML = /*html*/`
                 ${header()}
@@ -40,7 +44,13 @@ export function render_home_page() {
                 </main>
             `;
             
+            // تحميل المنشورات الأولى
             show_posts();
+            
+            // تفعيل scroll listener للتحميل التلقائي
+            initScrollListener();
+            
+            // تفعيل وظيفة logout
             logout();
         })
         .catch(error => {
