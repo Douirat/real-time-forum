@@ -1,4 +1,6 @@
 import { navigateTo } from "../router/router.js";
+import { render_error_page } from "../views/error.js";
+import { getErrorMessage } from "../utils/error_validators.js";
 
 export function header() {
     return /*html*/`
@@ -24,17 +26,22 @@ export function logout() {
                 .then(async response => {
                     if (!response.ok) {
                         const errorText = await response.text();
-                        throw new Error(errorText);
+                        const error = new Error(errorText);
+                        error.status = response.status;
+                        throw error;
                     }
                     return response.json();
                 })
                 .then(data => {
                     navigateTo("/login");
                 })
-                .catch(errorText => {
-                    console.log("Error:", errorText);
-                    // Navigate to login even if logout fails
-                    navigateTo("/login");
+                .catch(error => {
+                    console.error("Logout error:", error);
+                     if (error.status && error.status >= 500) {
+                        render_error_page(error.status, getErrorMessage(error.status));
+                    } else {
+                        navigateTo("/login");
+                    }
                 });
         });
     }
