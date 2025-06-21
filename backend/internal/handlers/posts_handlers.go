@@ -3,10 +3,11 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
+	"real_time_forum/internal/handlers/utils"
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/services"
-	"real_time_forum/internal/handlers/utils"
 )
 
 // Create a struct to represent the user
@@ -56,12 +57,29 @@ func (postHand *PostsHandlers) GetAllPostsHandler(w http.ResponseWriter, r *http
 		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "method not allowed"})
 		return
 	}
-	posts, err := postHand.postsServ.GetAllPostsService()
+
+	// Parse offset and limit from query
+	offsetStr := r.URL.Query().Get("offset")
+	limitStr := r.URL.Query().Get("limit")
+
+	// Default to 0 and 10 if not provided
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil {
+		offset = 0
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		limit = 10
+	}
+
+	// Call service with pagination
+	posts, err := postHand.postsServ.GetAllPostsService(offset, limit)
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "error getPosts"})
 		return
 	}
-	utils.ResponseJSON(w, http.StatusCreated, posts)
+
+	utils.ResponseJSON(w, http.StatusOK, posts)
 }
 
 // Get all posts handler:

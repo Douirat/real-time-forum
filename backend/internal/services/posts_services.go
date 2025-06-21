@@ -11,7 +11,7 @@ import (
 // Create an interface for the posts services:
 type PostsServiceLayer interface {
 	CreatePost(post *models.PostUser, token string) error
-	GetAllPostsService() ([]*models.PostUser, error)
+	GetAllPostsService(offset, limit int) ([]*models.PostUser, error) 
 	GetAllCategoriesService() ([]*models.Categories, error)
 }
 
@@ -41,19 +41,21 @@ func (postSer *PostsService) CreatePost(post *models.PostUser, token string) err
 }
 
 // Get all posts service:
-func (postSer *PostsService) GetAllPostsService() ([]*models.PostUser, error) {
-	posts, err := postSer.PostRepo.GetAllPostsRepository()
+func (postSer *PostsService) GetAllPostsService(offset, limit int) ([]*models.PostUser, error) {
+	posts, err := postSer.PostRepo.GetAllPostsRepository(offset, limit)
 	if err != nil {
 		return nil, err
 	}
+
 	for _, post := range posts {
 		parsedTime, err := time.Parse("2006-01-02 15:04:05", post.CreatedAt)
 		if err == nil {
-			post.CreatedAt = parsedTime.Format(time.RFC3339) // ISO 8601 standard
+			post.CreatedAt = parsedTime.Format(time.RFC3339)
 		}
 	}
 	return posts, nil
 }
+
 
 // Get all categories service:
 func (postSer *PostsService) GetAllCategoriesService() ([]*models.Categories, error) {
