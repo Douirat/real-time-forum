@@ -1,5 +1,7 @@
 import { navigateTo } from "../router/router.js";
 import { isValidEmail } from "../utils/auth_validators.js";
+import { render_error_page } from "./error.js";
+import { getErrorMessage } from "../utils/error_validators.js";
 
 export async function login_user() {
     let credentials = {
@@ -22,13 +24,25 @@ export async function login_user() {
         .then(async (response) => {
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(errorText);
+                const error = new Error(errorText);
+                error.status = response.status;
+                throw error;
             }
             return response.json();
         })
         .then((data) => navigateTo("/"))
-        .catch((errorText) => {
-            console.log("Error:", errorText);
-            alert("Login failed. Please check your credentials.");
+        .catch((error) => {
+            console.error("Login error:", error);
+
+            // Handle specific HTTP errors
+            if (error.status) {
+                if (error.status === 401 || error.status === 403) {
+                    alert("Login failed. Please check your credentials.");
+                } else {
+                    render_error_page(error.status, getErrorMessage(error.status));
+                }
+            } else {
+                render_error_page(500, "Login failed due to an unknown error");
+            }
         });
 }
