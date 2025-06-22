@@ -86,7 +86,10 @@ function get_chat_history(user) {
     .then(data => {
       const container = document.getElementById("messages-container")
       container.innerHTML = ""
-      if (!data || data.length() == 0){
+      if (!data){
+        return
+      }
+      if (data.length == 0){
         return
       }
       data.forEach(msg => {
