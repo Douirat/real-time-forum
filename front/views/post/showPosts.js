@@ -17,52 +17,47 @@ export function reset_pagination() {
     hasMorePosts = true;
 }
 
-// دالة للتحقق من وصول المستخدم لأسفل الصفحة
 function isNearBottom() {
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
     const windowHeight = window.innerHeight;
     const documentHeight = document.documentElement.scrollHeight;
     
-    // إذا وصل المستخدم للـ 80% من الصفحة
     return scrollTop + windowHeight >= documentHeight * 0.95;
 }
 
-// دالة محدودة بـ throttle للتحقق من الـ scroll
 const handleScroll = throttle(() => {
-    console.log('Scroll detected, checking conditions...'); // للتتبع
+    console.log('Scroll detected, checking conditions...');  للتتبع
     console.log('isNearBottom:', isNearBottom());
     console.log('isLoading:', isLoading);
     console.log('hasMorePosts:', hasMorePosts);
     
     if (isNearBottom() && !isLoading && hasMorePosts) {
-        console.log('Loading more posts...'); // للتتبع
+        console.log('Loading more posts...');  للتتبع
         show_posts();
     }
 }, 200);
 
-// إضافة مستمع للـ scroll عند تحميل الصفحة
 export function initScrollListener() {
     window.addEventListener('scroll', handleScroll);
-    console.log('Scroll listener initialized'); // للتتبع
+    console.log('Scroll listener initialized'); 
 }
 
-// إزالة مستمع الـ scroll عند الحاجة
 export function removeScrollListener() {
     window.removeEventListener('scroll', handleScroll);
 }
 
 export function show_posts() {
     if (isLoading) {
-        console.log('Already loading, skipping...'); // للتتبع
+        console.log('Already loading, skipping...'); 
         return;
     }
     
     if (!hasMorePosts) {
-        console.log('No more posts available'); // للتتبع
+        console.log('No more posts available'); 
         return;
     }
     
-    console.log(`Loading posts with offset: ${offset}, limit: ${limit}`); // للتتبع
+    console.log(`Loading posts with offset: ${offset}, limit: ${limit}`); 
     isLoading = true;
     
     fetch(`http://localhost:8080/get_posts?offset=${offset}&limit=${limit}`)
@@ -76,8 +71,8 @@ export function show_posts() {
             return res.json();
         })
         .then(data => {
-            console.log('Received posts:', data.length); // للتتبع
-            
+            console.log('Received posts:', data.length); 
+                        
             const container = document.querySelector(".posts");
             if (offset === 0) {
                 container.innerHTML = "";
@@ -88,21 +83,17 @@ export function show_posts() {
                     container.innerHTML = "<p>No posts yet. Be the first to create one!</p>";
                 }
                 hasMorePosts = false;
-                console.log('No more posts to load'); // للتتبع
+                console.log('No more posts to load'); 
                 return;
             }
 
-            // إذا عدد المنشورات أقل من الحد المطلوب، فلا توجد منشورات أكثر
             if (data.length < limit) {
                 hasMorePosts = false;
-                console.log('Reached end of posts'); // للتتبع
+                console.log('Reached end of posts');
             }
 
-            // تحديث الـ offset
             offset += data.length;
             
-            // إزالة هذا السطر المشكوك فيه - قد يسبب مشاكل
-            // if (offset === data.length) data.reverse();
 
             data.forEach(post => {
                 const postDiv = document.createElement("div");
@@ -132,7 +123,7 @@ export function show_posts() {
                 container.appendChild(postDiv);
             });
             
-            console.log(`Total posts loaded so far: ${container.children.length}`); // للتتبع
+            console.log(`Total posts loaded so far: ${container.children.length}`); 
         })
         .catch(err => {
             console.error("Fetch error:", err);
@@ -144,6 +135,6 @@ export function show_posts() {
         })
         .finally(() => {
             isLoading = false;
-            console.log('Loading finished'); // للتتبع
+            console.log('Loading finished');
         });
 }

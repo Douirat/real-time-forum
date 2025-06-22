@@ -2,35 +2,39 @@
 import { header, logout } from "../components/header.js";
 import { post_form } from "../components/forms.js";
 import { fetch_categories } from "./post/fetchCategories.js";
-import { show_posts, initScrollListener, reset_pagination } from "./post/showPosts.js";
+import {
+  show_posts,
+  initScrollListener,
+  reset_pagination,
+} from "./post/showPosts.js";
 import { navigateTo } from "../router/router.js";
 
 // Global variable to store categories data
 let categoriesData = [];
 
 export function render_home_page() {
-    fetch("http://localhost:8080/is_logged", {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json"
-        },
+  fetch("http://localhost:8080/is_logged", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText);
+      }
+      return response.json();
     })
-    .then(async response => {
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText);
-        }
-        return response.json();
-    })
-    .then(data => {
-        fetch_categories().then(categories => {
-            categoriesData = categories;
+    .then((data) => {
+      fetch_categories()
+        .then((categories) => {
+          categoriesData = categories;
 
-            // إعادة تعيين pagination عند دخول الصفحة الرئيسية
-            reset_pagination();
+          reset_pagination();
 
-            // Render the home page with categories
-            document.body.innerHTML = /*html*/`
+          // Render the home page with categories
+          document.body.innerHTML = /*html*/ `
                 ${header()}
                 <main>
                     <section>
@@ -43,22 +47,16 @@ export function render_home_page() {
                     </section>
                 </main>
             `;
-            
-            // تحميل المنشورات الأولى
-            show_posts();
-            
-            // تفعيل scroll listener للتحميل التلقائي
-            initScrollListener();
-            
-            // تفعيل وظيفة logout
-            logout();
+          show_posts();
+          initScrollListener();
+          logout();
         })
-        .catch(error => {
-            console.error("Error fetching categories:", error);
+        .catch((error) => {
+          console.error("Error fetching categories:", error);
         });
     })
-    .catch(error => {
-        console.log("Error:", error.message);
-        navigateTo("/login");
+    .catch((error) => {
+      console.log("Error:", error.message);
+      navigateTo("/login");
     });
 }
