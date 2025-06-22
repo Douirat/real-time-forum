@@ -71,7 +71,7 @@ export function show_posts() {
             return res.json();
         })
         .then(data => {
-            console.log('Received posts:', data.length); 
+            //console.log('Received posts:', data.length); 
                         
             const container = document.querySelector(".posts");
             if (offset === 0) {

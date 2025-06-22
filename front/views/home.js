@@ -21,6 +21,8 @@ export function render_home_page() {
   })
     .then(async (response) => {
       if (!response.ok) {
+                console.log("dddddddddddddd")
+
         const errorText = await response.text();
         throw new Error(errorText);
       }
