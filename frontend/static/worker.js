@@ -1,6 +1,5 @@
-import { navigateTo } from "./script.js";
 import { appState } from "./state.js";
-
+import { start_chat_with_user } from "./chat.js"
 
 export const worker = new SharedWorker("./static/shared_socket.js");
 
@@ -106,7 +105,7 @@ function update_status(senderId) {
     offlineContainer.querySelector(`[data-user-id='${senderId}']`);
 
   if (!userElem) {
-    fetch('http://localhost:8080/')
+    fetch(`http://localhost:8080/get_last_user?user_id=${senderId}`)
       .then(response => {
         // Check if the request was successful (status code 200-299)
         if (!response.ok) {
@@ -117,7 +116,50 @@ function update_status(senderId) {
       })
       .then(data => {
         // Process the fetched data
-        console.log('Fetched data:', data);
+        let user = { id: data.id, nick_name: data.nick_name, is_online: true }
+        console.log("the new added user is: ------------------>", data);
+        
+        console.log(user);
+        
+        const onlineContainer = document.querySelector("#online-users-list");
+
+        if (!onlineContainer) return;
+
+        // Create user chat div
+        const userChat = document.createElement("div");
+        userChat.classList.add("user_chat");
+        userChat.setAttribute("data-user-id", user.id);
+        userChat.setAttribute("role", "button");
+        userChat.setAttribute("tabindex", "0");
+
+        // Status indicator
+        const status = document.createElement("div");
+        status.classList.add("user_status");
+        status.classList.add("online");
+        status.setAttribute("aria-label", "Online");
+        status.title = "Online";
+
+        // User name
+        const userName = document.createElement("p");
+        userName.textContent = user.nick_name;
+        userChat.append(status, userName);
+
+        // Click handler
+        userChat.addEventListener("click", () => {
+          start_chat_with_user(user);
+        });
+
+        // Keyboard accessibility: trigger click on Enter or Space
+        userChat.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            start_chat_with_user();
+          }
+        });
+
+        // Append user to the correct container
+        onlineContainer.appendChild(userChat);
+
       })
       .catch(error => {
         // Handle any errors that occurred during the fetch operation
@@ -132,16 +174,12 @@ function update_status(senderId) {
     return;
   }
 
-  const isNowOnline = event.data.type === "online";
 
   // Update status classes
   statusIndicator.classList.toggle("online", isNowOnline);
-  statusIndicator.classList.toggle("offline", !isNowOnline);
-  statusIndicator.setAttribute("aria-label", isNowOnline ? "Online" : "Offline");
-  statusIndicator.title = isNowOnline ? "Online" : "Offline";
+  statusIndicator.setAttribute("aria-label", "Online");
+  statusIndicator.title = "Online"
 
-  // Move user to correct container
-  const targetContainer = isNowOnline ? onlineContainer : offlineContainer;
-  targetContainer.appendChild(userElem);
+  onlineContainer.appendChild(userElem);
 
 }

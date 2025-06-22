@@ -1,5 +1,4 @@
 import { render_char_area } from "./components/chat_area.js";
-import { navigateTo } from "./script.js";
 import { appState } from "./state.js";
 import { sendMessage, worker } from "./worker.js";
 
@@ -30,26 +29,25 @@ function handle_messsage(user) {
   
 
   sendBtn.addEventListener("click", () => {
-    let input = inputField.value.trim();
-    if (input === "") return;
-    console.log("worker: ", worker);
+    let input = inputField.value.trim()
+    if (input === "") return
+    console.log("worker: ", worker)
     let message = {
       type: "message",
       receiver: user.id,
       content: input
     }
    
-    sendMessage(worker, message);
+    sendMessage(worker, message)
     display_sent_message(message)
-      // navigateTo("/")
-    inputField.value = "";
-  });
+    inputField.value = ""
+  })
 }
 
 
 // handle sending the typing notification:
 function handle_typing(user) {
-  let input_field = document.getElementById("message-input");
+  let input_field = document.getElementById("message-input")
   input_field.addEventListener("input", () => {
     if (!isTyping) {
       sendMessage(worker, {
@@ -57,7 +55,7 @@ function handle_typing(user) {
         receiver: user.id,
         content: "typing_status"
       });
-      isTyping = true;
+      isTyping = true
     }
 
     clearTimeout(time_out); 
@@ -69,10 +67,10 @@ function handle_typing(user) {
           receiver: user.id,
           content: "typing_status"
         });
-        isTyping = false;
+        isTyping = false
       }
-    }, 1500);
-  });
+    }, 1500)
+  })
 }
 
 // get chat history:
@@ -81,12 +79,12 @@ function get_chat_history(user) {
   fetch(`http://localhost:8080/get_chat?user_id=${user.id}`)
     .then(response => {
       if (!response.ok) {
-        throw new Error("Failed to fetch chat history");
+        throw new Error("Failed to fetch chat history")
       }
-      return response.json();
+      return response.json()
     })
     .then(data => {
-      const container = document.getElementById("messages-container");
+      const container = document.getElementById("messages-container")
       container.innerHTML = ""
       if (!data || data.length() == 0){
         return
@@ -118,11 +116,11 @@ function cancel_chat() {
 }
 
  function display_sent_message(message) {
-  const container = document.getElementById("messages-container");
-  if (!container) return;
-  const msgDiv = document.createElement("div");
-  msgDiv.classList.add("message", "sent");
-  msgDiv.innerText = message.content;
-  container.appendChild(msgDiv);
-  container.scrollTop = container.scrollHeight;
+  const container = document.getElementById("messages-container")
+  if (!container) return
+  const msgDiv = document.createElement("div")
+  msgDiv.classList.add("message", "sent")
+  msgDiv.innerText = message.content
+  container.appendChild(msgDiv)
+  container.scrollTop = container.scrollHeight
  }
