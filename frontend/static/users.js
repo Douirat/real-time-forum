@@ -5,8 +5,6 @@ import { appState } from "./state.js";
 
 
 // users offset and limit:
-// let users_offset = 0
-// let users_limit = 10
 let isFetchingUsers = false;
 
 export async function register_new_user() {
@@ -129,37 +127,83 @@ export function logout() {
 
 
 function renderUsers(users) {
-  const container = document.querySelector("#users-list");
-  container.innerHTML = ""
+  console.log("All users: ", users);
+  
+  const onlineContainer = document.querySelector("#online-users-list");
+  const offlineContainer = document.querySelector("#offline-users-list");
+  if (!onlineContainer || !offlineContainer) return;
+
+  // Clear previous users
+  onlineContainer.innerHTML = "";
+  offlineContainer.innerHTML = "";
+
   users.forEach(user => {
     console.log("the chat user: ", user);
-    let user_chat = document.createElement("div")
-    user_chat.classList.add("user_chat")
-    user_chat.setAttribute("id", user.id)
-    const status = document.createElement("div")
-    status.setAttribute("id", "user_status");
-    status.classList.add("offline")
-    let user_name = document.createElement("p")
-    user_name.innerText = user.nick_name;
-    user_chat.append(status, user_name)
 
-    user_chat.addEventListener("click", () => {
-      start_chat_with_user(user.id)
-    })
-    container.appendChild(user_chat)
+    // Create user chat div
+    const userChat = document.createElement("div");
+    userChat.classList.add("user_chat");
+    userChat.setAttribute("data-user-id", user.id);
+    userChat.setAttribute("role", "button");
+    userChat.setAttribute("tabindex", "0");
+
+    // Status indicator
+    const status = document.createElement("div");
+    status.classList.add("user_status");
+    if (user.is_online) {
+      status.classList.add("online");
+      status.setAttribute("aria-label", "Online");
+      status.title = "Online";
+    } else {
+      status.classList.add("offline");
+      status.setAttribute("aria-label", "Offline");
+      status.title = "Offline";
+    }
+
+    // User name
+    const userName = document.createElement("p");
+    userName.textContent = user.nick_name || "Anonymous";
+
+    userChat.append(status, userName);
+
+    // Click handler
+    userChat.addEventListener("click", () => {
+      start_chat_with_user(user);
+    });
+
+    // Keyboard accessibility: trigger click on Enter or Space
+    userChat.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        start_chat_with_user(user);
+      }
+    });
+
+    // Append user to the correct container
+    if (user.is_online) {
+      onlineContainer.appendChild(userChat);
+    } else {
+      offlineContainer.appendChild(userChat);
+    }
   });
 }
 
 
 
 
+
 export function setupUserScrollListener() {
   const box = document.querySelector("#users-scroll-box");
-  box.addEventListener("scroll", () => {
+  if (!box) return;
+
+  function handleUserScroll() {
     if (box.scrollTop + box.clientHeight >= box.scrollHeight - 10 && !isFetchingUsers) {
-      loadMoreUsers();
+      load_users();
     }
-  });
+  }
+
+  box.addEventListener("scroll", handleUserScroll);
+  return { box, handleUserScroll };
 }
 
 export function load_users() {
@@ -171,15 +215,19 @@ export function load_users() {
         renderUsers(data);
         appState.users_offset += data.length;
       } else {
-        // No more users, remove scroll listener if needed
+        // No more users, remove scroll listener
         const box = document.querySelector("#users-scroll-box");
-        box.removeEventListener("scroll", handleUserScroll);
+        if (box && window.userScrollHandler) {
+          box.removeEventListener("scroll", window.userScrollHandler);
+          console.log("Removed user scroll listener - no more users");
+        }
       }
     })
     .finally(() => {
       isFetchingUsers = false;
     });
 }
+
 
 
 

@@ -11,7 +11,7 @@ import (
 type UsersServicesLayer interface {
 	UserRegestration(user *models.User) error
 	AuthenticateUser(email, password string) (*models.User, error)
-	GetUsersService(offset, limit int) ([]*models.ChatUser, error)
+	// GetUsersService(offset, limit int) ([]*models.ChatUser, error)
 	GetUserProfile(userId int)(*models.User, error)
 }
 
@@ -64,10 +64,10 @@ func (userServ *UsersServices) AuthenticateUser(email, password string) (*models
 	return user, nil
 }
 
-// Get all users to fill the chat menu (removed offset and limit):
-func (userServ *UsersServices) GetUsersService(offset, limit int) ([]*models.ChatUser, error) {
-	return userServ.userRepository.GetUsersRepo(offset, limit)
-}
+// // Get all users to fill the chat menu (removed offset and limit):
+// func (userServ *UsersServices) GetUsersService(offset, limit int) ([]*models.ChatUser, error) {
+// 	return userServ.userRepository.GetUsersRepo(offset, limit)
+// }
 
 // extract the user from dataabase:
 func (userServ *UsersServices)GetUserProfile(userId int)(*models.User, error) {

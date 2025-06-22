@@ -64,6 +64,7 @@ func main() {
 	mainRouter.AddRoute("POST", "/login", usersHandlers.UsersLoginHandler)
 	mainRouter.AddRoute("POST", "/logout", usersHandlers.Logout)
 	mainRouter.AddRoute("GET", "/get_profile", usersHandlers.GetProfileHandler)
+	mainRouter.AddRoute("GET", "/get_last_user", usersHandlers.GetLastUser)
 	// mainRouter.AddRoute("GET", "/get_users", usersHandlers.GetUsersHandler)
 	mainRouter.AddRoute("GET", "/logged_user", usersHandlers.IsLogged)
 	mainRouter.AddRoute("POST", "/add_post", postsHandlers.CreatePostsHandler)
@@ -74,6 +75,7 @@ func main() {
 	mainRouter.AddRoute("GET", "/ws", webSocketHandler.SocketHandler)
 	mainRouter.AddRoute("GET", "/get_users", webSocketHandler.GetUsers)
 	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
+	
 
 	// fmt.Println("Routes registered:", mainRouter.Routes)
 	fmt.Println("Listening on port: http://localhost:8080/")

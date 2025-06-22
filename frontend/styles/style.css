@@ -7,20 +7,20 @@
   background-repeat: no-repeat;
 }
 
-html, body {
+html,
+body {
   height: 100%;
-}
-
-/* LAYOUT GRID */
-.container {
+  overflow: auto;
   display: grid;
-  grid-template-columns: 250px 1fr;    /* Aside is 250px, main gets remaining */
-  grid-template-rows: 60px 1fr;        /* Header is 60px, rest fills */
+  grid-template-columns: 250px 1fr;
+  /* Aside is 250px, main gets remaining */
+  grid-template-rows: 60px 1fr;
+  /* Header is 60px, rest fills */
   grid-template-areas:
     "header header"
     "aside main";
   width: 100vw;
-  height: 100vh;
+  height: fit-content;
   font-family: sans-serif;
 }
 
@@ -73,7 +73,8 @@ main {
 }
 
 /* Optional: posts layout enhancements */
-.postForm, .posts {
+.postForm,
+.posts {
   margin-bottom: 20px;
 }
 
@@ -82,7 +83,7 @@ main {
   margin-bottom: 12px;
   padding: 12px;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .category-tag {
@@ -90,4 +91,18 @@ main {
   padding: 2px 6px;
   margin-right: 4px;
   border-radius: 4px;
+}
+
+#login_form {
+  position: absolute;
+  width: 40%;
+  height: fit-content;
+  top: 20%;
+}
+
+#registration_form {
+  position: absolute;
+  width: 40%;
+  height: fit-content;
+  top: 20%;
 }

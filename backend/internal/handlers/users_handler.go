@@ -197,3 +197,7 @@ func (UsersHandler *UsersHandlers) GetProfileHandler(w http.ResponseWriter, r *h
 		w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
 }
+
+func (UsersHandler *UsersHandlers)GetLastUser(w http.ResponseWriter, r *http.Request) {
+	
+}

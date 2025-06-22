@@ -39,12 +39,11 @@ export function render_home_page() {
                 appState.categoriesData = categories;
 
                 // Clear the body before rendering (SPA behavior)
-                document.body.innerHTML = "";
+                while (document.body.firstChild) {
+                    document.body.removeChild(document.body.firstChild);
+                }
 
-                // Create container and inject full layout
-                const container = document.createElement("div");
-                container.classList.add("container");
-                container.innerHTML = `
+                document.body.innerHTML = `
                 ${header()}
                 ${render_left_aside()}
                 <main>
@@ -59,7 +58,6 @@ export function render_home_page() {
                 </main>
             `;
 
-                document.body.appendChild(container);
 
                 // Attach post form submission listener
                 const postForm = document.getElementById("post-form");
@@ -72,22 +70,23 @@ export function render_home_page() {
 
                 // Init users + profile + logout
                 load_users();
+                
                 handle_user_profile();
                 logout();
 
                 // Load initial posts
                 show_posts();
-// ✅ Only ONE scroll listener (globally) with proper throttling
-window.addEventListener("scroll", throttle(() => {
-    const scrollPosition = window.innerHeight + window.scrollY;
-    const documentHeight = document.body.offsetHeight;
-     console.log("Near bottom — calling show_posts()", scrollPosition, " ", documentHeight);
 
-    if (!appState.isFetching && !appState.noMorePosts && scrollPosition >= documentHeight - 300) {
-        console.log("Near bottom — calling show_posts()");
-        show_posts();
-    }
-}, 300));
+
+                window.addEventListener("scroll", () => {
+                    const scrollPos = window.innerHeight + window.scrollY;
+                    const docHeight = document.body.offsetHeight;
+                    if (scrollPos >= docHeight - 300) {
+                        console.log("Near bottom, loading more posts...");
+                        show_posts();
+                    }
+                });
+
 
             }).catch(error => {
                 console.error("Error fetching categories:", error);

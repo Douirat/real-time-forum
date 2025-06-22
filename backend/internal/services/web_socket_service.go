@@ -373,27 +373,26 @@ func (socket *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *htt
 
 // Get all users and the online status as well:
 func (socket *WebSocketService) GetAllUsersWithStatus(id, offset, limit int) ([]*models.ChatUser, error) {
-    users, err := socket.UserRepo.GetUsersRepo(offset, limit)
-    if err != nil {
-        return nil, err
-    }
+	users, err := socket.UserRepo.GetSortedUsersForChat(id, offset, limit)
+	if err != nil {
+		return nil, err
+	}
 
-    socket.Hub.Mu.RLock()
-    defer socket.Hub.Mu.RUnlock()
+	socket.Hub.Mu.RLock()
+	defer socket.Hub.Mu.RUnlock()
 
-    var filteredUsers []*models.ChatUser
-    for _, user := range users {
-        if user == nil {
-            continue
-        }
-        if user.Id == id {
-            continue // skip current user
-        }
-        _, isOnline := socket.Hub.Clients[user.Id]
-        user.IsOnline = isOnline
-        filteredUsers = append(filteredUsers, user)
-    }
+	var filteredUsers []*models.ChatUser
+	for _, user := range users {
+		if user == nil {
+			continue
+		}
+		if user.Id == id {
+			continue // skip current user
+		}
+		_, isOnline := socket.Hub.Clients[user.Id]
+		user.IsOnline = isOnline
+		filteredUsers = append(filteredUsers, user)
+	}
 
-    return filteredUsers, nil
+	return filteredUsers, nil
 }
-
