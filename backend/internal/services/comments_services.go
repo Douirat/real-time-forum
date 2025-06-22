@@ -10,7 +10,7 @@ import (
 // Create an interface to represent the comment service:
 type CommentsServicesLayer interface {
 	MakeComments(comment *models.Comment, token string) error
-	ShowCommentsservice(id int) ([]*models.Comment, error)
+	ShowCommentsservice(id, offset, limit int) ([]*models.Comment, error)
 }
 
 // Create an object to function the functionalities of the my service layer:
@@ -35,6 +35,6 @@ func (comServ *CommentsServices) MakeComments(comment *models.Comment, token str
 }
 
 // show comments:
-func (comServ *CommentsServices) ShowCommentsservice(id int) ([]*models.Comment, error) {
-	return comServ.commentsRepo.ShowComments(id)
+func (comServ *CommentsServices) ShowCommentsservice(id, offset, limit int) ([]*models.Comment, error) {
+	return comServ.commentsRepo.ShowComments(id, offset, limit)
 }
