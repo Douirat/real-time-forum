@@ -1,3 +1,45 @@
+/* commentStyle.css */
+
+/* Make the comments container scrollable */
+#comments-container-1,
+#comments-container-2,
+#comments-container-3,
+#comments-container-4,
+#comments-container-5,
+#comments-container-6,
+#comments-container-7,
+#comments-container-8,
+#comments-container-9,
+#comments-container-10,
+[id^="comments-container-"] {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px;
+    background-color: #fafafa;
+    margin-bottom: 15px;
+}
+
+/* Custom scrollbar styling */
+[id^="comments-container-"]::-webkit-scrollbar {
+    width: 6px;
+}
+
+[id^="comments-container-"]::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+[id^="comments-container-"]::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+[id^="comments-container-"]::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
 .comments-list {
     list-style-type: none;
     padding: 0;
@@ -7,14 +49,19 @@
 .comment {
     padding: 10px;
     margin-bottom: 8px;
-    background-color: #f9f9f9;
+    background-color: #ffffff;
     border-radius: 6px;
+    border: 1px solid #e8e8e8;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .comment-header {
     display: flex;
     justify-content: space-between;
     margin-bottom: 5px;
+    align-items: center;
 }
 
 .comment-header strong {
@@ -24,8 +71,27 @@
 
 .comment-header small {
     color: #666;
+    font-size: 12px;
 }
 
 .comment p {
     margin: 0;
+    line-height: 1.4;
+    color: #333;
+}
+
+/* Loading indicator */
+.comments-loading {
+    text-align: center;
+    padding: 10px;
+    color: #666;
+    font-style: italic;
+}
+
+/* No comments message */
+.comments-container p {
+    text-align: center;
+    color: #888;
+    font-style: italic;
+    margin: 20px 0;
 }

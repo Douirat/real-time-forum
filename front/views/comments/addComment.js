@@ -1,5 +1,5 @@
-import { show_comments_for_post } from './fetchComments.js';
 import { isEmptyInput } from '../../utils/comment_validators.js';
+import { formatDate } from '../../utils/comment_validators.js';
 import { render_error_page } from "../error.js";
 import { getErrorMessage } from "../../utils/error_validators.js";
 
@@ -11,6 +11,7 @@ export function add_comment(postId) {
         alert("Please enter a comment");
         return;
     }
+    
     const commentData = {
         post_id: postId,
         content: commentInput.value.trim()
@@ -30,9 +31,19 @@ export function add_comment(postId) {
             }
             return res.json();
         })
-        .then(() => {
+        .then((response) => {
+            // Clear the input first
             commentInput.value = "";
-            show_comments_for_post(postId);
+            
+            // Add the new comment to the top of the list
+            addNewCommentToTop(postId, {
+                id: response.id || Date.now(),
+                content: commentData.content,
+                nick_name: response.nick_name || "Anonymous",
+                created_at: response.created_at || new Date().toISOString()
+            });
+            
+            console.log("Comment added successfully");
         })
         .catch(err => {
             console.error("Error adding comment:", err);
@@ -42,4 +53,46 @@ export function add_comment(postId) {
                 render_error_page(500, "Failed to add comment due to an unknown error");
             }
         });
+}
+
+// Function to add a new comment to the top of the list
+function addNewCommentToTop(postId, comment) {
+    const container = document.getElementById(`comments-container-${postId}`);
+    if (!container) return;
+    
+    // Check if there's a "No comments yet" message and remove it
+    const noCommentsMsg = container.querySelector('p');
+    if (noCommentsMsg && noCommentsMsg.textContent.includes('No comments yet')) {
+        noCommentsMsg.remove();
+    }
+    
+    let commentsList = container.querySelector('.comments-list');
+    
+    if (!commentsList) {
+        // If no comments list exists, create one
+        container.innerHTML = `<ul class="comments-list"></ul>`;
+        commentsList = container.querySelector('.comments-list');
+    }
+    
+    // Create the new comment HTML
+    const newCommentHtml = `
+        <li>
+            <div class="comment">
+                <div class="comment-header">
+                    <strong>${comment.nick_name || 'Anonymous'}</strong>
+                    <small>${formatDate(comment.created_at)}</small>
+                </div>
+                <p>${comment.content}</p>
+            </div>
+        </li>
+        
+    `;
+    
+    // Add new comment to the very top of the list
+    commentsList.insertAdjacentHTML('afterbegin', newCommentHtml);
+    
+    // Scroll the container to the top to show the new comment
+    container.scrollTop = 0;
+    
+    console.log(`New comment added to top of post ${postId}`);
 }
