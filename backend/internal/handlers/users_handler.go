@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"real_time_forum/internal/handlers/utils"
@@ -188,16 +190,48 @@ func (UsersHandler *UsersHandlers) GetProfileHandler(w http.ResponseWriter, r *h
 
 	// get user by id:
 	user, err := UsersHandler.userServ.GetUserProfile(userId)
-		if err != nil {
+	if err != nil {
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "user does't exist"})
 		return
 	}
 	user.Password = "********"
 
-		w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
 }
 
-func (UsersHandler *UsersHandlers)GetLastUser(w http.ResponseWriter, r *http.Request) {
-	
+func (UsersHandler *UsersHandlers) GetLastUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "invalid method"})
+		return
+	}
+
+	query := r.URL.Query()
+	userId := query.Get("user_id")
+
+	if userId == "" {
+		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "missing user id"})
+		return
+	}
+
+	userID, err := strconv.Atoi(userId)
+	if err != nil || userID <= 0 {
+		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "invalid user id"})
+		return
+	}
+
+	user, err := UsersHandler.userServ.GetUserProfile(userID)
+	if err != nil {
+		log.Printf("error fetching user %d: %v", userID, err)
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "error fetching the user"})
+		return
+	}
+
+	user.Age = 0
+	user.Email = ""
+	user.Gender = ""
+	user.FirstName = ""
+	user.LastName = ""
+
+	utils.ResponseJSON(w, http.StatusOK,  user)
 }
