@@ -127,64 +127,65 @@ export function logout() {
 
 
 function renderUsers(users) {
-  console.log("All users: ", users);
-  
-  const onlineContainer = document.querySelector("#online-users-list");
-  const offlineContainer = document.querySelector("#offline-users-list");
-  if (!onlineContainer || !offlineContainer) return;
+  const users_container = document.querySelector("#chat_users");
+  if (!users_container) return;
 
   // Clear previous users
-  onlineContainer.innerHTML = "";
-  offlineContainer.innerHTML = "";
+  users_container.innerHTML = "";
 
   users.forEach(user => {
     console.log("the chat user: ", user);
 
     // Create user chat div
-    const userChat = document.createElement("div");
-    userChat.classList.add("user_chat");
-    userChat.setAttribute("data-user-id", user.id);
-    userChat.setAttribute("role", "button");
-    userChat.setAttribute("tabindex", "0");
+    const user_chat = document.createElement("div");
+    user_chat.classList.add("user_chat");
+    user_chat.setAttribute("user-id", user.id);
+    user_chat.tabIndex = 0; // for keyboard navigation
 
     // Status indicator
     const status = document.createElement("div");
     status.classList.add("user_status");
     if (user.is_online) {
       status.classList.add("online");
-      status.setAttribute("aria-label", "Online");
       status.title = "Online";
     } else {
       status.classList.add("offline");
-      status.setAttribute("aria-label", "Offline");
       status.title = "Offline";
     }
 
     // User name
-    const userName = document.createElement("p");
-    userName.textContent = user.nick_name || "Anonymous";
+    const user_name = document.createElement("p");
+    user_name.textContent = user.nick_name || "Anonymous";
 
-    userChat.append(status, userName);
+    // Notification block
+    const notification = document.createElement("div");
+    notification.classList.add("notification");
+    
+    // Show unread count only if greater than 0
+    if (user.unread_count && user.unread_count > 0) {
+      notification.textContent = user.unread_count;
+      notification.classList.add("show"); // Use for styling
+    } else {
+      notification.classList.add("hidden"); // Optional styling
+    }
+
+    // Assemble chat user block
+    user_chat.append(status, user_name, notification);
 
     // Click handler
-    userChat.addEventListener("click", () => {
+    user_chat.addEventListener("click", () => {
       start_chat_with_user(user);
     });
 
-    // Keyboard accessibility: trigger click on Enter or Space
-    userChat.addEventListener("keydown", (e) => {
+    // Keyboard accessibility
+    user_chat.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         start_chat_with_user(user);
       }
     });
 
-    // Append user to the correct container
-    if (user.is_online) {
-      onlineContainer.appendChild(userChat);
-    } else {
-      offlineContainer.appendChild(userChat);
-    }
+    users_container.appendChild(user_chat);
   });
 }
 

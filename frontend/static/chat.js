@@ -6,20 +6,37 @@ let isTyping = false
 let time_out = null
 
 export function start_chat_with_user(user) {
-     worker.port.start()
+  worker.port.start();
+
   // Remove existing chat box if present
   let oldChat = document.querySelector("#chat_area");
   if (oldChat) oldChat.remove();
+
+  // Mark messages as read immediately
+  mark_messages_as_read(user.id);
+
+  // Remove notification from UI
+  const userElem = document.querySelector(`.user_chat[user-id='${user.id}']`);
+  if (userElem) {
+    const notif = userElem.querySelector(".notification");
+    if (notif) {
+      notif.textContent = "";
+      notif.classList.remove("show");
+      notif.classList.add("hidden");
+    }
+  }
 
   const temp = document.createElement('div');
   temp.innerHTML = render_char_area();
   const element = temp.firstElementChild;
   document.body.appendChild(element);
-  get_chat_history(user)
+
+  get_chat_history(user);
   handle_messsage(user);
   handle_typing(user);
   cancel_chat();
 }
+
 
 
 function handle_messsage(user) {
@@ -127,3 +144,20 @@ function cancel_chat() {
   container.appendChild(msgDiv)
   container.scrollTop = container.scrollHeight
  }
+
+
+ function mark_messages_as_read(fromId) {
+  fetch(`http://localhost:8080/mark_read?from_id=${fromId}`, {
+    method: "POST",
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Failed to mark messages as read");
+    return res.json();
+  })
+  .then(data => {
+    console.log("Messages marked as read:", data);
+  })
+  .catch(err => {
+    console.error("Error marking messages as read:", err);
+  });
+}

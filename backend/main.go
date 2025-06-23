@@ -74,7 +74,7 @@ func main() {
 	mainRouter.AddRoute("GET", "/ws", webSocketHandler.SocketHandler)
 	mainRouter.AddRoute("GET", "/get_users", webSocketHandler.GetUsers)
 	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
-	
+	mainRouter.AddRoute("POST", "mark_read", messagesHandler.MarkMessageAsRead)
 
 	// fmt.Println("Routes registered:", mainRouter.Routes)
 	fmt.Println("Listening on port: http://localhost:8080/")

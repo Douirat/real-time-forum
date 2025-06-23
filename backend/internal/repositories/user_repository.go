@@ -71,40 +71,44 @@ func (userRepo *UsersRepository) GetUserByID(id int) (*models.User, error) {
 // Get all users:
 func (userRepo *UsersRepository) GetSortedUsersForChat(myID, offset, limit int) ([]*models.ChatUser, error) {
 	query := `
-    SELECT id, nick_name
+    SELECT id, nick_name, unread_count
     FROM (
         -- Users who have chatted with me
         SELECT 
-            u.id, u.nick_name, MAX(pm.created_at) AS last_message_time
-        FROM 
-            users u
-        JOIN 
-            private_messages pm
-            ON (u.id = pm.sender_id AND pm.receiver_id = ?) OR
-               (u.id = pm.receiver_id AND pm.sender_id = ?)
-        WHERE 
-            u.id != ?
+            u.id, 
+            u.nick_name, 
+            MAX(pm.created_at) AS last_message_time,
+            (
+                SELECT COUNT(*) 
+                FROM private_messages 
+                WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0
+            ) AS unread_count
+        FROM users u
+        JOIN private_messages pm
+            ON (u.id = pm.sender_id AND pm.receiver_id = ?) 
+            OR (u.id = pm.receiver_id AND pm.sender_id = ?)
+        WHERE u.id != ?
         GROUP BY u.id
 
         UNION ALL
 
         -- Users who have NOT chatted with me
         SELECT 
-            u.id, u.nick_name, NULL as last_message_time
-        FROM 
-            users u
-        WHERE 
-            u.id != ? AND
-            u.id NOT IN (
-                SELECT 
-                    CASE 
-                        WHEN pm.sender_id = ? THEN pm.receiver_id
-                        ELSE pm.sender_id
-                    END
-                FROM private_messages pm
-                WHERE pm.sender_id = ? OR pm.receiver_id = ?
-            )
-    )
+            u.id, 
+            u.nick_name, 
+            NULL as last_message_time,
+            0 as unread_count
+        FROM users u
+        WHERE u.id != ? AND u.id NOT IN (
+            SELECT 
+                CASE 
+                    WHEN pm.sender_id = ? THEN pm.receiver_id
+                    ELSE pm.sender_id
+                END
+            FROM private_messages pm
+            WHERE pm.sender_id = ? OR pm.receiver_id = ?
+        )
+    ) AS all_users
     ORDER BY 
         last_message_time IS NULL,       
         last_message_time DESC,        
@@ -114,9 +118,8 @@ func (userRepo *UsersRepository) GetSortedUsersForChat(myID, offset, limit int) 
 
 	rows, err := userRepo.db.Query(
 		query,
-		myID, myID, myID,
-		myID,           
-		myID, myID, myID,
+		myID, myID, myID, myID, // For first subquery (unread count, joins, filter)
+		myID, myID, myID, myID, // For second subquery (not-in logic)
 		limit, offset,
 	)
 	if err != nil {
@@ -127,14 +130,16 @@ func (userRepo *UsersRepository) GetSortedUsersForChat(myID, offset, limit int) 
 	var users []*models.ChatUser
 	for rows.Next() {
 		chatUser := &models.ChatUser{}
-		if err := rows.Scan(&chatUser.Id, &chatUser.NickName); err != nil {
+		if err := rows.Scan(&chatUser.Id, &chatUser.NickName, &chatUser.UnreadCount); err != nil {
 			return nil, err
 		}
 
-		// You can later determine IsOnline via a map/session tracker
-		chatUser.IsOnline = false 
+		// For now, you can determine online status elsewhere (e.g., session map)
+		chatUser.IsOnline = false
+
 		users = append(users, chatUser)
 	}
 
 	return users, nil
 }
+

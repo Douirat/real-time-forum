@@ -9,6 +9,7 @@ import (
 // Create messages' service interface:
 type MessagesServiceLayer interface {
 	GetChatHistoryService(id int, sessionValue string) ([]*models.Message, error)
+	MarkMessageAsRead(fromID int) error
 }
 
 // Create the employee that will execute the message sevice interface:
@@ -34,4 +35,13 @@ func (mesSer *MessagesService) GetChatHistoryService(id int, sessionValue string
 	}
 	// Retrieve chat history between client and selected user
 	return mesSer.messageRepo.GetChatHistory(clientId, id)
+}
+
+// mark message as read service:
+func (mesSer *MessagesService)MarkMessageAsRead(fromID int) error {
+	err := mesSer.messageRepo.MarkMessageAsRead(fromID) 
+	if err != nil {
+		return err
+	}
+	return nil
 }

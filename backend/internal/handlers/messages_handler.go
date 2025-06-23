@@ -3,8 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"real_time_forum/internal/services"
 	"strconv"
+
+	"real_time_forum/internal/services"
 )
 
 // Create a struct to represent the:
@@ -54,4 +55,23 @@ func (messHand *MessagesHandler) GetChatHistoryHandler(w http.ResponseWriter, r 
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(messages)
+}
+
+// Mark a message as read:
+func (messHand *MessagesHandler) MarkMessageAsRead(w http.ResponseWriter, r *http.Request) {
+	fromIDStr := r.URL.Query().Get("from_id")
+	fromID, err := strconv.Atoi(fromIDStr)
+	if err != nil || fromID <= 0 {
+		http.Error(w, "Invalid sender ID", http.StatusBadRequest)
+		return
+	}
+
+	err := messHand.MessageSer.MarkMessageAsRead(fromID)
+	if err != nil {
+		http.Error(w, "Failed to mark as read", http.StatusInternalServerError)
+		return
+	}
+	    json.NewEncoder(w).Encode(map[string]any{
+        "success": true,
+    })
 }

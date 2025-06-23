@@ -1,6 +1,58 @@
-#profile_users{
-    width: 20vw;
-    position: fixed;
-    left: 0;
-    bottom: 0;
+.online {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: green;
+}
+
+.offline {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: red;
+}
+
+#chat_users{
+    width: fit-content;
+    height: fit-content;
+    padding: 2vmin;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1vmin;
+}
+
+.user_chat{
+    width: fit-content;
+    min-width: 140px;
+    padding: 4px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+    border: 1px rgb(85, 82, 82) solid;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.notification {
+  background-color: red;
+  color: white;
+  font-size: 12px;
+  min-width: 20px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  text-align: center;
+  margin-left: auto;
+  display: none; /* hide by default */
+}
+
+.notification.show {
+  display: inline-block;
+}
+
+.notification.hidden {
+  display: none;
 }
