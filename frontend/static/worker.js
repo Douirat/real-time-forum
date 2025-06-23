@@ -125,19 +125,19 @@ function displayMessage(msg) {
 
 function showTypingIndicator(msg) {
   console.log("called ->>--------->>");
-  
+
   const typingElem = document.getElementById("typing-indicator");
   if (!typingElem) return;
+  console.log(typingElem);
 
-  if (!appState.currentUser || msg.sender != appState.currentUser.id) {
+  if (!appState.chat_user || msg.sender != appState.chat_user.id) {
     return
   }
-  typingElem.innerText = `User ${appState.currentUser.nick_name} is typing...`;
+  typingElem.innerText = `User ${appState.chat_user.nick_name} is typing...`;
   typingElem.style.display = "block";
 }
 
 function hideTypingIndicator() {
-    console.log("called ->>--------->>");
   const typingElem = document.getElementById("typing-indicator");
   if (!typingElem) return;
   typingElem.style.display = "none";
