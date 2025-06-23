@@ -7,13 +7,14 @@ import (
 	"strconv"
 
 	"real_time_forum/internal/handlers/utils"
+	"real_time_forum/internal/models"
 	"real_time_forum/internal/services"
 )
 
 // Create a struct to represent the:
 type MessagesHandler struct {
 	MessageSer services.MessagesServiceLayer
-	SessServ services.SessionsServicesLayer
+	SessServ   services.SessionsServicesLayer
 }
 
 // Instantiate a new Messages handler:
@@ -79,14 +80,16 @@ func (messHand *MessagesHandler) GetChatHistoryHandler(w http.ResponseWriter, r 
 		return
 	}
 
+	// Send proper JSON response even when messages are empty
 	w.Header().Set("Content-Type", "application/json")
+	if messages == nil {
+		messages = []*models.Message{}
+	}
 	json.NewEncoder(w).Encode(messages)
 }
 
-
 // Mark a message as read:
 func (messHand *MessagesHandler) MarkMessageAsRead(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("The server visited this handler ------->")
 	fromIDStr := r.URL.Query().Get("from_id")
 	fromID, err := strconv.Atoi(fromIDStr)
 	if err != nil || fromID <= 0 {
