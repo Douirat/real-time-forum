@@ -2,20 +2,23 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
+	"real_time_forum/internal/handlers/utils"
 	"real_time_forum/internal/services"
 )
 
 // Create a struct to represent the:
 type MessagesHandler struct {
 	MessageSer services.MessagesServiceLayer
+	SessServ services.SessionsServicesLayer
 }
 
 // Instantiate a new Messages handler:
-func NewMessagesHandler(messSer *services.MessagesService) *MessagesHandler {
-	return &MessagesHandler{MessageSer: messSer}
+func NewMessagesHandler(messSer *services.MessagesService, sessSer *services.SessionService) *MessagesHandler {
+	return &MessagesHandler{MessageSer: messSer, SessServ: sessSer}
 }
 
 // Get chat history between the client and the chosen user:
@@ -59,6 +62,7 @@ func (messHand *MessagesHandler) GetChatHistoryHandler(w http.ResponseWriter, r 
 
 // Mark a message as read:
 func (messHand *MessagesHandler) MarkMessageAsRead(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("The server visited this handler ------->")
 	fromIDStr := r.URL.Query().Get("from_id")
 	fromID, err := strconv.Atoi(fromIDStr)
 	if err != nil || fromID <= 0 {
@@ -66,12 +70,24 @@ func (messHand *MessagesHandler) MarkMessageAsRead(w http.ResponseWriter, r *htt
 		return
 	}
 
-	err := messHand.MessageSer.MarkMessageAsRead(fromID)
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "No session token found"})
+		return
+	}
+
+	userID, err := messHand.SessServ.GetUserIdFromSession(cookie.Value)
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "Invalid session"})
+		return
+	}
+
+	err = messHand.MessageSer.MarkMessageAsRead(fromID, userID)
 	if err != nil {
 		http.Error(w, "Failed to mark as read", http.StatusInternalServerError)
 		return
 	}
-	    json.NewEncoder(w).Encode(map[string]any{
-        "success": true,
-    })
+	json.NewEncoder(w).Encode(map[string]any{
+		"success": true,
+	})
 }
