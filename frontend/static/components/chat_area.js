@@ -12,7 +12,7 @@ export function render_char_area() {
         </div>
 
         <!-- Typing indicator placeholder -->
-        <div id="typing-indicator" class="typing-indicator" style="display:none; font-style: italic; color: #555; padding: 5px 10px;"></div>
+        <div id="typing-indicator" class="typing-indicator"></div>
 
         <div class="message-input-container">
           <input type="text" id="message-input" placeholder="Type a message..." />

@@ -91,9 +91,9 @@
 }
 
 /* Typing indicator styles */
-#typing-indicator {
+.typing-indicator {
+  display: none;
   font-style: italic;
-  font-size: small;
-  padding: 5px 10px;
   color: #555;
+  padding: 5px 10px;
 }

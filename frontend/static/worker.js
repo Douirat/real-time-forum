@@ -9,7 +9,7 @@ worker.port.start();
 worker.port.onmessage = (event) => {
   const users_container = document.querySelector("#chat_users");
   const msg = event.data;
-  console.log("[Main] Message from worker:", msg);
+  console.log("[Main] Message from worker ->---------> :", msg);
 
   switch (msg.type) {
     case "message":
@@ -124,6 +124,8 @@ function displayMessage(msg) {
 
 
 function showTypingIndicator(msg) {
+  console.log("called ->>--------->>");
+  
   const typingElem = document.getElementById("typing-indicator");
   if (!typingElem) return;
 
@@ -135,6 +137,7 @@ function showTypingIndicator(msg) {
 }
 
 function hideTypingIndicator() {
+    console.log("called ->>--------->>");
   const typingElem = document.getElementById("typing-indicator");
   if (!typingElem) return;
   typingElem.style.display = "none";
