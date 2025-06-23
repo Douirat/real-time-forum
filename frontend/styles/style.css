@@ -63,6 +63,9 @@ aside#profile_users {
   background-color: #f2f2f2;
   overflow-y: auto;
   padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2vh;
 }
 
 /* MAIN */

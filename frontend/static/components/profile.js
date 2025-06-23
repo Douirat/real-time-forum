@@ -1,3 +1,5 @@
+import { appState } from "../state.js";
+
 // fill the profile with the user that has the session:
 export async function handle_user_profile() {
   const container = document.getElementById('user_profile_container'); // your container
@@ -16,6 +18,13 @@ export async function handle_user_profile() {
     }
 
     const user = await response.json();
+    console.log("the logged in user is: ", user);
+    
+    appState.app_user = {
+      id: user.id,
+      nick_name: user.nick_name,
+      is_online: true,
+    }
 
     // Render the profile HTML inline, right after data is fetched:
     container.innerHTML = /*HTML*/`

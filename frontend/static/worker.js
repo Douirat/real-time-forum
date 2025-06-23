@@ -1,18 +1,29 @@
 import { appState } from "./state.js";
-import { start_chat_with_user } from "./chat.js"
-import { load_users } from "./users.js";
+import { mark_messages_as_read } from "./chat.js"
+import { load_users, setupUserScrollListener } from "./users.js";
 
 export const worker = new SharedWorker("./static/shared_socket.js");
 
 worker.port.start();
 
 worker.port.onmessage = (event) => {
+  const users_container = document.querySelector("#chat_users");
   const msg = event.data;
   console.log("[Main] Message from worker:", msg);
 
   switch (msg.type) {
     case "message":
       displayMessage(msg);
+      if (appState.chat_user) {
+        if (msg.sender == appState.chat_user.id) {
+          mark_messages_as_read(msg.sender)
+        }
+      }
+      appState.users_offset = 0
+      if (users_container) {
+        users_container.innerHTML = "";
+      }
+      setupUserScrollListener()
       load_users()
       break;
 
@@ -23,16 +34,30 @@ worker.port.onmessage = (event) => {
       hideTypingIndicator();
       break;
     case "offline":
-      if (appState.currentUser) {
-        if (msg.sender == appState.currentUser.id) {
+
+      if (appState.chat_user) {
+        if (msg.sender == appState.chat_user.id) {
           hideTypingIndicator();
         }
       }
+
       // update_status(msg.sender)
+      console.log("the state is: ", appState);
+      appState.users_offset = 0
+      if (users_container) {
+        users_container.innerHTML = "";
+      }
+      setupUserScrollListener()
       load_users()
       break;
     case "online":
       // update_status(msg.sender)
+      appState.users_offset = 0
+      console.log("the state is: ", appState);
+      if (users_container) {
+        users_container.innerHTML = "";
+      }
+      setupUserScrollListener()
       load_users()
       break;
     case "status":
@@ -61,12 +86,39 @@ export function sendMessage(worker, message) {
 function displayMessage(msg) {
   const container = document.getElementById("messages-container");
   if (!container) return;
+
+  const isSentByAppUser = msg.sender_id === appState.app_user.id;
+
+  // Create message wrapper
   const msgDiv = document.createElement("div");
-  msgDiv.classList.add("message", "received"); // always "received"
-  // Insert message content (you can add timestamp if you have it)
-  msgDiv.innerText = msg.content;
+  msgDiv.classList.add("message");
+  msgDiv.classList.add(isSentByAppUser ? "sent" : "received");
+
+  // Sender name
+  const senderDiv = document.createElement("div");
+  senderDiv.classList.add("message_creator");
+  senderDiv.textContent = isSentByAppUser
+    ? appState.app_user.nick_name
+    : appState.chat_user.nick_name;
+
+  // Message content
+  const contentDiv = document.createElement("div");
+  contentDiv.classList.add("content");
+  contentDiv.textContent = msg.content;
+
+  // Generate current timestamp
+  const dateDiv = document.createElement("div");
+  dateDiv.classList.add("message_date");
+  const now = new Date();
+  dateDiv.textContent = now.toLocaleString(); // You can customize this format
+
+  // Build and append
+  msgDiv.appendChild(senderDiv);
+  msgDiv.appendChild(contentDiv);
+  msgDiv.appendChild(dateDiv);
   container.appendChild(msgDiv);
-  // Scroll chat to bottom
+
+  // Auto-scroll to bottom
   container.scrollTop = container.scrollHeight;
 }
 
@@ -87,105 +139,3 @@ function hideTypingIndicator() {
   if (!typingElem) return;
   typingElem.style.display = "none";
 }
-
-
-
-// Update the user statys dynamically:
-// function update_status(senderId) {
-//   const onlineContainer = document.querySelector("#online-users-list");
-//   const offlineContainer = document.querySelector("#offline-users-list");
-//   if (!onlineContainer || !offlineContainer) return;
-
-//   console.log("Updating status of user:", senderId);
-
-//   // Try to find user in both containers
-//   let userElem = onlineContainer.querySelector(`[data-user-id='${senderId}']`) ||
-//     offlineContainer.querySelector(`[data-user-id='${senderId}']`);
-
-//   if (!userElem) {
-//     console.warn("User element not found in DOM:", senderId);
-//     update_for_the_new_user(senderId)
-//     return;
-//   }
-
-//   const statusIndicator = userElem.querySelector(".user_status");
-//   if (!statusIndicator) {
-//     console.warn("Status indicator not found for user:", senderId);
-//     return;
-//   }
-
-//   const isNowOnline = event.data.type === "online";
-
-//   // Update status classes
-//   statusIndicator.classList.toggle("online", isNowOnline);
-//   statusIndicator.classList.toggle("offline", !isNowOnline);
-//   statusIndicator.setAttribute("aria-label", isNowOnline ? "Online" : "Offline");
-//   statusIndicator.title = isNowOnline ? "Online" : "Offline";
-
-//   // Move user to correct container
-//   const targetContainer = isNowOnline ? onlineContainer : offlineContainer;
-//   targetContainer.appendChild(userElem);
-// }
-
-// function update_for_the_new_user(sender_id) {
-//   fetch(`http://localhost:8080/get_last_user?user_id=${sender_id}`)
-//     .then(response => {
-//       // Check if the request was successful (status code 200-299)
-//       if (!response.ok) {
-//         throw new Error(`HTTP error! status: ${response.status}`);
-//       }
-//       // Parse the response body as JSON
-//       return response.json();
-//     })
-//     .then(data => {
-//       // Process the fetched data
-//       let user = { id: data.id, nick_name: data.nick_name, is_online: true }
-
-//       console.log(user);
-
-//       const onlineContainer = document.querySelector("#online-users-list");
-
-//       if (!onlineContainer) return;
-
-//       // Create user chat div
-//       const userChat = document.createElement("div");
-//       userChat.classList.add("user_chat");
-//       userChat.setAttribute("data-user-id", user.id);
-//       userChat.setAttribute("role", "button");
-//       userChat.setAttribute("tabindex", "0");
-
-//       // Status indicator
-//       const status = document.createElement("div");
-//       status.classList.add("user_status");
-//       status.classList.add("online");
-//       status.setAttribute("aria-label", "Online");
-//       status.title = "Online";
-
-//       // User name
-//       const userName = document.createElement("p");
-//       userName.textContent = user.nick_name;
-//       userChat.append(status, userName);
-
-//       // Click handler
-//       userChat.addEventListener("click", () => {
-//         start_chat_with_user(user);
-//       });
-
-//       // Keyboard accessibility: trigger click on Enter or Space
-//       userChat.addEventListener("keydown", (e) => {
-//         if (e.key === "Enter" || e.key === " ") {
-//           e.preventDefault();
-//           start_chat_with_user();
-//         }
-//       });
-
-//       // Append user to the correct container
-//       onlineContainer.appendChild(userChat);
-
-//     })
-//     .catch(error => {
-//       // Handle any errors that occurred during the fetch operation
-//       console.error('Error fetching data:', error);
-//     });
-//   return;
-// }

@@ -131,7 +131,7 @@ function renderUsers(users) {
   if (!users_container) return;
 
   // Clear previous users
-  users_container.innerHTML = "";
+  // users_container.innerHTML = "";
 
   users.forEach(user => {
     console.log("the chat user: ", user);
@@ -160,7 +160,7 @@ function renderUsers(users) {
     // Notification block
     const notification = document.createElement("div");
     notification.classList.add("notification");
-    
+
     // Show unread count only if greater than 0
     if (user.unread_count && user.unread_count > 0) {
       notification.textContent = user.unread_count;
@@ -193,41 +193,49 @@ function renderUsers(users) {
 
 
 
+export function load_users() {
+  if (appState.is_fetching_users) return; // prevent concurrent fetches
+  appState.is_fetching_users = true;
+  console.log("The offset and limits are: ", appState.users_offset, " ", appState.users_limit);
+
+  fetch(`http://localhost:8080/get_users?offset=${appState.users_offset}&limit=${appState.users_limit}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data) {
+        if (data.length > 0) {
+          renderUsers(data);
+          appState.users_offset += data.length;
+        } else {
+          // No more users, remove scroll listener
+          const box = document.querySelector("#users-scroll-box");
+          if (box && window.userScrollHandler) {
+            box.removeEventListener("scroll", window.userScrollHandler);
+            console.log("Removed user scroll listener - no more users");
+          }
+        }
+      }
+    })
+    .finally(() => {
+      appState.is_fetching_users = false;
+    });
+}
+
 export function setupUserScrollListener() {
   const box = document.querySelector("#users-scroll-box");
   if (!box) return;
 
   function handleUserScroll() {
-    if (box.scrollTop + box.clientHeight >= box.scrollHeight - 10 && !isFetchingUsers) {
+    if (box.scrollTop + box.clientHeight >= box.scrollHeight - 10 && !appState.is_fetching_users) {
       load_users();
     }
   }
 
   box.addEventListener("scroll", handleUserScroll);
+  window.userScrollHandler = handleUserScroll;
+
   return { box, handleUserScroll };
 }
 
-export function load_users() {
-  isFetchingUsers = true;
-  fetch(`http://localhost:8080/get_users?offset=${appState.users_offset}&limit=${appState.users_limit}`)
-    .then(response => response.json())
-    .then(data => {
-      if (data.length > 0) {
-        renderUsers(data);
-        appState.users_offset += data.length;
-      } else {
-        // No more users, remove scroll listener
-        const box = document.querySelector("#users-scroll-box");
-        if (box && window.userScrollHandler) {
-          box.removeEventListener("scroll", window.userScrollHandler);
-          console.log("Removed user scroll listener - no more users");
-        }
-      }
-    })
-    .finally(() => {
-      isFetchingUsers = false;
-    });
-}
 
 
 

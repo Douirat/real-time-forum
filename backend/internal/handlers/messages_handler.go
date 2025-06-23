@@ -40,13 +40,36 @@ func (messHand *MessagesHandler) GetChatHistoryHandler(w http.ResponseWriter, r 
 		return
 	}
 
+	// Handle offset and limit
+	offset := 0
+	limit := 20
+
+	if offsetParam := r.URL.Query().Get("offset"); offsetParam != "" {
+		offset, err = strconv.Atoi(offsetParam)
+		if err != nil || offset < 0 {
+			http.Error(w, "Invalid offset parameter", http.StatusBadRequest)
+			return
+		}
+	}
+
+	if limitParam := r.URL.Query().Get("limit"); limitParam != "" {
+		limit, err = strconv.Atoi(limitParam)
+		if err != nil || limit <= 0 {
+			http.Error(w, "Invalid limit parameter", http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Session check
 	cookie, err := r.Cookie("session_token")
 	if err != nil {
 		http.Error(w, "Unauthorized: missing session token", http.StatusUnauthorized)
 		return
 	}
 	sessionToken := cookie.Value
-	messages, err := messHand.MessageSer.GetChatHistoryService(guestId, sessionToken)
+
+	// Get messages
+	messages, err := messHand.MessageSer.GetChatHistoryService(guestId, sessionToken, offset, limit)
 	if err != nil {
 		if err.Error() == "user has no session" {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -59,6 +82,7 @@ func (messHand *MessagesHandler) GetChatHistoryHandler(w http.ResponseWriter, r 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(messages)
 }
+
 
 // Mark a message as read:
 func (messHand *MessagesHandler) MarkMessageAsRead(w http.ResponseWriter, r *http.Request) {
