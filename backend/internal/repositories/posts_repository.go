@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"database/sql"
-
 	"real_time_forum/internal/models"
 )
 
@@ -32,7 +31,7 @@ func (postRepository *PostsRepository) CreatePost(post *models.PostUser) error {
 	if err != nil {
 		return err
 	}
-	// check if error return to create
+	//check if error return to create
 	defer tx.Rollback()
 	// Execute the post creation query
 	result, err := tx.Exec(query, post.Title, post.Content, post.CreatedAt, post.UserId)

@@ -1,0 +1,240 @@
+import { render_char_area } from "../../components/chat_area.js";
+import { appState } from "../../utils/state.js";
+import { load_users, setupUserScrollListener } from "../users/users.js";
+import { sendMessage, worker } from "./worker.js";
+
+let isTyping = false
+let time_out = null
+
+export function start_chat_with_user(user) {
+  worker.port.start();
+
+  // Remove existing chat box if present
+  let oldChat = document.querySelector("#chat_area");
+  if (oldChat) oldChat.remove();
+
+  // Mark messages as read immediately
+  mark_messages_as_read(user.id);
+
+  // Remove notification from UI
+  const userElem = document.querySelector(`.user_chat[user-id='${user.id}']`);
+  if (userElem) {
+    const notif = userElem.querySelector(".notification");
+    if (notif) {
+      notif.textContent = "";
+      notif.classList.remove("show");
+      notif.classList.add("hidden");
+    }
+  }
+
+  const temp = document.createElement('div');
+  temp.innerHTML = render_char_area();
+  const element = temp.firstElementChild;
+  document.body.appendChild(element);
+
+  get_chat_history(user);
+  setupChatScrollListener();
+  handle_messsage(user);
+  handle_typing(user);
+  cancel_chat();
+}
+
+
+
+function handle_messsage(user) {
+  const users_container = document.querySelector("#chat_users");
+  let sendBtn = document.getElementById("send-button");
+  let inputField = document.getElementById("message-input");
+
+
+  sendBtn.addEventListener("click", () => {
+    let input = inputField.value.trim()
+    if (input === "") return
+    console.log("worker: ", worker)
+    let message = {
+      type: "message",
+      receiver: user.id,
+      content: input
+    }
+
+    sendMessage(worker, message)
+    display_sent_message(message)
+    appState.users_offset = 0
+    if (users_container) {
+      users_container.innerHTML = ""
+    }
+    setupUserScrollListener()
+    load_users()
+    inputField.value = ""
+  })
+}
+
+
+// handle sending the typing notification:
+function handle_typing(user) {
+  let input_field = document.getElementById("message-input")
+  input_field.addEventListener("input", () => {
+    if (!isTyping) {
+      sendMessage(worker, {
+        type: "start_typing",
+        receiver: user.id,
+        content: "typing_status"
+      });
+      isTyping = true
+    }
+
+    clearTimeout(time_out);
+
+    time_out = setTimeout(() => {
+      if (isTyping) {
+        sendMessage(worker, {
+          type: "stop_typing",
+          receiver: user.id,
+          content: "typing_status"
+        });
+        isTyping = false
+      }
+    }, 1500)
+  })
+}
+
+export function setupChatScrollListener() {
+  const container = document.getElementById("messages-container");
+  if (!container) return;
+
+  container.addEventListener("scroll", () => {
+    // Load more messages if scrolled to top and not already fetching
+    if (container.scrollTop === 0 && !appState.is_fetching_messages) {
+      get_chat_history(appState.chat_user);
+    }
+  });
+}
+
+
+// get chat history:
+function get_chat_history(user) {
+  if (appState.is_fetching_messages) return;
+  appState.is_fetching_messages = true;
+  appState.chat_user = user;
+
+
+  fetch(`http://localhost:8080/get_chat?user_id=${user.id}&offset=${appState.chat_offset}&limit=${appState.chat_limit}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Failed to fetch chat history");
+      }
+      return response.json();
+    })
+    .then(data => {
+      const container = document.getElementById("messages-container");
+      if (!container || !data || data.length === 0) {
+        appState.is_fetching_messages = false;
+        return;
+      }
+
+      const previousScrollHeight = container.scrollHeight;
+
+      data.forEach(msg => {
+        const msgDiv = document.createElement("div");
+        msgDiv.classList.add("message");
+        msgDiv.classList.add(msg.sender_id === user.id ? "received" : "sent");
+
+        const contentDiv = document.createElement("div");
+        contentDiv.classList.add("content");
+        contentDiv.textContent = msg.content;
+
+        const userDiv = document.createElement("div");
+        userDiv.classList.add("message_creator");
+        userDiv.textContent = msg.sender_id === user.id
+          ? user.nick_name
+          : appState.app_user?.nick_name || "You";
+
+        const dateDiv = document.createElement("div");
+        dateDiv.classList.add("message_date");
+        const dateObj = new Date(msg.created_at);
+        dateDiv.textContent = dateObj.toLocaleString();
+
+        msgDiv.appendChild(userDiv);
+        msgDiv.appendChild(contentDiv);
+        msgDiv.appendChild(dateDiv);
+
+        // Prepend to top (insert before first child)
+        container.insertBefore(msgDiv, container.firstChild);
+      });
+
+      appState.chat_offset += data.length;
+
+      // Maintain scroll position after prepending
+      container.scrollTop = container.scrollHeight - previousScrollHeight;
+
+      appState.is_fetching_messages = false;
+    })
+    .catch(error => {
+      appState.is_fetching_messages = false;
+      console.error("Error fetching chat history:", error);
+    });
+}
+
+
+
+
+// Cancel the chat area:
+function cancel_chat() {
+  let btn = document.getElementById("cancel_chat")
+  btn.addEventListener("click", () => {
+    appState.chat_user = null
+    btn.parentElement.parentElement.parentElement.remove()
+  })
+}
+
+
+// display sent messages on the ui to maintain realtime effect:
+function display_sent_message(message) {
+  const container = document.getElementById("messages-container");
+  if (!container) return;
+
+  const msgDiv = document.createElement("div");
+  msgDiv.classList.add("message", "sent");
+
+  // Sender name
+  const senderDiv = document.createElement("div");
+  senderDiv.classList.add("message_creator");
+  senderDiv.textContent = appState.app_user.nick_name;
+
+  // Message content
+  const contentDiv = document.createElement("div");
+  contentDiv.classList.add("content");
+  contentDiv.textContent = message.content;
+
+  // Current timestamp
+  const dateDiv = document.createElement("div");
+  dateDiv.classList.add("message_date");
+  dateDiv.textContent = new Date().toLocaleString();
+
+  // Append parts to message div
+  msgDiv.appendChild(senderDiv);
+  msgDiv.appendChild(contentDiv);
+  msgDiv.appendChild(dateDiv);
+
+  // Add to container and scroll
+  container.appendChild(msgDiv);
+  container.scrollTop = container.scrollHeight;
+}
+
+
+
+export function mark_messages_as_read(fromId) {
+  fetch(`http://localhost:8080/mark_read?from_id=${fromId}`, {
+    method: "POST",
+  })
+    .then(res => {
+      if (!res.ok) throw new Error("Failed to mark messages as read");
+      return res.json();
+    })
+    .then(data => {
+      console.log("Messages marked as read:", data);
+    })
+    .catch(err => {
+      console.error("Error marking messages as read:", err);
+    });
+}

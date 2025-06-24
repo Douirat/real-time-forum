@@ -69,9 +69,13 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Serve static files
-	if r.Method == "GET" && (strings.HasPrefix(r.URL.Path, "/static/") || strings.HasPrefix(r.URL.Path, "/styles/")) {
-		http.ServeFile(w, r, "../frontend"+r.URL.Path)
-		return
+	if r.Method == "GET" {
+		if strings.HasSuffix(r.URL.Path, ".css") || strings.HasSuffix(r.URL.Path, ".js") || strings.HasSuffix(r.URL.Path, ".png") {
+			http.ServeFile(w, r, "../frontend"+r.URL.Path)
+			return
+		}
+		// http.ServeFile(w, r, "../front/index.html")
+		// return
 	}
 
 	// Handle registered routes
@@ -82,5 +86,5 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Not found
-	http.NotFound(w, r)
+	http.ServeFile(w, r, "../frontend/index.html")
 }
