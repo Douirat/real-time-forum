@@ -5,6 +5,8 @@ import { fetch_categories } from "./post/fetchCategories.js";
 import { show_posts, initScrollListener, reset_pagination } from "./post/showPosts.js";
 import { navigateTo } from "../router/router.js";
 import { render_left_aside } from "../components/left_aside.js";
+import {setupUserScrollListener, load_users } from "./users/users.js";
+import { handle_user_profile } from "../components/profile.js";
 // import { appState } from "../utils/state.js";
 
 // Global variable to store categories data
@@ -46,6 +48,9 @@ export function render_home_page() {
                     </section>
                 </main>
             `;
+          setupUserScrollListener()
+          load_users()
+          handle_user_profile();
           show_posts();
           initScrollListener();
           logout();

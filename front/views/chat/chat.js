@@ -1,6 +1,6 @@
-import { render_char_area } from "./components/chat_area.js";
-import { appState } from "./state.js";
-import { load_users, setupUserScrollListener } from "./users.js";
+import { render_char_area } from "../../components/chat_area.js";
+import { appState } from "../../utils/state.js";
+import { load_users, setupUserScrollListener } from "../users/users.js";
 import { sendMessage, worker } from "./worker.js";
 
 let isTyping = false

@@ -1,6 +1,6 @@
-import { appState } from "./state.js";
+import { appState } from "../../utils/state.js";
 import { mark_messages_as_read } from "./chat.js"
-import { load_users, setupUserScrollListener } from "./users.js";
+import { load_users, setupUserScrollListener } from "../users/users.js";
 
 export const worker = new SharedWorker("./static/shared_socket.js");
 

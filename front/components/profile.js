@@ -1,4 +1,4 @@
-import { appState } from "../state.js";
+import { appState } from "../utils/state.js";
 
 // fill the profile with the user that has the session:
 export async function handle_user_profile() {
