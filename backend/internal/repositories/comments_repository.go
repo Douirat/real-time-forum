@@ -44,6 +44,7 @@ func (commentsRepo *CommentsRepository) ShowComments(id, offset, limit int) ([]*
 	 JOIN users AS u
 	 ON c.author_id=u.ID
 	 WHERE post_id = ?
+	 ORDER BY c.created_at DESC 
 	 LIMIT ? OFFSET ?;
 	`
 
