@@ -1,63 +1,102 @@
-import { header, logout } from "./components/header.js";
-import { render_left_aside, init_chat } from "./components/left_aside.js"; // Updated import
-import { render_right_aside, init_right_aside } from "./components/right_aside.js";
+import { header } from "./components/header.js";
 import { post_form } from "./components/forms.js";
-import { fetch_categories, show_posts } from "./post.js";
+import { fetch_categories, show_posts, add_new_post } from "./post.js";
 import { navigateTo } from "./script.js";
-import { create_web_socket } from "./web_socket.js";
-// Global variable to store categories data
-let categoriesData = [];
+import { load_users, logout, setupUserScrollListener } from "./users.js";
+import { throttle } from "./utils.js";
+import { sendMessage, worker } from "./worker.js";
+import { render_left_aside } from "./components/left_aside.js";
+import { appState, resetAppState } from "./state.js";
+import { handle_user_profile } from "./components/profile.js";
+
+
 
 export function render_home_page() {
-    fetch("http://localhost:8080/is_logged", {
+    resetAppState();
+
+    fetch("http://localhost:8080/logged_user", {
         method: "GET",
         headers: {
             "Content-Type": "application/json"
         },
     })
-    .then(async response => {
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText);
-        }
-        return response.json();
-    })
-    .then(data => {
-        // Initialize WebSocket connection
-        create_web_socket(data.username || "user");
-        
-        fetch_categories().then(categories => {
-            categoriesData = categories;
+        .then(async response => {
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Logged-in user:", data);
 
-            // Render the home page with categories
-            document.body.innerHTML = /*html*/`
-                    ${header()}
-                    ${render_left_aside()}
-                    <main>
-                        <section>
-                            <div class="postForm">
-                                ${post_form(categories)}
-                            </div>
-                            <div class="posts">
-                                <!-- Posts will be loaded here -->
-                            </div>
-                        </section>
-                    </main>
-                    ${render_right_aside()}
-                `;
-            
-            show_posts();
-            init_chat(); // Initialize chat functionality
-            init_right_aside(); // Initialize right aside with all users
+            // Setup SharedWorker communication
+            worker.port.start();
+            sendMessage(worker, { type: "login" });
 
-            logout();
+            // Fetch and store categories
+            fetch_categories().then(categories => {
+                appState.categoriesData = categories;
+
+                // Clear the body before rendering (SPA behavior)
+                while (document.body.firstChild) {
+                    document.body.removeChild(document.body.firstChild);
+                }
+
+                document.body.innerHTML = `
+                ${header()}
+                ${render_left_aside()}
+                <main>
+                    <section>
+                        <div class="postForm">
+                            ${post_form(categories)}
+                        </div>
+                        <div class="posts">
+                            <!-- Posts will be loaded here -->
+                        </div>
+                    </section>
+                </main>
+            `;
+
+
+                // Attach post form submission listener
+                const postForm = document.getElementById("post-form");
+                if (postForm) {
+                    postForm.addEventListener("submit", (e) => {
+                        e.preventDefault();
+                        add_new_post();
+                    });
+                }
+
+                // Init users + profile + logout
+                setupUserScrollListener()
+                load_users()
+
+
+                handle_user_profile();
+                logout();
+
+                // Load initial posts
+                show_posts();
+
+
+                window.addEventListener("scroll", () => {
+                    const scrollPos = window.innerHeight + window.scrollY;
+                    const docHeight = document.body.offsetHeight;
+                    if (scrollPos >= docHeight - 300) {
+                        console.log("Near bottom, loading more posts...");
+                        show_posts();
+                    }
+                });
+
+
+            }).catch(error => {
+                console.error("Error fetching categories:", error);
+            });
         })
         .catch(error => {
-            console.error("Error fetching categories:", error);
+            console.log("Error:", error.message);
+            navigateTo("/login");
         });
-    })
-    .catch(error => {
-        console.log("Error:", error.message);
-        navigateTo("/login")
-    });
 }
+

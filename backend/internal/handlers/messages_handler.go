@@ -3,18 +3,22 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"real_time_forum/internal/services"
 	"strconv"
+
+	"real_time_forum/internal/handlers/utils"
+	"real_time_forum/internal/models"
+	"real_time_forum/internal/services"
 )
 
 // Create a struct to represent the:
 type MessagesHandler struct {
 	MessageSer services.MessagesServiceLayer
+	SessServ   services.SessionsServicesLayer
 }
 
 // Instantiate a new Messages handler:
-func NewMessagesHandler(messSer *services.MessagesService) *MessagesHandler {
-	return &MessagesHandler{MessageSer: messSer}
+func NewMessagesHandler(messSer *services.MessagesService, sessSer *services.SessionService) *MessagesHandler {
+	return &MessagesHandler{MessageSer: messSer, SessServ: sessSer}
 }
 
 // Get chat history between the client and the chosen user:
@@ -36,13 +40,36 @@ func (messHand *MessagesHandler) GetChatHistoryHandler(w http.ResponseWriter, r 
 		return
 	}
 
+	// Handle offset and limit
+	offset := 0
+	limit := 20
+
+	if offsetParam := r.URL.Query().Get("offset"); offsetParam != "" {
+		offset, err = strconv.Atoi(offsetParam)
+		if err != nil || offset < 0 {
+			http.Error(w, "Invalid offset parameter", http.StatusBadRequest)
+			return
+		}
+	}
+
+	if limitParam := r.URL.Query().Get("limit"); limitParam != "" {
+		limit, err = strconv.Atoi(limitParam)
+		if err != nil || limit <= 0 {
+			http.Error(w, "Invalid limit parameter", http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Session check
 	cookie, err := r.Cookie("session_token")
 	if err != nil {
 		http.Error(w, "Unauthorized: missing session token", http.StatusUnauthorized)
 		return
 	}
 	sessionToken := cookie.Value
-	messages, err := messHand.MessageSer.GetChatHistoryService(guestId, sessionToken)
+
+	// Get messages
+	messages, err := messHand.MessageSer.GetChatHistoryService(guestId, sessionToken, offset, limit)
 	if err != nil {
 		if err.Error() == "user has no session" {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -52,6 +79,41 @@ func (messHand *MessagesHandler) GetChatHistoryHandler(w http.ResponseWriter, r 
 		return
 	}
 
+	// Send proper JSON response even when messages are empty
 	w.Header().Set("Content-Type", "application/json")
+	if messages == nil {
+		messages = []*models.Message{}
+	}
 	json.NewEncoder(w).Encode(messages)
+}
+
+// Mark a message as read:
+func (messHand *MessagesHandler) MarkMessageAsRead(w http.ResponseWriter, r *http.Request) {
+	fromIDStr := r.URL.Query().Get("from_id")
+	fromID, err := strconv.Atoi(fromIDStr)
+	if err != nil || fromID <= 0 {
+		http.Error(w, "Invalid sender ID", http.StatusBadRequest)
+		return
+	}
+
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "No session token found"})
+		return
+	}
+
+	userID, err := messHand.SessServ.GetUserIdFromSession(cookie.Value)
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "Invalid session"})
+		return
+	}
+
+	err = messHand.MessageSer.MarkMessageAsRead(fromID, userID)
+	if err != nil {
+		http.Error(w, "Failed to mark as read", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]any{
+		"success": true,
+	})
 }

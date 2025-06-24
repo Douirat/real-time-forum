@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"database/sql"
+	"fmt"
+
 	"real_time_forum/internal/models"
 )
 
@@ -10,7 +12,7 @@ type UsersRepositoryLayer interface {
 	RegisterNewUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
 	GetUserByID(id int) (*models.User, error)
-	GetUsersRepo() ([]*models.ChatUser, error)
+	GetSortedUsersForChat(myID, offset, limit int) ([]*models.ChatUser, error)
 }
 
 // Create a structure to represent to implemente the contract with the repo interface:
@@ -53,10 +55,10 @@ func (userRepo *UsersRepository) GetUserByEmail(email string) (*models.User, err
 
 // get user bu id:
 func (userRepo *UsersRepository) GetUserByID(id int) (*models.User, error) {
-	// Fixed SQL query missing quotes and fixing syntax
+	// Fixed SQL query missing quotes and fixing syntax:
 	query := "SELECT id, nick_name, age, gender, first_name, last_name, email, password FROM users WHERE id = ?"
 	user := &models.User{}
-	// Fixed Scan by using address-of fields
+	// Fixed Scan by using address-of fields:
 	err := userRepo.db.QueryRow(query, id).Scan(
 		&user.Id, &user.NickName, &user.Age, &user.Gender, &user.FirstName, &user.LastName, &user.Email, &user.Password,
 	)
@@ -67,22 +69,77 @@ func (userRepo *UsersRepository) GetUserByID(id int) (*models.User, error) {
 }
 
 // Get all users:
-func (userRepo *UsersRepository) GetUsersRepo() ([]*models.ChatUser, error) {
-	query := `SELECT id, nick_name FROM users`
-	rows, err := userRepo.db.Query(query)
+func (userRepo *UsersRepository) GetSortedUsersForChat(myID, offset, limit int) ([]*models.ChatUser, error) {
+	query := `
+    SELECT id, nick_name, unread_count
+    FROM (
+        -- Users who have chatted with me
+        SELECT 
+            u.id, 
+            u.nick_name, 
+            MAX(pm.created_at) AS last_message_time,
+            (
+                SELECT COUNT(*) 
+                FROM private_messages 
+                WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0
+            ) AS unread_count
+        FROM users u
+        JOIN private_messages pm
+            ON (u.id = pm.sender_id AND pm.receiver_id = ?) 
+            OR (u.id = pm.receiver_id AND pm.sender_id = ?)
+        WHERE u.id != ?
+        GROUP BY u.id
+
+        UNION ALL
+
+        -- Users who have NOT chatted with me
+        SELECT 
+            u.id, 
+            u.nick_name, 
+            NULL as last_message_time,
+            0 as unread_count
+        FROM users u
+        WHERE u.id != ? AND u.id NOT IN (
+            SELECT 
+                CASE 
+                    WHEN pm.sender_id = ? THEN pm.receiver_id
+                    ELSE pm.sender_id
+                END
+            FROM private_messages pm
+            WHERE pm.sender_id = ? OR pm.receiver_id = ?
+        )
+    ) AS all_users
+    ORDER BY 
+        last_message_time IS NULL,       
+        last_message_time DESC,        
+        LOWER(nick_name) ASC           
+    LIMIT ? OFFSET ?;
+    `
+
+	rows, err := userRepo.db.Query(
+		query,
+		myID, myID, myID, myID, // For first subquery (unread count, joins, filter)
+		myID, myID, myID, myID, // For second subquery (not-in logic)
+		limit, offset,
+	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("query error: %v", err)
 	}
 	defer rows.Close()
 
 	var users []*models.ChatUser
 	for rows.Next() {
 		chatUser := &models.ChatUser{}
-		err := rows.Scan(&chatUser.Id, &chatUser.NickName)
-		if err != nil {
+		if err := rows.Scan(&chatUser.Id, &chatUser.NickName, &chatUser.UnreadCount); err != nil {
 			return nil, err
 		}
+
+		// For now, you can determine online status elsewhere (e.g., session map)
+		chatUser.IsOnline = false
+
 		users = append(users, chatUser)
 	}
+
 	return users, nil
 }
+

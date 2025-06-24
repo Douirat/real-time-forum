@@ -1,7 +1,7 @@
 package services
 
 import (
-	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -13,49 +13,42 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Service interface - Added MarkMessagesAsRead method
-type WebSocketServiceLayer interface {
+// Create an interface for the websocket implementation:
+type WebsocketSeviceLayer interface {
 	CreateNewWebSocket(w http.ResponseWriter, r *http.Request) error
-	GetAllUsersWithStatus(id int) ([]*models.ChatUser, error)
+	GetAllUsersWithStatus(id, offset, limit int) ([]*models.ChatUser, error)
 }
 
-// Main service struct
+// Create an implementer for the websoket contract:
 type WebSocketService struct {
-	hub         *Hub
-	messageRepo repositories.MessageRepositoryLayer
-	sessRepo    repositories.SessionsRepositoryLayer
-	userRepo    repositories.UsersRepositoryLayer
+	Hub         *ChatBroker
+	MessageRepo repositories.MessageRepositoryLayer
+	SessionRepo repositories.SessionsRepositoryLayer
+	UserRepo    repositories.UsersRepositoryLayer
 }
 
-// Message structure - Updated to include mark_as_read type
-type WebSocketMessage struct {
-	Type      string    `json:"type"`
-	From      int       `json:"from"`      // Frontend uses 'from'
-	To        int       `json:"to"`        // Frontend uses 'to'
-	Sender    int       `json:"sender"`    // Backend compatibility
-	Recipient int       `json:"recipient"` // Backend compatibility
-	Content   string    `json:"content"`
-	UserID    int       `json:"user_id,omitempty"`
-	IsRead    bool      `json:"is_read"`
+// Create a structure to reperesent the message structure:
+type WebsocketMessage struct {
+	Type     string `json:"type"`
+	Sender   int    `json:"sender"`
+	Receiver int    `json:"receiver"`
+	Content  string `json:"content"`
 }
 
-// Client represents a connected user
+// Create a structure to represent the client:
 type Client struct {
-	UserID int
-	Conn   *websocket.Conn
-	Send   chan *WebSocketMessage
+	UserId     int
+	Connection *websocket.Conn
+	Pipe       chan *WebsocketMessage
 }
 
-// Hub manages all connections and online status
-type Hub struct {
-	// Map of userID -> list of clients
-	users map[int][]*Client
-	mu    sync.RWMutex
-
-	// Channels for managing connections
-	register   chan *Client
-	unregister chan *Client
-	broadcast  chan *WebSocketMessage
+// Create a type to represent the the chat broker:
+type ChatBroker struct {
+	Mu         sync.RWMutex
+	Clients    map[int]*Client
+	Register   chan *Client
+	Unregister chan *Client
+	Broadcast  chan *WebsocketMessage
 }
 
 // WebSocket upgrader
@@ -67,385 +60,339 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-// Create new service
-func NewWebSocketService(hub *Hub, messRepo repositories.MessageRepositoryLayer, sessRepo repositories.SessionsRepositoryLayer, userRepo repositories.UsersRepositoryLayer) *WebSocketService {
+// Instantiate a new chat broker:
+func NewChatBroker() *ChatBroker {
+	return &ChatBroker{
+		Clients:    make(map[int]*Client),
+		Register:   make(chan *Client),
+		Unregister: make(chan *Client),
+		Broadcast:  make(chan *WebsocketMessage),
+	}
+}
+
+// Instantiate a new chat broker service:
+func NewWebSocketService(hub *ChatBroker, messRepo *repositories.MessageRepository, sessRepo *repositories.SessionsRepository, userRepo *repositories.UsersRepository) *WebSocketService {
 	return &WebSocketService{
-		hub:         hub,
-		messageRepo: messRepo,
-		sessRepo:    sessRepo,
-		userRepo:    userRepo,
+		Hub:         hub,
+		MessageRepo: messRepo,
+		SessionRepo: sessRepo,
+		UserRepo:    userRepo,
 	}
 }
 
-// Create new hub
-func NewChatBroker() *Hub {
-	return &Hub{
-		users:      make(map[int][]*Client),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		broadcast:  make(chan *WebSocketMessage),
-	}
-}
-
-// ========== MARK MESSAGES AS READ IMPLEMENTATION ==========
-
-// Internal method to mark messages as read - takes specific parameters
-func (s *WebSocketService) markMessagesAsRead(senderID, receiverID int) error {
-	// Mark messages as read in database
-	if err := s.messageRepo.MarkMessagesAsRead(senderID, receiverID); err != nil {
-		log.Printf("Error marking messages as read in DB: %v", err)
-		return err
-	}
-
-	log.Printf("Messages marked as read: from user %d to user %d", senderID, receiverID)
-	
-	// Optional: Notify sender that their messages were read
-	readNotification := &WebSocketMessage{
-		Type:    "messages_read",
-		From:    receiverID,
-		To:      senderID,
-		Content: "messages_marked_as_read",
-		IsRead:  true,
-	}
-	
-	s.hub.sendToUser(readNotification, senderID)
-	
-	return nil
-}
-
-// ========== ONLINE/OFFLINE MANAGEMENT ==========
-
-// Check if user is online (has any connections)
-func (h *Hub) IsUserOnline(userID int) bool {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-	clients, exists := h.users[userID]
-	return exists && len(clients) > 0
-}
-
-// Add client connection for user
-func (h *Hub) addClient(client *Client) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.users[client.UserID] = append(h.users[client.UserID], client)
-}
-
-// Remove client connection for user
-func (h *Hub) removeClient(client *Client) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	clients := h.users[client.UserID]
-	newClients := []*Client{}
-	for _, c := range clients {
-		if c != client {
-			newClients = append(newClients, c)
-		}
-	}
-
-	if len(newClients) > 0 {
-		h.users[client.UserID] = newClients
-	} else {
-		delete(h.users, client.UserID)
-	}
-}
-
-// Notify when user comes online
-func (h *Hub) notifyUserOnline(userID int) {
-	msg := &WebSocketMessage{
-		Type:    "user_online",
-		UserID:  userID,
-		From:    userID,
-		Sender:  userID,
-		Content: "joined chat",
-	}
-	h.broadcastToOthers(msg, userID)
-}
-
-// Notify when user goes offline
-func (h *Hub) notifyUserOffline(userID int) {
-	msg := &WebSocketMessage{
-		Type:    "user_offline",
-		UserID:  userID,
-		From:    userID,
-		Sender:  userID,
-		Content: "left chat",
-	}
-	h.broadcastToOthers(msg, userID)
-}
-
-// ========== MESSAGE BROADCASTING ==========
-
-// Send to all users except one
-func (h *Hub) broadcastToOthers(msg *WebSocketMessage, excludeUserID int) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
-	for userID, clients := range h.users {
-		if userID != excludeUserID {
-			h.sendToUserClients(clients, msg)
-		}
-	}
-}
-
-// Send to all users
-func (h *Hub) broadcastToAll(msg *WebSocketMessage) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
-	for _, clients := range h.users {
-		h.sendToUserClients(clients, msg)
-	}
-}
-
-// Send to specific user (all their connections)
-func (h *Hub) sendToUser(msg *WebSocketMessage, userID int) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
-	if clients, exists := h.users[userID]; exists {
-		h.sendToUserClients(clients, msg)
-	}
-}
-
-// Helper to send message to multiple client connections
-func (h *Hub) sendToUserClients(clients []*Client, msg *WebSocketMessage) {
-	for _, client := range clients {
-		select {
-		case client.Send <- msg:
-			// Sent successfully
-		default:
-			// Channel full or closed, will be cleaned up later
-		}
-	}
-}
-
-// ========== MAIN HUB LOOP ==========
-
-func (h *Hub) Run() {
-	for {
-		select {
-		case client := <-h.register:
-			wasOnline := h.IsUserOnline(client.UserID)
-			h.addClient(client)
-
-			log.Printf("User %d connected. Online: %t -> %t",
-				client.UserID, wasOnline, true)
-
-			// Only notify if user just came online
-			if !wasOnline {
-				h.notifyUserOnline(client.UserID)
-			}
-
-		case client := <-h.unregister:
-			wasOnline := h.IsUserOnline(client.UserID)
-			h.removeClient(client)
-			close(client.Send)
-
-			isStillOnline := h.IsUserOnline(client.UserID)
-			log.Printf("User %d disconnected. Online: %t -> %t",
-				client.UserID, wasOnline, isStillOnline)
-
-			// Only notify if user went completely offline
-			if wasOnline && !isStillOnline {
-				h.notifyUserOffline(client.UserID)
-			}
-
-		case msg := <-h.broadcast:
-			switch msg.Type {
-			case "message": // Handle frontend's "message" type
-				// This is a private message if To/Recipient is specified
-				if msg.To > 0 || msg.Recipient > 0 {
-					recipientID := msg.To
-					if recipientID == 0 {
-						recipientID = msg.Recipient
-					}
-					// Send to recipient
-					h.sendToUser(msg, recipientID)
-					// Send back to sender for confirmation
-					h.sendToUser(msg, msg.From)
-				} else {
-					// Public message - broadcast to all
-					h.broadcastToAll(msg)
-				}
-			default:
-				// Default behavior - broadcast to all
-				h.broadcastToAll(msg)
-			}
-		}
-	}
-}
-
-// ========== WEBSOCKET CONNECTION HANDLING ==========
-
-func (s *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *http.Request) error {
-	// Upgrade connection
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		return err
-	}
-
-	// Get user from session
-	cookie, err := r.Cookie("session_token")
-	if err != nil {
-		conn.Close()
-		return errors.New("missing session token")
-	}
-
-	userID, err := s.sessRepo.GetSessionByToken(cookie.Value)
-	if err != nil {
-		conn.Close()
-		return errors.New("invalid session")
-	}
-
-	// Create client
-	client := &Client{
-		UserID: userID,
-		Conn:   conn,
-		Send:   make(chan *WebSocketMessage, 256),
-	}
-
-	// Register and start handling
-	s.hub.register <- client
-
-	// Start both pumps
-	go s.writePump(client)
-	go s.readPump(client)
-
-	return nil
-}
-
-// READ PUMP - Handle incoming messages from client
-func (s *WebSocketService) readPump(client *Client) {
+// Create the function to write messages to the websocket:
+// writePump handles outgoing messages to the WebSocket connection
+// This runs in its own goroutine per client (e.g., Client B)
+func (client *Client) WritePump() {
+	// [Cleanup] Ensure connection is closed when loop ends
 	defer func() {
-		s.hub.unregister <- client
-		client.Conn.Close()
+		if client.Connection != nil {
+			client.Connection.Close()
+		}
 	}()
 
-	// Set read limit and deadlines
-	client.Conn.SetReadLimit(512)
-	client.Conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-	client.Conn.SetPongHandler(func(string) error {
-		client.Conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-		return nil
-	})
+	// [Start Sending] Continuously listen on the Send channel
+	for {
+		select {
+		// [Hub ->> WritePumpB] Step 3: Wait for a message routed to this client
+		case message, ok := <-client.Pipe:
+			if !ok {
+				// [Hub signals closure] Send a close message and terminate
+				if client.Connection != nil {
+					client.Connection.WriteMessage(websocket.CloseMessage, []byte{})
+				}
+				return
+			}
+
+			// [WritePumpB ->> ClientB] Step 4: Send the message to the browser
+			if client.Connection != nil {
+				if err := client.Connection.WriteJSON(message); err != nil {
+					log.Printf("Write error for %d: %v", client.UserId, err)
+					return
+				}
+				log.Printf("Sent message to %d: %+v", client.UserId, message)
+			}
+			// [ClientB ->> ClientB] Step 5 happens in browser's JS: `onmessage` event
+		}
+	}
+}
+
+// A function to read data from the websocket:
+// readPump handles incoming messages from the WebSocket connection
+// This runs in its own goroutine per client (e.g., Client A)
+func (client *Client) ReadPump(hub *ChatBroker, socket *WebSocketService) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[PANIC] recovered in ReadPump for client %d: %v", client.UserId, r)
+		}
+		hub.Unregister <- client
+		if client.Connection != nil {
+			client.Connection.Close()
+		}
+	}()
+
+	if client.Connection != nil {
+		client.Connection.SetReadLimit(512)
+		client.Connection.SetPongHandler(func(string) error { return nil })
+	}
 
 	for {
-		var msg WebSocketMessage
-		if err := client.Conn.ReadJSON(&msg); err != nil {
-			log.Printf("Error reading message from client %d: %v", client.UserID, err)
+		msg := &WebsocketMessage{}
+
+		if client.Connection == nil {
 			break
 		}
 
-		// Set sender information
-		msg.From = client.UserID
-		msg.Sender = client.UserID
-
-		log.Printf("Received message: Type=%s, From=%d, To=%d, Content=%s",
-			msg.Type, msg.From, msg.To, msg.Content)
-
-		// ========== HANDLE MARK AS READ MESSAGE ==========
-		if msg.Type == "mark_as_read" {
-			// When user opens a conversation, mark messages FROM the other user TO current user as read
-			if msg.To > 0 {
-				// client.UserID is the receiver (current user)
-				// msg.To is the sender whose messages we want to mark as read
-				if err := s.markMessagesAsRead(msg.To, client.UserID); err != nil {
-					log.Printf("Error marking messages as read: %v", err)
-				}
+		err := client.Connection.ReadJSON(msg)
+		if err != nil {
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+				log.Printf("Client %d disconnected normally: %v", client.UserId, err)
+			} else if websocket.IsUnexpectedCloseError(err, websocket.CloseAbnormalClosure) {
+				log.Printf("[ERROR] Unexpected websocket close for client %d: %v", client.UserId, err)
+			} else {
+				log.Printf("[ERROR] ReadJSON error for client %d: %v", client.UserId, err)
 			}
-			continue // Don't broadcast this message type
+			_ = client.Connection.Close() // Close immediately on error
+			break
 		}
 
-		// **SAVE PRIVATE MESSAGES TO DATABASE**
-		if msg.Type == "message" && (msg.To > 0 || msg.Recipient > 0) {
-			recipientID := msg.To
-			if recipientID == 0 {
-				recipientID = msg.Recipient
-			}
+		msg.Sender = client.UserId
+		log.Printf("Received message from %d: %+v", client.UserId, msg)
 
-			// Save message with IsRead: false (recipient hasn't seen it yet)
-			if err := s.savePrivateMessage(&msg, recipientID); err != nil {
-				log.Printf("Error saving private message: %v", err)
-				// Continue processing even if save fails
-			}
+		message := &models.Message{
+			Id:         0,
+			Content:    msg.Content,
+			SenderId:   msg.Sender,
+			RecieverId: msg.Receiver,
+			IsRead:     false,
+			// CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
+			CreatedAt: time.Now(),
 		}
 
-		// Send to hub for broadcasting
-		s.hub.broadcast <- &msg
+		if msg.Type == "message" {
+			err = socket.MessageRepo.InsertMessage(message)
+			if err != nil {
+				log.Printf("[ERROR] Failed to insert message from client %d: %v", client.UserId, err)
+				_ = client.Connection.Close() // Close connection on DB error too
+				break
+			}
+		}
+		hub.Broadcast <- msg
 	}
 }
-// WRITE PUMP - Send messages to client
-func (s *WebSocketService) writePump(client *Client) {
-	ticker := time.NewTicker(54 * time.Second)
-	defer func() {
-		ticker.Stop()
-		client.Conn.Close()
-	}()
 
+// Run a vertual server like that specializes in websocket alone:
+func (broker *ChatBroker) RunChatBroker() {
 	for {
 		select {
-		case msg, ok := <-client.Send:
-			client.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
-			if !ok {
-				// Channel was closed
-				client.Conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
+		// New client connection
+		case client := <-broker.Register:
+			broker.Mu.Lock()
+			if _, exists := broker.Clients[client.UserId]; !exists {
+				broker.Clients[client.UserId] = client
+				log.Printf("[INFO] Client %d connected. Total: %d", client.UserId, len(broker.Clients))
+			}
+			broker.Mu.Unlock()
+
+			// Notify others that a user joined
+			broker.BroadcastToOthers(&WebsocketMessage{
+				Type:     "online",
+				Sender:   client.UserId,
+				Content:  "joined the chat",
+				Receiver: 0,
+			}, client.UserId)
+
+		// Client disconnected
+		case client := <-broker.Unregister:
+			broker.Mu.Lock()
+			_, exists := broker.Clients[client.UserId]
+			if exists {
+				delete(broker.Clients, client.UserId)
+				log.Printf("[INFO] Client %d disconnected. Remaining: %d", client.UserId, len(broker.Clients))
+			}
+			broker.Mu.Unlock()
+
+			if exists {
+				broker.BroadcastToAll(&WebsocketMessage{
+					Type:     "offline",
+					Sender:   client.UserId,
+					Content:  "left the chat",
+					Receiver: 0,
+				})
+
+				safeClose(client.Pipe)
 			}
 
-			if err := client.Conn.WriteJSON(msg); err != nil {
-				log.Printf("Error writing message to client %d: %v", client.UserID, err)
-				return
-			}
-
-		case <-ticker.C:
-			client.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
-			if err := client.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
+		// Handle broadcast messages
+		case msg := <-broker.Broadcast:
+			if msg.Receiver != 0 {
+				// Private message
+				broker.SendToClient(msg, msg.Receiver)
+			} else {
+				// Public broadcast
+				broker.BroadcastToOthers(msg, msg.Sender)
 			}
 		}
 	}
 }
 
-// Save private message to database
-func (s *WebSocketService) savePrivateMessage(wsMsg *WebSocketMessage, recipientID int) error {
-	// Create message model with IsRead: false (recipient hasn't seen it yet)
-	message := &models.Message{
-		Content:    wsMsg.Content,
-		SenderId:   wsMsg.From, // Use From field from frontend
-		RecieverId: recipientID,
-		IsRead:     false, // Always false when saving - only true when recipient marks as read
-		CreatedAt:  time.Now(),
+// Broadcast to all users:
+func (broker *ChatBroker) BroadcastToAll(msg *WebsocketMessage) {
+	broker.Mu.RLock()
+	defer broker.Mu.RUnlock()
+
+	for id, client := range broker.Clients {
+		if client == nil || client.Pipe == nil {
+			continue
+		}
+		select {
+		case client.Pipe <- msg:
+		default:
+			log.Printf("[WARN] Client %d not responding. Removing...", id)
+			go broker.RemoveClient(id)
+		}
+	}
+}
+
+// broadcast to other users:
+func (broker *ChatBroker) BroadcastToOthers(msg *WebsocketMessage, excludeId int) {
+	broker.Mu.RLock()
+	defer broker.Mu.RUnlock()
+
+	for id, client := range broker.Clients {
+		if id == excludeId || client == nil || client.Pipe == nil {
+			continue
+		}
+		select {
+		case client.Pipe <- msg:
+		default:
+			log.Printf("[WARN] Client %d unreachable. Removing...", id)
+			go broker.RemoveClient(id)
+		}
+	}
+}
+
+// Send to a speific user:
+func (broker *ChatBroker) SendToClient(msg *WebsocketMessage, receiverId int) {
+	broker.Mu.RLock()
+	client, exists := broker.Clients[receiverId]
+	broker.Mu.RUnlock()
+
+	if !exists || client == nil || client.Pipe == nil {
+		log.Printf("[WARN] Receiver %d not found or invalid", receiverId)
+		return
 	}
 
-	// Save to database
-	if err := s.messageRepo.InsertMessage(message); err != nil {
-		return err
+	select {
+	case client.Pipe <- msg:
+	default:
+		log.Printf("[WARN] Failed to send to client %d. Removing...", receiverId)
+		go broker.RemoveClient(receiverId)
+	}
+}
+
+// Remove a client from the hub when unregistered:
+func (broker *ChatBroker) RemoveClient(id int) {
+	broker.Mu.Lock()
+	client, exists := broker.Clients[id]
+	if exists {
+		delete(broker.Clients, id)
+	}
+	broker.Mu.Unlock()
+
+	if exists && client != nil {
+		log.Printf("[INFO] Cleaning up client %d", id)
+		// Close connection first
+		if client.Connection != nil {
+			client.Connection.Close()
+		}
+		// Then safely close the channel
+		safeClose(client.Pipe)
+	}
+}
+
+// Safe closing for channels:
+func safeClose(ch chan *WebsocketMessage) {
+	// Check if channel is nil before attempting to close
+	if ch == nil {
+		return
 	}
 
-	log.Printf("Private message saved: from %d to %d, content: %s, isRead: %t",
-		wsMsg.From, recipientID, wsMsg.Content, message.IsRead)
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[ERROR] Panic closing channel: %v", r)
+		}
+	}()
+
+	// Close the channel
+	close(ch)
+}
+
+// Create a new websocket connection:
+func (socket *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *http.Request) error {
+	// 1. Method check
+	if r.Method != http.MethodGet {
+		return fmt.Errorf("method not allowed: %s", r.Method)
+	}
+
+	// 2. Get user authentication first (before upgrading connection)
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		return fmt.Errorf("no session token: %v", err)
+	}
+	token := cookie.Value
+
+	// Get user ID from session
+	userId, err := socket.SessionRepo.GetSessionByToken(token)
+	if err != nil {
+		return fmt.Errorf("invalid session: %v", err)
+	}
+
+	// 3. Upgrade the connection only after authentication
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return fmt.Errorf("failed to upgrade connection: %v", err)
+	}
+
+	// 4. Create the client with proper channel initialization
+	client := &Client{
+		UserId:     userId,
+		Connection: conn,
+		Pipe:       make(chan *WebsocketMessage, 256), // Add buffer to prevent blocking
+	}
+
+	// 5. Register the user to hub
+	socket.Hub.Register <- client
+
+	// 6. Start goroutines
+	go client.ReadPump(socket.Hub, socket)
+	go client.WritePump()
+
 	return nil
 }
 
-// Get all users with their online status (excluding self)
-func (s *WebSocketService) GetAllUsersWithStatus(excludeID int) ([]*models.ChatUser, error) {
-	users, err := s.userRepo.GetUsersRepo()
+// Get all users and the online status as well:
+func (socket *WebSocketService) GetAllUsersWithStatus(id, offset, limit int) ([]*models.ChatUser, error) {
+	users, err := socket.UserRepo.GetSortedUsersForChat(id, offset, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	chatUsers := []*models.ChatUser{}
+	socket.Hub.Mu.RLock()
+	defer socket.Hub.Mu.RUnlock()
+
+	var filteredUsers []*models.ChatUser
 	for _, user := range users {
-		if user.Id == excludeID {
-			continue // skip self
+		if user == nil {
+			continue
 		}
-		chatUsers = append(chatUsers, &models.ChatUser{
-			Id:       user.Id,
-			NickName: user.NickName,
-			IsOnline: s.hub.IsUserOnline(user.Id),
-		})
+		if user.Id == id {
+			continue // skip current user
+		}
+		_, isOnline := socket.Hub.Clients[user.Id]
+		user.IsOnline = isOnline
+		filteredUsers = append(filteredUsers, user)
 	}
 
-	return chatUsers, nil
+	return filteredUsers, nil
 }

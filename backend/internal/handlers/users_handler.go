@@ -2,13 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
-	"strings"
+	"strconv"
 	"time"
 
+	"real_time_forum/internal/handlers/utils"
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/services"
-	"real_time_forum/internal/handlers/utils"
 )
 
 // UsersHandlersLayer defines the contract for user handlers
@@ -19,6 +20,7 @@ type UsersHandlersLayer interface {
 
 // UsersHandlers implements the user handlers contract
 type UsersHandlers struct {
+	chatBroker  *services.ChatBroker
 	userServ    services.UsersServicesLayer
 	sessionServ services.SessionsServicesLayer
 }
@@ -36,8 +38,9 @@ type Edge struct {
 }
 
 // NewUsersHandlers creates a new user handler
-func NewUsersHandlers(userServ services.UsersServicesLayer, sessionServ services.SessionsServicesLayer) *UsersHandlers {
+func NewUsersHandlers(chatBro *services.ChatBroker, userServ services.UsersServicesLayer, sessionServ services.SessionsServicesLayer) *UsersHandlers {
 	return &UsersHandlers{
+		chatBroker:  chatBro,
 		userServ:    userServ,
 		sessionServ: sessionServ,
 	}
@@ -105,32 +108,36 @@ func (userHandler *UsersHandlers) UsersLoginHandler(w http.ResponseWriter, r *ht
 	utils.ResponseJSON(w, http.StatusCreated, response)
 }
 
-// logout user:
 func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request) {
-	var token string
-	// read session_token from cookie:
-	authHeader := r.Header.Get("Authorization")
-	if strings.HasPrefix(authHeader, "Bearer") {
-		token = strings.TrimPrefix(authHeader, "Bearer")
-	} else {
-		// fallback => cookie:
-		cookie, err := r.Cookie("session_token")
-		if err != nil {
-			utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid token"})
-			return
-		}
-		token = cookie.Value
-		
-	}
-
-	// delete session from database :
-	err := userHandler.sessionServ.DestroySession(token)
+	// Read session_token from cookie
+	cookie, err := r.Cookie("session_token")
 	if err != nil {
-		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "faild to logout"})
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid token"})
+		return
+	}
+	token := cookie.Value
+
+	// Get user ID from session
+	userId, err := userHandler.sessionServ.GetUserIdFromSession(token)
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid session"})
 		return
 	}
 
-	// emty cookie :
+	// Destroy session
+	err = userHandler.sessionServ.DestroySession(token)
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "failed to logout"})
+		return
+	}
+
+	client := &services.Client{
+		UserId: userId,
+	}
+
+	userHandler.chatBroker.Unregister <- client
+
+	// Clear the cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
 		Value:    "",
@@ -139,6 +146,7 @@ func (userHandler *UsersHandlers) Logout(w http.ResponseWriter, r *http.Request)
 		MaxAge:   -1,
 		HttpOnly: true,
 	})
+
 	utils.ResponseJSON(w, http.StatusCreated, map[string]string{"message": "User logged out successfully"})
 }
 
@@ -160,19 +168,70 @@ func (userHandler *UsersHandlers) IsLogged(w http.ResponseWriter, r *http.Reques
 	utils.ResponseJSON(w, http.StatusOK, map[string]string{"message": "User logged out successfully"})
 }
 
-// Get users for chat:
-// Get all users for chat (removed offset and limit):
-func (userHandler *UsersHandlers) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "method not allowed"})
+// function to get the user profile:
+func (UsersHandler *UsersHandlers) GetProfileHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "invalid method"})
 		return
 	}
 
-	// Get all users without pagination
-	users, err := userHandler.userServ.GetUsersService()
+	cookie, err := r.Cookie("session_token")
 	if err != nil {
-		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "failed to get users"})
+		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid token"})
 		return
 	}
-	utils.ResponseJSON(w, http.StatusOK, users)
+
+	token := cookie.Value
+	userId, err := UsersHandler.sessionServ.GetUserIdFromSession(token)
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "invalid user id"})
+		return
+	}
+
+	// get user by id:
+	user, err := UsersHandler.userServ.GetUserProfile(userId)
+	if err != nil {
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "user does't exist"})
+		return
+	}
+	user.Password = "********"
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}
+
+func (UsersHandler *UsersHandlers) GetLastUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "invalid method"})
+		return
+	}
+
+	query := r.URL.Query()
+	userId := query.Get("user_id")
+
+	if userId == "" {
+		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "missing user id"})
+		return
+	}
+
+	userID, err := strconv.Atoi(userId)
+	if err != nil || userID <= 0 {
+		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "invalid user id"})
+		return
+	}
+
+	user, err := UsersHandler.userServ.GetUserProfile(userID)
+	if err != nil {
+		log.Printf("error fetching user %d: %v", userID, err)
+		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "error fetching the user"})
+		return
+	}
+
+	user.Age = 0
+	user.Email = ""
+	user.Gender = ""
+	user.FirstName = ""
+	user.LastName = ""
+
+	utils.ResponseJSON(w, http.StatusOK,  user)
 }

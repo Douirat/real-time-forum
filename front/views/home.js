@@ -2,18 +2,14 @@
 import { header, logout } from "../components/header.js";
 import { post_form } from "../components/forms.js";
 import { fetch_categories } from "./post/fetchCategories.js";
-import {
-  show_posts,
-  initScrollListener,
-  reset_pagination,
-} from "./post/showPosts.js";
+import {show_posts,initScrollListener,reset_pagination} from "./post/showPosts.js";
 import { navigateTo } from "../router/router.js";
 
 // Global variable to store categories data
 let categoriesData = [];
 
 export function render_home_page() {
-  fetch("http://localhost:8080/is_logged", {
+  fetch("http://localhost:8080/logged_user", {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -21,8 +17,6 @@ export function render_home_page() {
   })
     .then(async (response) => {
       if (!response.ok) {
-                console.log("dddddddddddddd")
-
         const errorText = await response.text();
         throw new Error(errorText);
       }

@@ -10,7 +10,7 @@ import (
 // Create an interface to represent the repository:
 type MessageRepositoryLayer interface {
 	InsertMessage(m *models.Message) error
-	GetChatHistory(client, guest int) ([]*models.Message, error)
+	GetChatHistory(client, guest int, offset int, limit int) ([]*models.Message, error)
 	GetLastMessage(user1ID, user2ID int) (*models.Message, error)
 	MarkMessagesAsRead(senderID, receiverID int) error
 	GetUnreadMessageCount(userID int) (int, error)
@@ -35,36 +35,40 @@ func (mes *MessageRepository) InsertMessage(message *models.Message) error {
 }
 
 // Get the chat history between the chosen user and the client:
-func (mesRepo *MessageRepository) GetChatHistory(client, guest int) ([]*models.Message, error) {
-	// 4. Fetch messages between the two users
+func (mesRepo *MessageRepository) GetChatHistory(client, guest int, offset int, limit int) ([]*models.Message, error) {
 	query := `
 	SELECT ID, content, sender_id, receiver_id, is_read, created_at
 	FROM private_messages
 	WHERE (sender_id = ? AND receiver_id = ?)
 	   OR (sender_id = ? AND receiver_id = ?)
-	ORDER BY created_at ASC;
+	ORDER BY created_at ASC
+	LIMIT ? OFFSET ?
 	`
-	rows, err := mesRepo.db.Query(query, client, guest, guest, client)
+
+	rows, err := mesRepo.db.Query(query, client, guest, guest, client, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
 	var messages []*models.Message
+
 	for rows.Next() {
 		msg := &models.Message{}
 		var createdAtStr string
 		if err := rows.Scan(&msg.Id, &msg.Content, &msg.SenderId, &msg.RecieverId, &msg.IsRead, &createdAtStr); err != nil {
 			return nil, err
 		}
-		// Parse the timestamp
+		// Parse timestamp
 		if createdAt, parseErr := time.Parse("2006-01-02 15:04:05", createdAtStr); parseErr == nil {
 			msg.CreatedAt = createdAt
 		}
 		messages = append(messages, msg)
 	}
-	fmt.Println(messages)
+
 	return messages, nil
 }
+
 
 // Get the LastMessage :
 func (mesRepo *MessageRepository) GetLastMessage(client, guest int) (*models.Message, error) {

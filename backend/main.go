@@ -32,8 +32,8 @@ func main() {
 	fmt.Println("Connected successfully to database")
 
 	// craete Chat Broker :
-	chatBroker :=services.NewChatBroker()
-	go chatBroker.Run()
+	chatBroker := services.NewChatBroker()
+	go chatBroker.RunChatBroker()
 
 	// Initialize repositories:
 	usersRepository := repositories.NewUsersRepository(databaseConnection)
@@ -47,37 +47,34 @@ func main() {
 	sessionService := services.NewSessionsServices(usersRepository, sessionRepository)
 	postsServices := services.NewPostService(postsRepository, sessionRepository)
 	commentsService := services.NewCommentsServices(commentsRepository, sessionRepository)
-	webSocketService := services.NewWebSocketService(chatBroker,messageRepository, sessionRepository,usersRepository)
+	webSocketService := services.NewWebSocketService(chatBroker, messageRepository, sessionRepository, usersRepository)
 	messagesService := services.NewMessageService(messageRepository, sessionRepository)
 
 	// Initialize handlers:
-	usersHandlers := handlers.NewUsersHandlers(usersServices, sessionService)
+	usersHandlers := handlers.NewUsersHandlers(chatBroker, usersServices, sessionService)
 	postsHandlers := handlers.NewPostsHandles(postsServices)
 	commentsHandlers := handlers.NewCommentsHandler(commentsService)
 	webSocketHandler := handlers.NewWebSocketHandler(webSocketService, sessionService)
-	messagesHandler := handlers.NewMessagesHandler(messagesService)
+	messagesHandler := handlers.NewMessagesHandler(messagesService, sessionService)
 	// Setup router and routes:
 	mainRouter := router.NewRouter(sessionService)
 
-	// User routes:
-	// fmt.Println("websocket handler: ", webSocketHandler.Clients.Clients)
-	// go webSocketHandler.Clients.RunWebSocket()
-
-	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
+	// mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
 	mainRouter.AddRoute("POST", "/register", usersHandlers.UsersRegistrationHandler)
 	mainRouter.AddRoute("POST", "/login", usersHandlers.UsersLoginHandler)
 	mainRouter.AddRoute("POST", "/logout", usersHandlers.Logout)
-	mainRouter.AddRoute("GET", "/get_users", usersHandlers.GetUsersHandler)
-	mainRouter.AddRoute("GET", "/is_logged", usersHandlers.IsLogged)
+	mainRouter.AddRoute("GET", "/get_profile", usersHandlers.GetProfileHandler)
+	mainRouter.AddRoute("GET", "/get_last_user", usersHandlers.GetLastUser)
+	mainRouter.AddRoute("GET", "/logged_user", usersHandlers.IsLogged)
 	mainRouter.AddRoute("POST", "/add_post", postsHandlers.CreatePostsHandler)
 	mainRouter.AddRoute("GET", "/get_posts", postsHandlers.GetAllPostsHandler)
 	mainRouter.AddRoute("GET", "/get_categories", postsHandlers.GetAllCategoriesHandler)
 	mainRouter.AddRoute("POST", "/commenting", commentsHandlers.MakeCommentsHandler)
 	mainRouter.AddRoute("GET", "/get_comments", commentsHandlers.ShowCommentsHandler)
 	mainRouter.AddRoute("GET", "/ws", webSocketHandler.SocketHandler)
-	mainRouter.AddRoute("GET", "/ws_users", webSocketHandler.GetUsers)
-	
-	
+	mainRouter.AddRoute("GET", "/get_users", webSocketHandler.GetUsers)
+	mainRouter.AddRoute("GET", "/get_chat", messagesHandler.GetChatHistoryHandler)
+	mainRouter.AddRoute("POST", "/mark_read", messagesHandler.MarkMessageAsRead)
 
 	// fmt.Println("Routes registered:", mainRouter.Routes)
 	fmt.Println("Listening on port: http://localhost:8080/")

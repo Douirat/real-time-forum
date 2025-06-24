@@ -1,11 +1,10 @@
-// Import comment functions
+
+// Import comment functions:
 import { toggle_comments, add_comment } from './comments.js';
 import { navigateTo } from './script.js';
+import { appState } from './state.js';
 
-var offset = 0;
-var limit = 10;
-
-// Function to fetch categories
+// Function to fetch categories:
 export function fetch_categories() {
     return fetch("http://localhost:8080/get_categories")
         .then(response => {
@@ -22,23 +21,28 @@ export function fetch_categories() {
 
 // Create a function to add a new post with categories:
 export function add_new_post() {
-    // Get selected categories
     const selectedCategories = [];
     document.querySelectorAll('.category-checkbox:checked').forEach(checkbox => {
         selectedCategories.push(parseInt(checkbox.value));
     });
 
     let post_data = {
-        title: document.getElementById("title").value,
-        content: document.getElementById("content").value,
-        categories: selectedCategories // Add categories to the post data
+        title: document.getElementById("title").value.trim(),
+        content: document.getElementById("content").value.trim(),
+        categories: selectedCategories
     }
-   
-    if (post_data.title == "" || post_data.content == "") {
-        alert("please fill in all the post fields")
-        return
+
+    if (post_data.title === "" || post_data.content === "") {
+        alert("Please fill in all the post fields");
+        return;
     }
-    
+
+    const submitBtn = document.querySelector("#post-form button[type='submit']");
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Posting...";
+    }
+
     fetch("http://localhost:8080/add_post", {
         method: "POST",
         headers: {
@@ -48,163 +52,168 @@ export function add_new_post() {
     })
         .then(async response => {
             if (!response.ok) {
-                let err = await response.json()
-                throw new Error(err)
+                let err = await response.json();
+                throw new Error(err);
             }
             return response.json();
         })
         .then(data => {
-            // Clear input fields
             document.getElementById("title").value = "";
             document.getElementById("content").value = "";
-            
-            // Uncheck all category checkboxes
-            document.querySelectorAll('.category-checkbox:checked').forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            
-            // Reset pagination and refresh posts
-            offset = 0;
-            navigateTo("/")
+            document.querySelectorAll('.category-checkbox:checked').forEach(cb => cb.checked = false);
+
+            // ✅ Reset pagination and reload posts
+            appState.posts_offset = 0;
+            appState.noMorePosts = false;
+            show_posts();
         })
-        .catch(errorText => navigateTo("/login"));
+        .catch(error => {
+            console.error("Error adding post:", error);
+            navigateTo("/login");
+        })
+        .finally(() => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Post";
+            }
+        });
 }
 
-// Enhanced show posts function with category display:
+// ✅ Enhanced show posts function with proper state management:
 export function show_posts() {
-    console.log(`Fetching posts with offset: ${offset}, limit: ${limit}`);
-    
-    fetch(`http://localhost:8080/get_posts?offset=${offset}&limit=${limit}`)
-        .then(response => {
-            return response.json();
-        })
+    // Prevent multiple simultaneous requests
+    if (appState.isFetching) {
+        console.log("Already fetching posts, skipping...");
+        return;
+    }
+
+    // Don't fetch if we've reached the end
+    if (appState.noMorePosts) {
+        console.log("No more posts available");
+        return;
+    }
+
+    // Set fetching state
+    appState.isFetching = true;
+
+    fetch(`http://localhost:8080/get_posts?offset=${appState.posts_offset}&limit=${appState.posts_limit}`)
+        .then(response => response.json())
         .then(data => {
-            let postsContainer = document.querySelector(".posts");
-            
-            // If this is the first load (offset = 0), clear the container
-            if (offset === 0) {
+            const postsContainer = document.querySelector(".posts");
+
+            // If it's the first load, clear the container
+            if (appState.posts_offset === 0) {
                 postsContainer.innerHTML = "";
             }
 
-            // Check if we got any posts
             if (data && data.length > 0) {
-                // Update offset for next batch
-                offset += data.length;
-                
-                // Reverse the data to show newest posts first (only for first load)
-                if (offset === data.length) {
-                    data.reverse();
+                // Update offset
+                appState.posts_offset += data.length;
+
+                // Check if we got fewer posts than requested (end of data)
+                if (data.length < appState.posts_limit) {
+                    appState.noMorePosts = true;
+                    console.log("Reached end of posts");
                 }
-                
+
                 data.forEach(post => {
-                    // Create a new post div
-                    let postDiv = document.createElement("div");
+                    const postDiv = document.createElement("div");
                     postDiv.className = "post-item";
-                    
-                    // Create UserName and timestamp element
-                    let userNameElement = document.createElement("h4");
+
+                    // Header info
+                    const userNameElement = document.createElement("h4");
                     userNameElement.textContent = `Posted by: ${post.user_name || "Unknown User"}`;
 
-                    // Create timestamp element
-                    let timestampElement = document.createElement("small");
-                    timestampElement.textContent = post.created_at ? `Posted on: ${new Date(post.created_at).toLocaleString()}` : "";
+                    const timestampElement = document.createElement("small");
+                    timestampElement.className = "post-timestamp";
+                    timestampElement.textContent = post.created_at
+                        ? `Posted on: ${new Date(post.created_at).toLocaleString()}`
+                        : "";
 
-                    // Create title element
-                    let titleElement = document.createElement("h3");
+                    const titleElement = document.createElement("h3");
                     titleElement.textContent = post.title;
 
-                    // Create content element
-                    let contentElement = document.createElement("p");
+                    const contentElement = document.createElement("p");
                     contentElement.textContent = post.content;
-                    
-                    // Create categories element if categories exist
+
+                    // Categories
                     let categoriesElement = null;
                     if (post.categories_names) {
                         categoriesElement = document.createElement("div");
                         categoriesElement.className = "post-categories";
-                        
+
                         const categoriesList = post.categories_names.split(',');
                         categoriesElement.innerHTML = `
-                            <small style="color: #666;">Categories: ${categoriesList.map(cat => 
-                                `<span class="category-tag" style="background-color: #f0f0f0; padding: 3px 8px; border-radius: 12px; margin-right: 5px;">${cat.trim()}</span>`
+                            <small>Categories: ${categoriesList.map(cat =>
+                                `<span class="category-tag">${cat.trim()}</span>`
                             ).join('')}</small>
                         `;
                     }
 
-                    // Create comment button
-                    let commentButton = document.createElement("button");
+                    // Comments toggle button
+                    const commentButton = document.createElement("button");
                     commentButton.textContent = "Comments";
                     commentButton.className = "comment-btn";
-                    commentButton.onclick = function () {
-                        toggle_comments(post.id);
-                    };
+                    commentButton.onclick = () => toggle_comments(post.id);
 
-                    // Create comments section (initially hidden)
-                    let commentsSection = document.createElement("div");
+                    // Comments section
+                    const commentsSection = document.createElement("div");
                     commentsSection.id = `comments-section-${post.id}`;
 
-                    // Create comments container
-                    let commentsContainer = document.createElement("div");
+                    const commentsContainer = document.createElement("div");
                     commentsContainer.id = `comments-container-${post.id}`;
-                    commentsContainer.style.marginBottom = "15px";
+                    commentsContainer.className = "comments-container";
 
-                    // Create comment form
-                    let commentForm = document.createElement("div");
+                    // Add comment form
+                    const commentForm = document.createElement("div");
                     commentForm.className = "comment-form";
-                    commentForm.style.display = "flex";
-                    commentForm.style.marginTop = "10px";
 
-                    // Create comment input
-                    let commentInput = document.createElement("input");
+                    const commentInput = document.createElement("input");
                     commentInput.id = `comment-input-${post.id}`;
                     commentInput.type = "text";
                     commentInput.placeholder = "Write a comment...";
+                    commentInput.className = "comment-input";
 
-                    // Create submit button
-                    let submitButton = document.createElement("button");
+                    const submitButton = document.createElement("button");
                     submitButton.textContent = "Submit";
-                    submitButton.onclick = function () {
-                        add_comment(post.id);
-                    };
+                    submitButton.className = "submit-comment-btn";
+                    submitButton.onclick = () => add_comment(post.id);
 
-                    // Assemble comment form
                     commentForm.appendChild(commentInput);
                     commentForm.appendChild(submitButton);
 
-                    // Assemble comments section
                     commentsSection.appendChild(commentsContainer);
                     commentsSection.appendChild(commentForm);
 
-                    // Add elements to post div
+                    // Append all elements to post
                     postDiv.appendChild(userNameElement);
                     postDiv.appendChild(timestampElement);
                     postDiv.appendChild(titleElement);
                     postDiv.appendChild(contentElement);
-                    if (categoriesElement) {
-                        postDiv.appendChild(categoriesElement);
-                    }
+                    if (categoriesElement) postDiv.appendChild(categoriesElement);
                     postDiv.appendChild(commentButton);
                     postDiv.appendChild(commentsSection);
 
-                    // Add the post div to the container
+                    // Append post to DOM
                     postsContainer.appendChild(postDiv);
                 });
-                
-                console.log(`Loaded ${data.length} posts. New offset: ${offset}`);
+
+                console.log(`Loaded ${data.length} posts. New offset: ${appState.posts_offset}`);
             } else {
-                // No more posts to load
-                if (offset === 0) {
+                // No posts found
+                if (appState.posts_offset === 0) {
                     postsContainer.innerHTML = "<p>No posts yet. Be the first to create one!</p>";
+                } else {
+                    console.log("No more posts to load");
+                    appState.noMorePosts = true;
                 }
-                console.log("No more posts to load");
             }
         })
         .catch(error => {
             console.error("Fetch error:", error);
+        })
+        .finally(() => {
+            // ✅ Always reset fetching state
+            appState.isFetching = false;
         });
-}
-
-// Reset pagination (useful when adding new posts or refreshing)
-export function reset_pagination() {
-    offset = 0;
-}
+    }
