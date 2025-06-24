@@ -1,14 +1,14 @@
-// fetchComments.js
+// fetchComments.js - مبسط
 import { formatDate } from '../../utils/comment_validators.js';
 import { render_error_page } from "../error.js";
 import { getErrorMessage } from "../../utils/error_validators.js";
 import { throttle } from "../../utils/throttle.js";
 
-// Store pagination state for each post
+// حفظ حالة الصفحات لكل منشور
 const commentPagination = new Map();
-
 const COMMENTS_LIMIT = 4;
 
+// إعادة تعيين حالة الصفحات
 export function reset_comment_pagination(postId) {
     commentPagination.set(postId, {
         offset: 0,
@@ -17,6 +17,7 @@ export function reset_comment_pagination(postId) {
     });
 }
 
+// الحصول على حالة الصفحات
 export function get_comment_pagination(postId) {
     if (!commentPagination.has(postId)) {
         reset_comment_pagination(postId);
@@ -24,55 +25,41 @@ export function get_comment_pagination(postId) {
     return commentPagination.get(postId);
 }
 
-const createCommentScrollHandler = (postId) => {
+// دالة التحقق من التمرير مع throttle
+const createScrollHandler = (postId) => {
     return throttle(() => {
         const container = document.getElementById(`comments-container-${postId}`);
         if (!container) return;
 
         const pagination = get_comment_pagination(postId);
         
-        // Check if we're near the bottom of the comments container itself
-        const scrollTop = container.scrollTop;
-        const scrollHeight = container.scrollHeight;
-        const clientHeight = container.clientHeight;
-        
-        // Consider "near bottom" if within 50px of bottom
-        const isNearContainerBottom = scrollTop + clientHeight >= scrollHeight - 50;
-        
-        console.log(`Comments scroll check for post ${postId}:`, {
-            scrollTop,
-            scrollHeight,
-            clientHeight,
-            isNearBottom: isNearContainerBottom,
-            isLoading: pagination.isLoading,
-            hasMoreComments: pagination.hasMoreComments
-        });
+        // التحقق من الوصول لأسفل الحاوية
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        const isNearBottom = scrollTop + clientHeight >= scrollHeight - 50;
 
-        if (isNearContainerBottom && !pagination.isLoading && pagination.hasMoreComments) {
-            console.log(`Loading more comments for post ${postId}...`);
+        if (isNearBottom && !pagination.isLoading && pagination.hasMoreComments) {
             load_comments_for_post(postId);
         }
     }, 200);
 };
 
-// Store scroll handlers for cleanup
+// حفظ معالجات التمرير
 const scrollHandlers = new Map();
 
+// إضافة مستمع التمرير
 export function init_comment_scroll_listener(postId) {
-    // Remove existing handler if any
-    remove_comment_scroll_listener(postId);
-    
     const container = document.getElementById(`comments-container-${postId}`);
     if (!container) return;
     
-    const handler = createCommentScrollHandler(postId);
-    scrollHandlers.set(postId, handler);
+    // إزالة المستمع القديم إن وجد
+    remove_comment_scroll_listener(postId);
     
-    // Add scroll listener to the comments container, not window
+    const handler = createScrollHandler(postId);
+    scrollHandlers.set(postId, handler);
     container.addEventListener("scroll", handler);
-    console.log(`Comment scroll listener initialized for post ${postId}`);
 }
 
+// إزالة مستمع التمرير
 export function remove_comment_scroll_listener(postId) {
     const handler = scrollHandlers.get(postId);
     const container = document.getElementById(`comments-container-${postId}`);
@@ -80,35 +67,25 @@ export function remove_comment_scroll_listener(postId) {
     if (handler && container) {
         container.removeEventListener("scroll", handler);
         scrollHandlers.delete(postId);
-        console.log(`Comment scroll listener removed for post ${postId}`);
     }
 }
 
+// عرض التعليقات للمنشور
 export function show_comments_for_post(postId) {
-    // Reset pagination and start fresh
     reset_comment_pagination(postId);
-    
-    // Load first batch of comments
     load_comments_for_post(postId, () => {
-        // Initialize scroll listener after first load
         init_comment_scroll_listener(postId);
     });
 }
 
+// تحميل التعليقات
 function load_comments_for_post(postId, callback) {
     const pagination = get_comment_pagination(postId);
     
-    if (pagination.isLoading) {
-        console.log(`Already loading comments for post ${postId}, skipping...`);
+    if (pagination.isLoading || !pagination.hasMoreComments) {
         return;
     }
 
-    if (!pagination.hasMoreComments) {
-        console.log(`No more comments available for post ${postId}`);
-        return;
-    }
-
-    console.log(`Loading comments for post ${postId} with offset: ${pagination.offset}, limit: ${COMMENTS_LIMIT}`);
     pagination.isLoading = true;
 
     fetch(`http://localhost:8080/get_comments?id=${postId}&offset=${pagination.offset}&limit=${COMMENTS_LIMIT}`)
@@ -125,81 +102,70 @@ function load_comments_for_post(postId, callback) {
             const container = document.getElementById(`comments-container-${postId}`);
             if (!container) return;
             
-            // Handle different response types
-            if (comments === null || comments === undefined || !comments.length) {
+            // التحقق من وجود تعليقات
+            if (!comments || !comments.length) {
                 if (pagination.offset === 0) {
                     container.innerHTML = `<p>No comments yet</p>`;
                 }
                 pagination.hasMoreComments = false;
-                console.log(`No more comments to load for post ${postId}`);
                 return;
             }
 
-            // Check if we got fewer comments than requested (end of data)
+            // التحقق من انتهاء البيانات
             if (comments.length < COMMENTS_LIMIT) {
                 pagination.hasMoreComments = false;
-                console.log(`Reached end of comments for post ${postId}`);
             }
 
-            // Update offset
+            // تحديث الإزاحة
             pagination.offset += comments.length;
 
-            // Sort comments by created_at descending (newest first)
-            const sortedComments = comments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
+            // عرض التعليقات
             if (pagination.offset === comments.length) {
-                // First load - create new list
-                container.innerHTML = renderCommentsList(sortedComments);
+                // التحميل الأول
+                container.innerHTML = renderCommentsList(comments);
             } else {
-                // Subsequent loads - append to bottom of existing list
+                // التحميل التالي - إضافة للقائمة الموجودة
                 const existingList = container.querySelector('.comments-list');
                 if (existingList) {
-                    // Create temporary container for new comments
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = renderCommentsList(sortedComments);
-                    const newListItems = tempDiv.querySelectorAll('.comments-list li');
-                    
-                    // Append each new comment to the existing list
-                    newListItems.forEach(item => {
-                        existingList.appendChild(item);
-                    });
-                } else {
-                    // Fallback if no existing list found
-                    container.innerHTML = renderCommentsList(sortedComments);
+                    existingList.insertAdjacentHTML('beforeend', 
+                        comments.map(renderSingleComment).join('')
+                    );
                 }
             }
-
-            console.log(`Total comments loaded for post ${postId}: ${pagination.offset}`);
             
-            // Execute callback if provided
             if (callback) callback();
         })
         .catch(err => {
-            console.error("ERR DETAILS:", err);
+            console.error("Error loading comments:", err);
             if (err.status) {
                 render_error_page(err.status, getErrorMessage(err.status));
             } else {
-                render_error_page(500, "Failed to fetch comments due to an unknown error");
+                render_error_page(500, "Failed to fetch comments");
             }
         })
         .finally(() => {
             pagination.isLoading = false;
-            console.log(`Comment loading finished for post ${postId}`);
         });
 }
 
+// عرض قائمة التعليقات
 function renderCommentsList(comments) {
     return `<ul class="comments-list">
-        ${comments.map(c => `
-            <li>
-                <div class="comment">
-                    <div class="comment-header">
-                        <strong>${c.nick_name || 'Anonymous'}</strong>
-                        <small>${formatDate(c.created_at)}</small>
-                    </div>
-                    <p>${c.content}</p>
-                </div>
-            </li>
-        `).join('')}
+        ${comments.map(renderSingleComment).join('')}
     </ul>`;
+}
+
+// عرض تعليق واحد
+function renderSingleComment(comment) {
+    return `
+        <li>
+            <div class="comment">
+                <div class="comment-header">
+                    <strong>${comment.nick_name || 'Anonymous'}</strong>
+                    <small>${formatDate(comment.created_at)}</small>
+                </div>
+                <p>${comment.content}</p>
+            </div>
+        </li>
+    `;
 }
