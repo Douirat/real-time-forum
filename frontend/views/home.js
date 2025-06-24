@@ -5,16 +5,15 @@ import { fetch_categories } from "./post/fetchCategories.js";
 import { show_posts, initScrollListener, reset_pagination } from "./post/showPosts.js";
 import { navigateTo } from "../router/router.js";
 import { render_left_aside } from "../components/left_aside.js";
-import { setupUserScrollListener, load_users ,logout} from "./users/users.js";
+import { setupUserScrollListener, load_users, logout } from "./users/users.js";
 import { handle_user_profile } from "../components/profile.js";
-import { sendMessage, worker } from "../views/chat/worker.js";
-
-// import { appState } from "../utils/state.js";
+import { sendMessage, worker } from "./chat/worker.js";
 
 // Global variable to store categories data
 let categoriesData = [];
 
 export function render_home_page() {
+
   fetch("http://localhost:8080/logged_user", {
     method: "GET",
     headers: {

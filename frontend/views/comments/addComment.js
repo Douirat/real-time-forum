@@ -2,6 +2,7 @@ import { isEmptyInput } from '../../utils/comment_validators.js';
 import { formatDate } from '../../utils/comment_validators.js';
 import { render_error_page } from "../error.js";
 import { getErrorMessage } from "../../utils/error_validators.js";
+import { appState } from '../../utils/state.js';
 
 export function add_comment(postId) {
     const commentInput = document.getElementById(`comment-input-${postId}`);
@@ -39,7 +40,7 @@ export function add_comment(postId) {
             addNewCommentToTop(postId, {
                 id: response.id || Date.now(),
                 content: commentData.content,
-                nick_name: response.nick_name || "Anonymous",
+                nick_name: appState.app_user.nick_name || "Anonymous",
                 created_at: response.created_at || new Date().toISOString()
             });
             
@@ -79,7 +80,7 @@ function addNewCommentToTop(postId, comment) {
         <li>
             <div class="comment">
                 <div class="comment-header">
-                    <strong>${comment.nick_name || 'Anonymous'}</strong>
+                    <strong>${appState.app_user.nick_name  || 'Anonymous'}</strong>
                     <small>${formatDate(comment.created_at)}</small>
                 </div>
                 <p>${comment.content}</p>
