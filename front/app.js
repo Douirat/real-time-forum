@@ -1,6 +1,6 @@
 import { navigateTo, router } from "./router/router.js";
-import { login_user } from "./views/login.js";
-import { register_new_user } from "./views/register.js";
+import { login_user } from "./views/users/login.js";
+import { register_new_user } from "./views/users/register.js";
 import { add_new_post } from "./views/post/addPost.js";
 
 

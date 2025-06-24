@@ -1,7 +1,7 @@
-import { navigateTo } from "../router/router.js";
-import { isValidEmail } from "../utils/auth_validators.js";
-import { render_error_page } from "./error.js";
-import { getErrorMessage } from "../utils/error_validators.js";
+import { navigateTo } from "../../router/router.js";
+import { isValidEmail } from "../../utils/auth_validators.js";
+import { render_error_page } from "../error.js";
+import { getErrorMessage } from "../../utils/error_validators.js";
 
 export async function login_user() {
     let credentials = {
