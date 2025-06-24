@@ -1,8 +1,7 @@
-import { navigateTo } from "./script.js";
+import { navigateTo } from "../../router/router.js";
+import { appState } from "../../utils/state.js";
 import { start_chat_with_user } from "./chat.js"
 import { worker, sendMessage } from "./worker.js";
-import { appState } from "./state.js";
-
 
 // users offset and limit:
 let isFetchingUsers = false;
