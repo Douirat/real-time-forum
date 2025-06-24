@@ -1,12 +1,14 @@
 // home.js
-import { header, logout } from "../components/header.js";
+import { header } from "../components/header.js";
 import { post_form } from "../components/forms.js";
 import { fetch_categories } from "./post/fetchCategories.js";
 import { show_posts, initScrollListener, reset_pagination } from "./post/showPosts.js";
 import { navigateTo } from "../router/router.js";
 import { render_left_aside } from "../components/left_aside.js";
-import {setupUserScrollListener, load_users } from "./users/users.js";
+import { setupUserScrollListener, load_users ,logout} from "./users/users.js";
 import { handle_user_profile } from "../components/profile.js";
+import { sendMessage, worker } from "../views/chat/worker.js";
+
 // import { appState } from "../utils/state.js";
 
 // Global variable to store categories data
@@ -27,6 +29,9 @@ export function render_home_page() {
       return response.json();
     })
     .then((data) => {
+      worker.port.start();
+      sendMessage(worker, { type: "login" });
+
       fetch_categories()
         .then((categories) => {
           categoriesData = categories;
