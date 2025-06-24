@@ -53,7 +53,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if isValid {
 			http.Redirect(w, r, "/", http.StatusFound)
 		} else {
-			http.ServeFile(w, r, "../front/index.html")
+			http.ServeFile(w, r, "../frontend/index.html")
 		}
 		return
 	}
@@ -64,14 +64,14 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
-		http.ServeFile(w, r, "../front/index.html")
+		http.ServeFile(w, r, "../frontend/index.html")
 		return
 	}
 
 	// Serve static files
 	if r.Method == "GET" {
 		if strings.HasSuffix(r.URL.Path, ".css") || strings.HasSuffix(r.URL.Path, ".js") || strings.HasSuffix(r.URL.Path, ".png") {
-			http.ServeFile(w, r, "../front"+r.URL.Path)
+			http.ServeFile(w, r, "../frontend"+r.URL.Path)
 			return
 		}
 		// http.ServeFile(w, r, "../front/index.html")
@@ -86,5 +86,5 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Not found
-	http.ServeFile(w, r, "../front/index.html")
+	http.ServeFile(w, r, "../frontend/index.html")
 }
