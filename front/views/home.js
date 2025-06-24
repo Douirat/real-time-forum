@@ -2,8 +2,10 @@
 import { header, logout } from "../components/header.js";
 import { post_form } from "../components/forms.js";
 import { fetch_categories } from "./post/fetchCategories.js";
-import {show_posts,initScrollListener,reset_pagination} from "./post/showPosts.js";
+import { show_posts, initScrollListener, reset_pagination } from "./post/showPosts.js";
 import { navigateTo } from "../router/router.js";
+import { render_left_aside } from "../components/left_aside.js";
+// import { appState } from "../utils/state.js";
 
 // Global variable to store categories data
 let categoriesData = [];
@@ -32,6 +34,7 @@ export function render_home_page() {
           // Render the home page with categories
           document.body.innerHTML = /*html*/ `
                 ${header()}
+                ${render_left_aside()}
                 <main>
                     <section>
                         <div class="postForm">
