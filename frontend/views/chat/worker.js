@@ -60,6 +60,8 @@ worker.port.onmessage = (event) => {
       setupUserScrollListener()
       load_users()
       break;
+      case "sent_message":
+        display_sent_message(msg)
     case "status":
       console.log("[Main] WebSocket status:", msg.status);
       // Optionally update UI status indicator here
@@ -141,4 +143,37 @@ function hideTypingIndicator() {
   const typingElem = document.getElementById("typing-indicator");
   if (!typingElem) return;
   typingElem.style.display = "none";
+}
+
+// display sent messages on the ui to maintain realtime effect:
+function display_sent_message(message) {
+  const container = document.getElementById("messages-container");
+  if (!container) return;
+
+  const msgDiv = document.createElement("div");
+  msgDiv.classList.add("message", "sent");
+
+  // Sender name
+  const senderDiv = document.createElement("div");
+  senderDiv.classList.add("message_creator");
+  senderDiv.textContent = appState.app_user.nick_name;
+
+  // Message content
+  const contentDiv = document.createElement("div");
+  contentDiv.classList.add("content");
+  contentDiv.textContent = message.content;
+
+  // Current timestamp
+  const dateDiv = document.createElement("div");
+  dateDiv.classList.add("message_date");
+  dateDiv.textContent = new Date().toLocaleString();
+
+  // Append parts to message div
+  msgDiv.appendChild(senderDiv);
+  msgDiv.appendChild(contentDiv);
+  msgDiv.appendChild(dateDiv);
+
+  // Add to container and scroll
+  container.appendChild(msgDiv);
+  container.scrollTop = container.scrollHeight;
 }

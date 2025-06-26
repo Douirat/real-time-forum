@@ -68,8 +68,14 @@ function handle_messsage(user) {
       content: input,
     };
 
+     let sent_message = {
+      type: "sent_message",
+      receiver: user.id,
+      content: input,
+    };
+
+    sendMessage(worker, sent_message);
     sendMessage(worker, message);
-    display_sent_message(message);
     appState.users_offset = 0;
     if (users_container) {
       users_container.innerHTML = "";
@@ -210,38 +216,7 @@ function cancel_chat() {
   });
 }
 
-// display sent messages on the ui to maintain realtime effect:
-function display_sent_message(message) {
-  const container = document.getElementById("messages-container");
-  if (!container) return;
 
-  const msgDiv = document.createElement("div");
-  msgDiv.classList.add("message", "sent");
-
-  // Sender name
-  const senderDiv = document.createElement("div");
-  senderDiv.classList.add("message_creator");
-  senderDiv.textContent = appState.app_user.nick_name;
-
-  // Message content
-  const contentDiv = document.createElement("div");
-  contentDiv.classList.add("content");
-  contentDiv.textContent = message.content;
-
-  // Current timestamp
-  const dateDiv = document.createElement("div");
-  dateDiv.classList.add("message_date");
-  dateDiv.textContent = new Date().toLocaleString();
-
-  // Append parts to message div
-  msgDiv.appendChild(senderDiv);
-  msgDiv.appendChild(contentDiv);
-  msgDiv.appendChild(dateDiv);
-
-  // Add to container and scroll
-  container.appendChild(msgDiv);
-  container.scrollTop = container.scrollHeight;
-}
 
 export function mark_messages_as_read(fromId) {
   fetch(`http://localhost:8080/mark_read?from_id=${fromId}`, {

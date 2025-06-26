@@ -36,6 +36,7 @@ func (mes *MessageRepository) InsertMessage(message *models.Message) error {
 
 // Get the chat history between the chosen user and the client:
 func (mesRepo *MessageRepository) GetChatHistory(client, guest int, offset int, limit int) ([]*models.Message, error) {
+	fmt.Printf("offset: %d limit: %d", offset, limit)
 	query := `
 	SELECT ID, content, sender_id, receiver_id, is_read, created_at
 	FROM private_messages

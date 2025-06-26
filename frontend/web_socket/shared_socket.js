@@ -85,6 +85,10 @@ onconnect = (e) => {
         if (ws) ws.close();
         break;
 
+      case "sent_message":
+      broadcast(event.data)
+      break;
+
       case "message":
       case "start_typing":
       case "stop_typing":
