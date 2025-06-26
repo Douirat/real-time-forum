@@ -55,20 +55,15 @@ func (mesRepo *MessageRepository) GetChatHistory(client, guest int, offset int, 
 
 	for rows.Next() {
 		msg := &models.Message{}
-		var createdAtStr string
-		if err := rows.Scan(&msg.Id, &msg.Content, &msg.SenderId, &msg.RecieverId, &msg.IsRead, &createdAtStr); err != nil {
+		if err := rows.Scan(&msg.Id, &msg.Content, &msg.SenderId, &msg.RecieverId, &msg.IsRead, &msg.CreatedAt); err != nil {
 			return nil, err
 		}
-		// Parse timestamp
-		if createdAt, parseErr := time.Parse("2006-01-02 15:04:05", createdAtStr); parseErr == nil {
-			msg.CreatedAt = createdAt
-		}
+		fmt.Println("sass",msg.CreatedAt)
 		messages = append(messages, msg)
 	}
 
 	return messages, nil
 }
-
 
 // Get the LastMessage :
 func (mesRepo *MessageRepository) GetLastMessage(client, guest int) (*models.Message, error) {
@@ -112,7 +107,7 @@ func (mesRepo *MessageRepository) MarkMessagesAsRead(senderID, receiverID int) e
 	if err != nil {
 		return fmt.Errorf("failed to mark messages as read: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -128,7 +123,7 @@ func (mesRepo *MessageRepository) GetUnreadMessageCount(userID int) (int, error)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get unread message count: %w", err)
 	}
-	
+
 	return count, nil
 }
 
@@ -145,7 +140,7 @@ func (mesRepo *MessageRepository) GetUnreadMessages(userID int) ([]*models.Messa
 		return nil, fmt.Errorf("failed to get unread messages: %w", err)
 	}
 	defer rows.Close()
-	
+
 	var messages []*models.Message
 	for rows.Next() {
 		msg := &models.Message{}
@@ -153,13 +148,13 @@ func (mesRepo *MessageRepository) GetUnreadMessages(userID int) ([]*models.Messa
 		if err := rows.Scan(&msg.Id, &msg.Content, &msg.SenderId, &msg.RecieverId, &msg.IsRead, &createdAtStr); err != nil {
 			return nil, err
 		}
-		
+
 		// Parse the timestamp
 		if createdAt, parseErr := time.Parse("2006-01-02 15:04:05", createdAtStr); parseErr == nil {
 			msg.CreatedAt = createdAt
 		}
 		messages = append(messages, msg)
 	}
-	
+
 	return messages, nil
 }
