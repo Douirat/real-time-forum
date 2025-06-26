@@ -3,20 +3,29 @@ import { appState } from "../../utils/state.js";
 import { load_users, setupUserScrollListener } from "../users/users.js";
 import { sendMessage, worker } from "./worker.js";
 
-let isTyping = false
-let time_out = null
+let isTyping = false;
+let time_out = null;
 
 export function start_chat_with_user(user) {
   worker.port.start();
 
-  // Remove existing chat box if present
-  let oldChat = document.querySelector("#chat_area");
-  if (oldChat) oldChat.remove();
+  // تحقق من وجود محادثة مفتوحة مع نفس المستخدم
+  const existingChat = document.querySelector("#chat_area");
+  if (existingChat && appState.chat_user && appState.chat_user.id === user.id) {
+    // إذا كانت المحادثة مفتوحة مع نفس المستخدم، لا تفعل شيئاً
+    console.log("المحادثة مفتوحة بالفعل مع هذا المستخدم");
+    return;
+  }
 
-  // Mark messages as read immediately
+  // إزالة محادثة موجودة فقط إذا كانت مع مستخدم مختلف
+  if (existingChat) {
+    existingChat.remove();
+  }
+  
+  // تحديد الرسائل كمقروءة فوراً
   mark_messages_as_read(user.id);
 
-  // Remove notification from UI
+  // إزالة الإشعار من واجهة المستخدم
   const userElem = document.querySelector(`.user_chat[user-id='${user.id}']`);
   if (userElem) {
     const notif = userElem.querySelector(".notification");
@@ -27,10 +36,15 @@ export function start_chat_with_user(user) {
     }
   }
 
-  const temp = document.createElement('div');
+  // إنشاء منطقة دردشة جديدة
+  const temp = document.createElement("div");
   temp.innerHTML = render_char_area();
   const element = temp.firstElementChild;
   document.body.appendChild(element);
+
+  // إعادة تعيين إعدادات المحادثة
+  appState.chat_offset = 0;
+  appState.chat_user = user;
 
   get_chat_history(user);
   setupChatScrollListener();
@@ -39,48 +53,44 @@ export function start_chat_with_user(user) {
   cancel_chat();
 }
 
-
-
 function handle_messsage(user) {
   const users_container = document.querySelector("#chat_users");
   let sendBtn = document.getElementById("send-button");
   let inputField = document.getElementById("message-input");
 
-
   sendBtn.addEventListener("click", () => {
-    let input = inputField.value.trim()
-    if (input === "") return
-    console.log("worker: ", worker)
+    let input = inputField.value.trim();
+    if (input === "") return;
+    console.log("worker: ", worker);
     let message = {
       type: "message",
       receiver: user.id,
-      content: input
-    }
+      content: input,
+    };
 
-    sendMessage(worker, message)
-    display_sent_message(message)
-    appState.users_offset = 0
+    sendMessage(worker, message);
+    display_sent_message(message);
+    appState.users_offset = 0;
     if (users_container) {
-      users_container.innerHTML = ""
+      users_container.innerHTML = "";
     }
-    setupUserScrollListener()
-    load_users()
-    inputField.value = ""
-  })
+    setupUserScrollListener();
+    load_users();
+    inputField.value = "";
+  });
 }
-
 
 // handle sending the typing notification:
 function handle_typing(user) {
-  let input_field = document.getElementById("message-input")
+  let input_field = document.getElementById("message-input");
   input_field.addEventListener("input", () => {
     if (!isTyping) {
       sendMessage(worker, {
         type: "start_typing",
         receiver: user.id,
-        content: "typing_status"
+        content: "typing_status",
       });
-      isTyping = true
+      isTyping = true;
     }
 
     clearTimeout(time_out);
@@ -90,12 +100,12 @@ function handle_typing(user) {
         sendMessage(worker, {
           type: "stop_typing",
           receiver: user.id,
-          content: "typing_status"
+          content: "typing_status",
         });
-        isTyping = false
+        isTyping = false;
       }
-    }, 1500)
-  })
+    }, 1500);
+  });
 }
 
 export function setupChatScrollListener() {
@@ -110,31 +120,36 @@ export function setupChatScrollListener() {
   });
 }
 
-
 // get chat history:
 function get_chat_history(user) {
   if (appState.is_fetching_messages) return;
   appState.is_fetching_messages = true;
   appState.chat_user = user;
 
-
-  fetch(`http://localhost:8080/get_chat?user_id=${user.id}&offset=${appState.chat_offset}&limit=${appState.chat_limit}`)
-    .then(response => {
+  fetch(
+    `http://localhost:8080/get_chat?user_id=${user.id}&offset=${appState.chat_offset}&limit=${appState.chat_limit}`
+  )
+    .then((response) => {
       if (!response.ok) {
         throw new Error("Failed to fetch chat history");
       }
       return response.json();
     })
-    .then(data => {
+    .then((data) => {
       const container = document.getElementById("messages-container");
       if (!container || !data || data.length === 0) {
         appState.is_fetching_messages = false;
         return;
       }
 
+      // إذا كان هذا أول تحميل للمحادثة (offset = 0)، امسح الحاوية أولاً
+      if (appState.chat_offset === 0) {
+        container.innerHTML = "";
+      }
+
       const previousScrollHeight = container.scrollHeight;
 
-      data.forEach(msg => {
+      data.forEach((msg) => {
         const msgDiv = document.createElement("div");
         msgDiv.classList.add("message");
         msgDiv.classList.add(msg.sender_id === user.id ? "received" : "sent");
@@ -145,9 +160,10 @@ function get_chat_history(user) {
 
         const userDiv = document.createElement("div");
         userDiv.classList.add("message_creator");
-        userDiv.textContent = msg.sender_id === user.id
-          ? user.nick_name
-          : appState.app_user?.nick_name || "You";
+        userDiv.textContent =
+          msg.sender_id === user.id
+            ? user.nick_name
+            : appState.app_user?.nick_name || "You";
 
         const dateDiv = document.createElement("div");
         dateDiv.classList.add("message_date");
@@ -158,35 +174,41 @@ function get_chat_history(user) {
         msgDiv.appendChild(contentDiv);
         msgDiv.appendChild(dateDiv);
 
-        // Prepend to top (insert before first child)
-        container.insertBefore(msgDiv, container.firstChild);
+        // إذا كان التحميل الأول، أضف في النهاية، وإلا أضف في البداية
+        if (appState.chat_offset === 0) {
+          container.appendChild(msgDiv);
+        } else {
+          container.insertBefore(msgDiv, container.firstChild);
+        }
       });
 
       appState.chat_offset += data.length;
 
-      // Maintain scroll position after prepending
-      container.scrollTop = container.scrollHeight - previousScrollHeight;
+      // إدارة موضع التمرير
+      if (appState.chat_offset === data.length) {
+        // أول تحميل - انتقل إلى الأسفل
+        container.scrollTop = container.scrollHeight;
+      } else {
+        // تحميل المزيد - حافظ على الموضع
+        container.scrollTop = container.scrollHeight - previousScrollHeight;
+      }
 
       appState.is_fetching_messages = false;
     })
-    .catch(error => {
+    .catch((error) => {
       appState.is_fetching_messages = false;
       console.error("Error fetching chat history:", error);
     });
 }
 
-
-
-
 // Cancel the chat area:
 function cancel_chat() {
-  let btn = document.getElementById("cancel_chat")
+  let btn = document.getElementById("cancel_chat");
   btn.addEventListener("click", () => {
-    appState.chat_user = null
-    btn.parentElement.parentElement.parentElement.remove()
-  })
+    appState.chat_user = null;
+    btn.parentElement.parentElement.parentElement.remove();
+  });
 }
-
 
 // display sent messages on the ui to maintain realtime effect:
 function display_sent_message(message) {
@@ -221,20 +243,18 @@ function display_sent_message(message) {
   container.scrollTop = container.scrollHeight;
 }
 
-
-
 export function mark_messages_as_read(fromId) {
   fetch(`http://localhost:8080/mark_read?from_id=${fromId}`, {
     method: "POST",
   })
-    .then(res => {
+    .then((res) => {
       if (!res.ok) throw new Error("Failed to mark messages as read");
       return res.json();
     })
-    .then(data => {
+    .then((data) => {
       console.log("Messages marked as read:", data);
     })
-    .catch(err => {
+    .catch((err) => {
       console.error("Error marking messages as read:", err);
     });
 }
