@@ -9,23 +9,23 @@ let time_out = null;
 export function start_chat_with_user(user) {
   worker.port.start();
 
-  // تحقق من وجود محادثة مفتوحة مع نفس المستخدم
+  // Check if there's an open chat with the same user
   const existingChat = document.querySelector("#chat_area");
   if (existingChat && appState.chat_user && appState.chat_user.id === user.id) {
-    // إذا كانت المحادثة مفتوحة مع نفس المستخدم، لا تفعل شيئاً
-    console.log("المحادثة مفتوحة بالفعل مع هذا المستخدم");
+    // If chat is already open with the same user, do nothing
+    console.log("Chat is already open with this user");
     return;
   }
 
-  // إزالة محادثة موجودة فقط إذا كانت مع مستخدم مختلف
+  // Remove existing chat only if it's with a different user
   if (existingChat) {
     existingChat.remove();
   }
   
-  // تحديد الرسائل كمقروءة فوراً
+  // Mark messages as read immediately
   mark_messages_as_read(user.id);
 
-  // إزالة الإشعار من واجهة المستخدم
+  // Remove notification from user interface
   const userElem = document.querySelector(`.user_chat[user-id='${user.id}']`);
   if (userElem) {
     const notif = userElem.querySelector(".notification");
@@ -36,13 +36,13 @@ export function start_chat_with_user(user) {
     }
   }
 
-  // إنشاء منطقة دردشة جديدة
+  // Create new chat area
   const temp = document.createElement("div");
   temp.innerHTML = render_char_area();
   const element = temp.firstElementChild;
   document.body.appendChild(element);
 
-  // إعادة تعيين إعدادات المحادثة
+  // Reset chat settings
   appState.chat_offset = 0;
   appState.chat_user = user;
 
@@ -142,7 +142,7 @@ function get_chat_history(user) {
         return;
       }
 
-      // إذا كان هذا أول تحميل للمحادثة (offset = 0)، امسح الحاوية أولاً
+      // If this is the first load of the chat (offset = 0), clear the container first
       if (appState.chat_offset === 0) {
         container.innerHTML = "";
       }
@@ -174,7 +174,7 @@ function get_chat_history(user) {
         msgDiv.appendChild(contentDiv);
         msgDiv.appendChild(dateDiv);
 
-        // إذا كان التحميل الأول، أضف في النهاية، وإلا أضف في البداية
+        // If it's the first load, append at the end, otherwise insert at the beginning
         if (appState.chat_offset === 0) {
           container.appendChild(msgDiv);
         } else {
@@ -184,12 +184,12 @@ function get_chat_history(user) {
 
       appState.chat_offset += data.length;
 
-      // إدارة موضع التمرير
+      // Manage scroll position
       if (appState.chat_offset === data.length) {
-        // أول تحميل - انتقل إلى الأسفل
+        // First load - scroll to bottom
         container.scrollTop = container.scrollHeight;
       } else {
-        // تحميل المزيد - حافظ على الموضع
+        // Load more - maintain position
         container.scrollTop = container.scrollHeight - previousScrollHeight;
       }
 
