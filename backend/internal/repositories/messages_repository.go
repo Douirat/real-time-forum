@@ -55,6 +55,7 @@ func (mesRepo *MessageRepository) GetChatHistory(client, guest int, offset int, 
 
 	for rows.Next() {
 		msg := &models.Message{}
+		//handler problem time in msg 
 		if err := rows.Scan(&msg.Id, &msg.Content, &msg.SenderId, &msg.RecieverId, &msg.IsRead, &msg.CreatedAt); err != nil {
 			return nil, err
 		}
