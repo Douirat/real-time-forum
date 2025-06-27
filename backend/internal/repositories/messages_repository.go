@@ -29,8 +29,8 @@ func NewMessageRepository(dataBase *sql.DB) *MessageRepository {
 
 // insert a new message into database:
 func (mes *MessageRepository) InsertMessage(message *models.Message) error {
-	query := `INSERT INTO private_messages(content, sender_id, receiver_id, is_read, created_at) VALUES(?, ?, ?, ?, ?)`
-	_, err := mes.db.Exec(query, message.Content, message.SenderId, message.RecieverId, message.IsRead, message.CreatedAt)
+	query := `INSERT INTO private_messages(content, sender_id, receiver_id, is_read) VALUES(?, ?, ?, ?)`
+	_, err := mes.db.Exec(query, message.Content, message.SenderId, message.RecieverId, message.IsRead)
 	return err
 }
 

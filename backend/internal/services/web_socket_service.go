@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"sync"
-	"time"
 
 	"real_time_forum/internal/models"
 	"real_time_forum/internal/repositories"
@@ -84,38 +83,30 @@ func NewWebSocketService(hub *ChatBroker, messRepo *repositories.MessageReposito
 // writePump handles outgoing messages to the WebSocket connection
 // This runs in its own goroutine per client (e.g., Client B)
 func (client *Client) WritePump() {
-	// [Cleanup] Ensure connection is closed when loop ends
+	// Ensure connection is closed on function exit
 	defer func() {
 		if client.Connection != nil {
 			client.Connection.Close()
 		}
 	}()
 
-	// [Start Sending] Continuously listen on the Send channel
-	for {
-		select {
-		// [Hub ->> WritePumpB] Step 3: Wait for a message routed to this client
-		case message, ok := <-client.Pipe:
-			if !ok {
-				// [Hub signals closure] Send a close message and terminate
-				if client.Connection != nil {
-					client.Connection.WriteMessage(websocket.CloseMessage, []byte{})
-				}
+	// Continuously read from the Pipe channel
+	for message := range client.Pipe {
+		if client.Connection != nil {
+			if err := client.Connection.WriteJSON(message); err != nil {
+				log.Printf("Write error for %d: %v", client.UserId, err)
 				return
 			}
-
-			// [WritePumpB ->> ClientB] Step 4: Send the message to the browser
-			if client.Connection != nil {
-				if err := client.Connection.WriteJSON(message); err != nil {
-					log.Printf("Write error for %d: %v", client.UserId, err)
-					return
-				}
-				log.Printf("Sent message to %d: %+v", client.UserId, message)
-			}
-			// [ClientB ->> ClientB] Step 5 happens in browser's JS: `onmessage` event
+			log.Printf("Sent message to %d: %v", client.UserId, message)
 		}
 	}
+
+	// If we exit the loop (Pipe channel is closed), notify the client
+	if client.Connection != nil {
+		client.Connection.WriteMessage(websocket.CloseMessage, []byte{})
+	}
 }
+
 
 // A function to read data from the websocket:
 // readPump handles incoming messages from the WebSocket connection
@@ -165,8 +156,6 @@ func (client *Client) ReadPump(hub *ChatBroker, socket *WebSocketService) {
 			SenderId:   msg.Sender,
 			RecieverId: msg.Receiver,
 			IsRead:     false,
-			// CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
-			CreatedAt: time.Now(),
 		}
 
 		if msg.Type == "message" {
