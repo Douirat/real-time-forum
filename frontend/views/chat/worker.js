@@ -16,8 +16,7 @@ worker.port.onmessage = (event) => {
       displayMessage(msg);
       if (appState.chat_user) {
         if (msg.sender == appState.chat_user.id) {
-          sendMessage(worker, { type: "read", sender: msg.sender })
-          mark_messages_as_read(msg.sender)
+          sendMessage(worker, { type: "read", sender: appState.chat_user.id })
         }
       }
       appState.users_offset = 0
@@ -67,7 +66,6 @@ worker.port.onmessage = (event) => {
       display_sent_message(msg)
 
     case "read":
-      console.log("read message should be handled...");
       mark_messages_as_read(msg.sender)
       break;
     case "status":

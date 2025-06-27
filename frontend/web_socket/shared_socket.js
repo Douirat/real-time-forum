@@ -61,7 +61,6 @@ function broadcast(message, excludePort = null) {
 onconnect = (e) => {
   const port = e.ports[0];
   ports.push(port);
-  console.log("[Worker] New port connected. Total ports:", ports.length);
   port.start();
 
   // Immediately inform port of current connection status
@@ -71,22 +70,27 @@ onconnect = (e) => {
   });
 
   port.onmessage = (event) => {
-    console.log("[Worker] Message received from port:", event.data);
+    if (event.data.type === "read"){
+        console.log("himos recevido un nuevo mensage :", event.data);
+    }
     const { type, ...data } = event.data;
-
+    
     switch (type) {
-
-    case "read":
+      
+      case "read":
+    
+      console.log("happened");
+      
         broadcast(event.data)
         break;
 
       case "login":
-        console.log("[Worker] login message received: connecting WebSocket");
+  
         connectWebSocket();
         break;
 
       case "logout":
-        console.log("[Worker] logout message received: closing WebSocket");
+       
         if (ws) ws.close();
         break;
 
@@ -100,10 +104,10 @@ onconnect = (e) => {
       case "typing":
         if (ws && ws.readyState === WebSocket.OPEN) {
           const json = JSON.stringify({ type, ...data });
-          console.log("[Worker] Sending message over WebSocket:", json);
+        
           ws.send(json);
         } else {
-          console.warn("[Worker] WebSocket not open. Cannot send:", type);
+   
         }
         break;
 

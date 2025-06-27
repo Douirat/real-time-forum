@@ -23,7 +23,7 @@ export function start_chat_with_user(user) {
   }
   
   // Mark messages as read immediately
-  mark_messages_as_read(user.id);
+  sendMessage(worker, {type: "read", sender: user.id})
 
   // Remove notification from user interface
   const userElem = document.querySelector(`.user_chat[user-id='${user.id}']`);
@@ -228,6 +228,15 @@ export function mark_messages_as_read(fromId) {
     })
     .then((data) => {
       console.log("Messages marked as read:", data);
+      const userChat = document.querySelector(`.user_chat[user-id='${fromId}']`);
+      if (userChat) {
+        const notification = userChat.querySelector(".notification");
+        if (notification) {
+          notification.textContent = "";
+          notification.classList.remove("show");
+          notification.classList.add("hidden");
+        }
+      }
     })
     .catch((err) => {
       console.error("Error marking messages as read:", err);
