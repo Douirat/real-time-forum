@@ -16,6 +16,7 @@ worker.port.onmessage = (event) => {
       displayMessage(msg);
       if (appState.chat_user) {
         if (msg.sender == appState.chat_user.id) {
+          sendMessage(worker, { type: "read", sender: msg.sender })
           mark_messages_as_read(msg.sender)
         }
       }
@@ -60,8 +61,15 @@ worker.port.onmessage = (event) => {
       setupUserScrollListener()
       load_users()
       break;
-      case "sent_message":
-        display_sent_message(msg)
+    case "sent_message":
+
+
+      display_sent_message(msg)
+
+    case "read":
+      console.log("read message should be handled...");
+      mark_messages_as_read(msg.sender)
+      break;
     case "status":
       console.log("[Main] WebSocket status:", msg.status);
       // Optionally update UI status indicator here
@@ -126,8 +134,6 @@ function displayMessage(msg) {
 
 
 function showTypingIndicator(msg) {
-  console.log("called ->>--------->>");
-
   const typingElem = document.getElementById("typing-indicator");
   if (!typingElem) return;
   console.log(typingElem);

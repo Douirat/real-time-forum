@@ -75,6 +75,11 @@ onconnect = (e) => {
     const { type, ...data } = event.data;
 
     switch (type) {
+
+    case "read":
+        broadcast(event.data)
+        break;
+
       case "login":
         console.log("[Worker] login message received: connecting WebSocket");
         connectWebSocket();
@@ -86,8 +91,8 @@ onconnect = (e) => {
         break;
 
       case "sent_message":
-      broadcast(event.data)
-      break;
+        broadcast(event.data)
+        break;
 
       case "message":
       case "start_typing":
