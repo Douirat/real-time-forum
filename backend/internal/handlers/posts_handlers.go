@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"real_time_forum/internal/handlers/utils"
 	"real_time_forum/internal/models"
@@ -58,7 +59,18 @@ func (postHand *PostsHandlers) GetAllPostsHandler(w http.ResponseWriter, r *http
 	}
 
 	// Parse offset and limit from query
-	offset, limit := utils.ParseLimitOffset(r)
+	offsetStr := r.URL.Query().Get("offset")
+	limitStr := r.URL.Query().Get("limit")
+
+	// Default to 0 and 10 if not provided
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil {
+		offset = 0
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		limit = 10
+	}
 
 	// Call service with pagination
 	posts, err := postHand.postsServ.GetAllPostsService(offset, limit)
