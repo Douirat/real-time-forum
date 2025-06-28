@@ -55,23 +55,14 @@ func (comHand *CommentsHandler) ShowCommentsHandler(w http.ResponseWriter, r *ht
 	}
 	queryParam := r.URL.Query()
 	query := queryParam.Get("id")
-	offsetStr := r.URL.Query().Get("offset")
-	limitStr := r.URL.Query().Get("limit")
 
 	id, err := strconv.Atoi(query)
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "query not allowed"})
 		return
 	}
-	// Default to 0 and 10 if not provided
-	offset, err := strconv.Atoi(offsetStr)
-	if err != nil {
-		offset = 0
-	}
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit <= 0 {
-		limit = 10
-	}
+	offset, limit := utils.ParseLimitOffset(r)
+
 	comments, err := comHand.ComSer.ShowCommentsservice(id, offset, limit)
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "error getComment"})
