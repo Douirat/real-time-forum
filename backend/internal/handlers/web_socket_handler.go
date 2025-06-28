@@ -64,7 +64,7 @@ func (soc *WebSocketHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	// Defaults if query params not provided or invalid
 	offset := 0
-	limit := 20
+	limit := 10
 
 	if offsetStr != "" {
 		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {

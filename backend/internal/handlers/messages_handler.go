@@ -43,7 +43,7 @@ func (messHand *MessagesHandler) GetChatHistoryHandler(w http.ResponseWriter, r 
 
 	// Handle offset and limit
 	offset := 0
-	limit := 20
+	limit := 10
 
 	if offsetParam := r.URL.Query().Get("offset"); offsetParam != "" {
 		offset, err = strconv.Atoi(offsetParam)
