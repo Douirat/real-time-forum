@@ -155,7 +155,6 @@ function renderCommentsList(comments) {
     </ul>`;
 }
 
-// عرض تعليق واحد
 function renderSingleComment(comment) {
     return `
         <li>
