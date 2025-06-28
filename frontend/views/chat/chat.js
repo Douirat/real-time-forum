@@ -21,9 +21,9 @@ export function start_chat_with_user(user) {
   if (existingChat) {
     existingChat.remove();
   }
-  
+
   // Mark messages as read immediately
-  sendMessage(worker, {type: "read", sender: user.id})
+  sendMessage(worker, { type: "read", sender: user.id });
 
   // Remove notification from user interface
   const userElem = document.querySelector(`.user_chat[user-id='${user.id}']`);
@@ -68,7 +68,7 @@ function handle_messsage(user) {
       content: input,
     };
 
-     let sent_message = {
+    let sent_message = {
       type: "sent_message",
       receiver: user.id,
       content: input,
@@ -154,7 +154,10 @@ function get_chat_history(user) {
       }
 
       const previousScrollHeight = container.scrollHeight;
-
+      data = data.reverse();
+      if (appState.chat_offset !== 0) {
+        data = data.reverse();
+      }
       data.forEach((msg) => {
         const msgDiv = document.createElement("div");
         msgDiv.classList.add("message");
@@ -216,8 +219,6 @@ function cancel_chat() {
   });
 }
 
-
-
 export function mark_messages_as_read(fromId) {
   fetch(`http://localhost:8080/mark_read?from_id=${fromId}`, {
     method: "POST",
@@ -228,7 +229,9 @@ export function mark_messages_as_read(fromId) {
     })
     .then((data) => {
       console.log("Messages marked as read:", data);
-      const userChat = document.querySelector(`.user_chat[user-id='${fromId}']`);
+      const userChat = document.querySelector(
+        `.user_chat[user-id='${fromId}']`
+      );
       if (userChat) {
         const notification = userChat.querySelector(".notification");
         if (notification) {

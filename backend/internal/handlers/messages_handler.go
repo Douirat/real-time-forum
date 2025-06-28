@@ -42,24 +42,7 @@ func (messHand *MessagesHandler) GetChatHistoryHandler(w http.ResponseWriter, r 
 	}
 
 	// Handle offset and limit
-	offset := 0
-	limit := 20
-
-	if offsetParam := r.URL.Query().Get("offset"); offsetParam != "" {
-		offset, err = strconv.Atoi(offsetParam)
-		if err != nil || offset < 0 {
-			http.Error(w, "Invalid offset parameter", http.StatusBadRequest)
-			return
-		}
-	}
-
-	if limitParam := r.URL.Query().Get("limit"); limitParam != "" {
-		limit, err = strconv.Atoi(limitParam)
-		if err != nil || limit <= 0 {
-			http.Error(w, "Invalid limit parameter", http.StatusBadRequest)
-			return
-		}
-	}
+	offset, limit := utils.ParseLimitOffset(r)
 
 	// Session check
 	cookie, err := r.Cookie("session_token")
@@ -71,7 +54,7 @@ func (messHand *MessagesHandler) GetChatHistoryHandler(w http.ResponseWriter, r 
 
 	// Get messages
 	messages, err := messHand.MessageSer.GetChatHistoryService(guestId, sessionToken, offset, limit)
-	
+
 	if err != nil {
 		if err.Error() == "user has no session" {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -82,7 +65,7 @@ func (messHand *MessagesHandler) GetChatHistoryHandler(w http.ResponseWriter, r 
 	}
 
 	for _, v := range messages {
-		fmt.Println("zzzzzzzzzzzz",v)
+		fmt.Println("zzzzzzzzzzzz", v)
 	}
 
 	// Send proper JSON response even when messages are empty
