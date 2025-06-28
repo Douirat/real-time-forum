@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -18,6 +19,6 @@ func ParseLimitOffset(r *http.Request) (offset, limit int) {
 	if err != nil || limit <= 0 {
 		limit = 10
 	}
-
+	fmt.Println("ddd-")
 	return offset, limit
 }
