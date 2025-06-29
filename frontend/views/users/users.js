@@ -28,7 +28,7 @@ export function logout() {
         return response.json();
       })
       .then(data => () => {
-        // console.log(data)
+        console.log(data)
       })
       .catch(errorText => console.log("Error:", errorText));
   })

@@ -1,6 +1,8 @@
 import { appState } from "../../utils/state.js";
 import { mark_messages_as_read } from "./chat.js"
 import { load_users, setupUserScrollListener } from "../users/users.js";
+import { render_error_page } from "../error.js";
+import { getCookie } from "../../utils/auth_validators.js";
 
 export const worker = new SharedWorker("./web_socket/shared_socket.js");
 
@@ -83,8 +85,17 @@ worker.port.onclose = () => {
 };
 
 export function sendMessage(worker, message) {
+  const token = getCookieValue("session_token");
+  // if (!token) {
+  //   console.warn("No session token found in cookies");
+  //   render_error_page(500, "error with session!")
+  //   return;
+  // }
+
+  message.token = token; // attach token
   worker.port.postMessage(message);
 }
+
 
 // Placeholder functions for UI updates:
 function displayMessage(msg) {
@@ -174,4 +185,17 @@ function display_sent_message(message) {
   // Add to container and scroll
   container.appendChild(msgDiv);
   container.scrollTop = container.scrollHeight;
+}
+
+function getCookieValue(key) {
+  const cookies = document.cookie.split("; ");
+
+  for (let i = 0; i < cookies.length; i++) {
+    const [k, v] = cookies[i].split("=");
+    if (k === key) {
+      return decodeURIComponent(v);
+    }
+  }
+
+  return null; // Key not found
 }
