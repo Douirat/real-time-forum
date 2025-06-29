@@ -8,7 +8,7 @@
 
 body {
   height: 100%;
-  overflow: auto;
+  overflow-x: hidden;
   display: grid;
   grid-template-columns: 250px 1fr;
   /* Aside is 250px, main gets remaining */
@@ -175,14 +175,23 @@ main {
 
 /* Form styles */
 form {
-  max-width: 400px;
-  margin: 2rem auto;
+  /* max-width: 400px; */
+  /* margin: 2rem auto; */
   padding: 2rem;
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-
+#login_form,
+#registration_form {
+  width: 100vw;
+  padding: 2rem;
+  background: white;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 fieldset {
   border: 1px solid #ddd;
   padding: 1rem;
