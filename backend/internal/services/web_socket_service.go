@@ -39,6 +39,7 @@ type Client struct {
 	UserId     int
 	Connection *websocket.Conn
 	Pipe       chan *WebsocketMessage
+	SessionID  string
 }
 
 // Create a type to represent the the chat broker:
@@ -347,7 +348,8 @@ func (socket *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *htt
 	client := &Client{
 		UserId:     userId,
 		Connection: conn,
-		Pipe:       make(chan *WebsocketMessage, 256), // Add buffer to prevent blocking
+		Pipe:       make(chan *WebsocketMessage, 256),
+		SessionID: token,
 	}
 
 	// 5. Register the user to hub
