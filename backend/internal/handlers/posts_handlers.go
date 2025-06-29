@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"real_time_forum/internal/handlers/utils"
@@ -56,6 +57,10 @@ func (postHand *PostsHandlers) GetAllPostsHandler(w http.ResponseWriter, r *http
 		utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{"message": "method not allowed"})
 		return
 	}
+
+		cookie, err := r.Cookie("session_token")
+
+	fmt.Printf("The session token is: %v", cookie)
 
 	// Parse offset and limit from query
 	offset, limit := utils.ParseLimitOffset(r)
