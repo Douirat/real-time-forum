@@ -1,4 +1,3 @@
-// addComment.js - مبسط
 import { isEmptyInput, formatDate } from '../../utils/comment_validators.js';
 import { render_error_page } from "../error.js";
 import { getErrorMessage } from "../../utils/error_validators.js";
@@ -7,7 +6,6 @@ import { appState } from '../../utils/state.js';
 export function add_comment(postId) {
     const commentInput = document.getElementById(`comment-input-${postId}`);
     
-    // التحقق من صحة الإدخال
     if (isEmptyInput(commentInput?.value)) {
         alert("Please enter a comment");
         return;
@@ -33,10 +31,8 @@ export function add_comment(postId) {
         return res.json();
     })
     .then((response) => {
-        // مسح الحقل
         commentInput.value = "";
         
-        // إضافة التعليق الجديد لأعلى القائمة
         addNewCommentToTop(postId, {
             id: response.id || Date.now(),
             content: commentData.content,
@@ -54,12 +50,10 @@ export function add_comment(postId) {
     });
 }
 
-// إضافة تعليق جديد لأعلى القائمة
 function addNewCommentToTop(postId, comment) {
     const container = document.getElementById(`comments-container-${postId}`);
     if (!container) return;
     
-    // إزالة رسالة "لا توجد تعليقات" إن وجدت
     const noCommentsMsg = container.querySelector('p');
     if (noCommentsMsg && noCommentsMsg.textContent.includes('No comments yet')) {
         noCommentsMsg.remove();
@@ -67,13 +61,11 @@ function addNewCommentToTop(postId, comment) {
     
     let commentsList = container.querySelector('.comments-list');
     
-    // إنشاء قائمة جديدة إذا لم تكن موجودة
     if (!commentsList) {
         container.innerHTML = `<ul class="comments-list"></ul>`;
         commentsList = container.querySelector('.comments-list');
     }
     
-    // إضافة التعليق الجديد لأعلى القائمة
     const newCommentHtml = `
         <li>
             <div class="comment">
@@ -88,6 +80,5 @@ function addNewCommentToTop(postId, comment) {
     
     commentsList.insertAdjacentHTML('afterbegin', newCommentHtml);
     
-    // التمرير لأعلى لإظهار التعليق الجديد
     container.scrollTop = 0;
 }

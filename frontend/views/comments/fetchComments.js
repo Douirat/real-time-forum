@@ -1,14 +1,11 @@
-// fetchComments.js - مبسط
 import { formatDate } from '../../utils/comment_validators.js';
 import { render_error_page } from "../error.js";
 import { getErrorMessage } from "../../utils/error_validators.js";
 import { throttle } from "../../utils/throttle.js";
 
-// حفظ حالة الصفحات لكل منشور
 const commentPagination = new Map();
 const COMMENTS_LIMIT = 4;
 
-// إعادة تعيين حالة الصفحات
 export function reset_comment_pagination(postId) {
     commentPagination.set(postId, {
         offset: 0,
@@ -17,7 +14,6 @@ export function reset_comment_pagination(postId) {
     });
 }
 
-// الحصول على حالة الصفحات
 export function get_comment_pagination(postId) {
     if (!commentPagination.has(postId)) {
         reset_comment_pagination(postId);
@@ -25,7 +21,6 @@ export function get_comment_pagination(postId) {
     return commentPagination.get(postId);
 }
 
-// دالة التحقق من التمرير مع throttle
 const createScrollHandler = (postId) => {
     return throttle(() => {
         const container = document.getElementById(`comments-container-${postId}`);
@@ -33,7 +28,6 @@ const createScrollHandler = (postId) => {
 
         const pagination = get_comment_pagination(postId);
         
-        // التحقق من الوصول لأسفل الحاوية
         const { scrollTop, scrollHeight, clientHeight } = container;
         const isNearBottom = scrollTop + clientHeight >= scrollHeight - 50;
 
@@ -43,15 +37,12 @@ const createScrollHandler = (postId) => {
     }, 200);
 };
 
-// حفظ معالجات التمرير
 const scrollHandlers = new Map();
 
-// إضافة مستمع التمرير
 export function init_comment_scroll_listener(postId) {
     const container = document.getElementById(`comments-container-${postId}`);
     if (!container) return;
     
-    // إزالة المستمع القديم إن وجد
     remove_comment_scroll_listener(postId);
     
     const handler = createScrollHandler(postId);
@@ -59,7 +50,6 @@ export function init_comment_scroll_listener(postId) {
     container.addEventListener("scroll", handler);
 }
 
-// إزالة مستمع التمرير
 export function remove_comment_scroll_listener(postId) {
     const handler = scrollHandlers.get(postId);
     const container = document.getElementById(`comments-container-${postId}`);
@@ -70,7 +60,6 @@ export function remove_comment_scroll_listener(postId) {
     }
 }
 
-// عرض التعليقات للمنشور
 export function show_comments_for_post(postId) {
     reset_comment_pagination(postId);
     load_comments_for_post(postId, () => {
@@ -78,7 +67,6 @@ export function show_comments_for_post(postId) {
     });
 }
 
-// تحميل التعليقات
 function load_comments_for_post(postId, callback) {
     const pagination = get_comment_pagination(postId);
     
@@ -102,7 +90,6 @@ function load_comments_for_post(postId, callback) {
             const container = document.getElementById(`comments-container-${postId}`);
             if (!container) return;
             
-            // التحقق من وجود تعليقات
             if (!comments || !comments.length) {
                 if (pagination.offset === 0) {
                     container.innerHTML = `<p>No comments yet</p>`;
@@ -111,20 +98,15 @@ function load_comments_for_post(postId, callback) {
                 return;
             }
 
-            // التحقق من انتهاء البيانات
             if (comments.length < COMMENTS_LIMIT) {
                 pagination.hasMoreComments = false;
             }
 
-            // تحديث الإزاحة
             pagination.offset += comments.length;
 
-            // عرض التعليقات
             if (pagination.offset === comments.length) {
-                // التحميل الأول
                 container.innerHTML = renderCommentsList(comments);
             } else {
-                // التحميل التالي - إضافة للقائمة الموجودة
                 const existingList = container.querySelector('.comments-list');
                 if (existingList) {
                     existingList.insertAdjacentHTML('beforeend', 
@@ -148,14 +130,12 @@ function load_comments_for_post(postId, callback) {
         });
 }
 
-// عرض قائمة التعليقات
 function renderCommentsList(comments) {
     return `<ul class="comments-list">
         ${comments.map(renderSingleComment).join('')}
     </ul>`;
 }
 
-// عرض تعليق واحد
 function renderSingleComment(comment) {
     return `
         <li>
