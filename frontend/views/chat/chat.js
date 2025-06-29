@@ -1,5 +1,6 @@
 import { render_char_area } from "../../components/chat_area.js";
 import { appState } from "../../utils/state.js";
+import { render_error_page } from "../error.js";
 import { load_users, setupUserScrollListener } from "../users/users.js";
 import { sendMessage, worker } from "./worker.js";
 
@@ -206,7 +207,12 @@ function get_chat_history(user) {
     })
     .catch((error) => {
       appState.is_fetching_messages = false;
-      console.error("Error fetching chat history:", error);
+      // console.error("Error fetching chat history:", error);
+      if (error.status) {
+        render_error_page(error.status, getErrorMessage(error.status));
+      } else {
+        render_error_page(500, "failed to get chat history!");
+      }
     });
 }
 
@@ -243,5 +249,10 @@ export function mark_messages_as_read(fromId) {
     })
     .catch((err) => {
       console.error("Error marking messages as read:", err);
+      if (err.status) {
+        render_error_page(err.status, getErrorMessage(err.status));
+      } else {
+        render_error_page(500, "error marking messages as read!");
+      }
     });
 }

@@ -185,6 +185,7 @@ form {
 #login_form,
 #registration_form {
   width: 100vw;
+  min-width: 400px;
   padding: 2rem;
   background: white;
   height: 100vh;

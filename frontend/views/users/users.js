@@ -1,7 +1,8 @@
 import { navigateTo } from "../../router/router.js";
-import { appState } from "../../utils/state.js";
+import { appState, resetAppState } from "../../utils/state.js";
 import { start_chat_with_user } from "../chat/chat.js";
 import { worker, sendMessage } from "../chat/worker.js";
+import { render_error_page } from "../error.js";
 
 // users offset and limit:
 let isFetchingUsers = false;
@@ -104,29 +105,43 @@ function renderUsers(users) {
 export function load_users() {
   if (appState.is_fetching_users) return; // prevent concurrent fetches
   appState.is_fetching_users = true;
+
   console.log("The offset and limits are: ", appState.users_offset, " ", appState.users_limit);
 
   fetch(`http://localhost:8080/get_users?offset=${appState.users_offset}&limit=${appState.users_limit}`)
-    .then(response => response.json())
+    .then(response => {
+      // Check for HTTP errors
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json(); // This can also throw if response is not valid JSON
+    })
     .then(data => {
-      if (data) {
-        if (data.length > 0) {
-          renderUsers(data);
-          appState.users_offset += data.length;
-        } else {
-          // No more users, remove scroll listener
-          const box = document.querySelector("#users-scroll-box");
-          if (box && window.userScrollHandler) {
-            box.removeEventListener("scroll", window.userScrollHandler);
-            console.log("Removed user scroll listener - no more users");
-          }
+      if (data && data.length > 0) {
+        renderUsers(data);
+        appState.users_offset += data.length;
+      } else {
+        // No more users, remove scroll listener
+        const box = document.querySelector("#users-scroll-box");
+        if (box && window.userScrollHandler) {
+          box.removeEventListener("scroll", window.userScrollHandler);
+          console.log("Removed user scroll listener - no more users");
         }
+      }
+    })
+    .catch(error => {
+
+      if (error.status) {
+        render_error_page(error.status, getErrorMessage(error.status));
+      } else {
+        render_error_page(500, "failed to get chat history!");
       }
     })
     .finally(() => {
       appState.is_fetching_users = false;
     });
 }
+
 
 export function setupUserScrollListener() {
   const box = document.querySelector("#users-scroll-box");

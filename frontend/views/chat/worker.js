@@ -9,7 +9,6 @@ worker.port.start();
 worker.port.onmessage = (event) => {
   const users_container = document.querySelector("#chat_users");
   const msg = event.data;
-  console.log("[Main] Message from worker ->---------> :", msg);
 
   switch (msg.type) {
     case "message":
@@ -42,7 +41,7 @@ worker.port.onmessage = (event) => {
       }
 
       // update_status(msg.sender)
-      console.log("the state is: ", appState);
+  
       appState.users_offset = 0
       if (users_container) {
         users_container.innerHTML = "";
@@ -53,7 +52,7 @@ worker.port.onmessage = (event) => {
     case "online":
       // update_status(msg.sender)
       appState.users_offset = 0
-      console.log("the state is: ", appState);
+
       if (users_container) {
         users_container.innerHTML = "";
       }
@@ -61,12 +60,10 @@ worker.port.onmessage = (event) => {
       load_users()
       break;
     case "sent_message":
-
-
       display_sent_message(msg)
-
+      break;
     case "read":
-      mark_messages_as_read(msg.sender)
+        mark_messages_as_read(msg.sender)
       break;
     case "status":
       console.log("[Main] WebSocket status:", msg.status);
@@ -86,7 +83,6 @@ worker.port.onclose = () => {
 };
 
 export function sendMessage(worker, message) {
-  console.log("[Main] Sending message to worker:", message);
   worker.port.postMessage(message);
 }
 
@@ -134,8 +130,6 @@ function displayMessage(msg) {
 function showTypingIndicator(msg) {
   const typingElem = document.getElementById("typing-indicator");
   if (!typingElem) return;
-  console.log(typingElem);
-
   if (!appState.chat_user || msg.sender != appState.chat_user.id) {
     return
   }
