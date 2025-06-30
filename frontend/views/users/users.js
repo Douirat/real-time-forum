@@ -20,7 +20,9 @@ export function logout() {
       .then(async response => {
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(errorText);
+          const error = new Error(errorText);
+          error.status = response.status;
+          throw error;
         }
         worker.port.start()
         sendMessage(worker, { type: "logout" })
@@ -30,7 +32,20 @@ export function logout() {
       .then(data => () => {
         console.log(data)
       })
-      .catch(errorText => console.log("Error:", errorText));
+      .catch((error) => {
+        console.error("Login error:", error);
+
+        // Handle specific HTTP errors
+        if (error.status) {
+          if (error.status === 401 || error.status === 403) {
+            alert("Login failed. Please check your credentials.");
+          } else {
+            render_error_page(error.status, getErrorMessage(error.status));
+          }
+        } else {
+          render_error_page(500, "Login failed due to an unknown error");
+        }
+      });
   })
 }
 
@@ -109,11 +124,13 @@ export function load_users() {
   console.log("The offset and limits are: ", appState.users_offset, " ", appState.users_limit);
 
   fetch(`http://localhost:8080/get_users?offset=${appState.users_offset}&limit=${appState.users_limit}`)
-    .then(response => {
+    .then(async response => {
       // Check for HTTP errors
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+        const errorText = await response.text();
+        const error = new Error(errorText);
+        error.status = response.status;
+        throw error;      }
       return response.json(); // This can also throw if response is not valid JSON
     })
     .then(data => {
