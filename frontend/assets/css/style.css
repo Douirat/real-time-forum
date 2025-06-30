@@ -142,7 +142,27 @@ main {
 .category-label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  user-select: none;
+  border: 1px solid transparent;
+}
+
+.category-checkbox {
+  display: none; 
+}
+
+.category-name {
+  color: var(--text-muted);
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.category-checkbox:checked + .category-name {
+  color: var(--primary-color);
+  font-weight: bold;
 }
 
 .post-item {

@@ -72,17 +72,16 @@ export function login_form() {
 
 // Enhanced post creation form with categories:
 export function post_form(categories) {
-    // Generate HTML for category checkboxes
     const categoriesHTML = categories && categories.length > 0
         ? /*HTML*/ `
             <div class="categories-container">
                 <h4>Select categories</h4>
                 <div class="categories-options">
                     ${categories.map(category => `
-                        <div class="post_check">
-                        <small>${category.c_name}</small>
-                        <input type="checkbox" class="category-checkbox" value="${category.id}">
-                        </div>
+                        <label class="category-label">
+                            <input type="checkbox" class="category-checkbox" value="${category.id}">
+                            <span class="category-name">${category.c_name}</span>
+                        </label>
                     `).join('')}
                 </div>
             </div>
@@ -90,7 +89,7 @@ export function post_form(categories) {
         : '<p>No categories available</p>';
 
     return /*html*/`
-        <form id="posts_form" method="POST">
+        <form id="posts_form" method="POST" class="postForm">
             <h1>Create Post</h1>
             <input id="title" type="text" placeholder="Title..." required>
             <textarea id="content" placeholder="Content..." required></textarea>
