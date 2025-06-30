@@ -19,25 +19,36 @@ export async function handle_user_profile() {
 
     const user = await response.json();
     console.log("the logged in user is: ", user);
-    
+
     appState.app_user = {
       id: user.id,
       nick_name: user.nick_name,
       is_online: true,
     }
 
-    // Render the profile HTML inline, right after data is fetched:
-    container.innerHTML = /*HTML*/`
-      <section id="user_profile" class="profile-card">
-        <header class="profile-header">
-          <h2 id="profile-nick_name">${user.nick_name || 'Anonymous'}</h2>
-          <p class="profile-fullname" id="profile-fullname">${`${user.first_name || ''} ${user.last_name || ''}`.trim() || '\u00A0'}</p>
-        </header>
-        <div class="profile-details">
-          <p><strong>Email:</strong> <a href="mailto:${user.email || '#'}" id="profile-email">${user.email || 'N/A'}</a></p>
-        </div>
-      </section>
-    `;
+container.innerHTML = /*HTML*/`
+  <section id="user_profile" class="profile-card">
+    <div class="profile-details">
+      <div id="profile_img">
+        ${`${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.trim() || '&nbsp;'}
+      </div>
+    </div>
+
+    <div class="profile-details">
+      <small>Full name</small>
+      <p class="profile-fullname" id="profile-fullname">
+        ${`${user.first_name || ''} ${user.last_name || ''}`.trim() || '&nbsp;'}
+      </p>
+    </div>
+
+    <div class="profile-details">
+      <small>Email</small>
+      <p id="profile-email">
+        ${user.email || 'N/A'}
+      </p>
+    </div>
+  </section>
+`;
 
   } catch (error) {
     container.innerHTML = `<p class="error">Failed to load profile: ${error.message}</p>`;

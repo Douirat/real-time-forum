@@ -4,7 +4,7 @@ export function render_char_area() {
       <div class="chat-container">
         <div class="chat-header">
           <h3>Chat</h3>
-          <button id="cancel_chat">x</button>
+          <button id="cancel_chat"><img src="/assets/imgs/delete-button.png" alt="x"></button>
         </div>
 
         <div id="messages-container" class="messages-container">

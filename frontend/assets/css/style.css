@@ -1,5 +1,6 @@
 @import url(left_aside.css);
 @import url(chat_area.css);
+
 * {
   margin: 0;
   padding: 0;
@@ -10,7 +11,7 @@ body {
   height: 100%;
   overflow-x: hidden;
   display: grid;
-  grid-template-columns: 250px 1fr;
+  grid-template-columns: 400px 1fr;
   /* Aside is 250px, main gets remaining */
   grid-template-rows: 60px 1fr;
   /* Header is 60px, rest fills */
@@ -20,57 +21,76 @@ body {
   width: 100vw;
   height: fit-content;
   font-family: sans-serif;
+  background-color: #f2f2f2;
 }
 
 .header {
   grid-area: header;
-  background-color: #333;
-  color: white;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
+  height: fit-content;
 }
+
 
 .header nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background-color:  white;;
   width: 100%;
+  height: 6vh;
+  color: rgb(97, 94, 94);
+  border-radius: 10px;
+  margin: 4px;
+  padding: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
+
 
 .logo {
   font-size: 1.5rem;
   font-weight: bold;
-  color: white;
+ color: rgb(107, 103, 103);
   text-decoration: none;
 }
 
 .logout {
-  background-color: #ff4444;
-  color: white;
   border: none;
   padding: 0.5rem 1rem;
-  border-radius: 4px;
   cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: none;
 }
 
+.logout img{
+  width: 30px;
+  height: 30px;
+}
 /* ASIDE */
-aside#profile_users {
-  grid-area: aside;
+#profile_users {
   background-color: #f2f2f2;
-  overflow-y: auto;
+  margin: 4px;
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 2vh;
+  gap: 10vh;
 }
 
 main {
-  max-width: 800px;
+  width: 80%;
+  min-width: 400px;
   margin: 2rem auto;
   padding: 0 1rem;
   grid-area: main;
+
 }
 
 .postForm {
@@ -117,6 +137,7 @@ main {
   margin-bottom: 1rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
 }
 
 .post-categories {
@@ -182,6 +203,7 @@ form {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
 #login_form,
 #registration_form {
   width: 100vw;
@@ -193,6 +215,7 @@ form {
   justify-content: center;
   align-items: center;
 }
+
 fieldset {
   border: 1px solid #ddd;
   padding: 1rem;

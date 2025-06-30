@@ -2,7 +2,6 @@ import { appState } from "../../utils/state.js";
 import { mark_messages_as_read } from "./chat.js"
 import { load_users, setupUserScrollListener } from "../users/users.js";
 import { render_error_page } from "../error.js";
-import { getCookie } from "../../utils/auth_validators.js";
 
 export const worker = new SharedWorker("./web_socket/shared_socket.js");
 
@@ -15,17 +14,18 @@ worker.port.onmessage = (event) => {
   switch (msg.type) {
     case "message":
       displayMessage(msg);
-      if (appState.chat_user) {
-        if (msg.sender == appState.chat_user.id) {
-          sendMessage(worker, { type: "read", sender: appState.chat_user.id })
-        }
-      }
       appState.users_offset = 0
       if (users_container) {
         users_container.innerHTML = "";
       }
       setupUserScrollListener()
       load_users()
+      if (appState.chat_user) {
+        if (msg.sender == appState.chat_user.id) {
+          sendMessage(worker, { type: "read", sender: appState.chat_user.id })
+        }
+      }
+
       break;
 
     case "start_typing":
@@ -43,7 +43,7 @@ worker.port.onmessage = (event) => {
       }
 
       // update_status(msg.sender)
-  
+
       appState.users_offset = 0
       if (users_container) {
         users_container.innerHTML = "";
@@ -54,7 +54,6 @@ worker.port.onmessage = (event) => {
     case "online":
       // update_status(msg.sender)
       appState.users_offset = 0
-
       if (users_container) {
         users_container.innerHTML = "";
       }
@@ -65,7 +64,7 @@ worker.port.onmessage = (event) => {
       display_sent_message(msg)
       break;
     case "read":
-        mark_messages_as_read(msg.sender)
+      mark_messages_as_read(msg.sender)
       break;
     case "status":
       console.log("[Main] WebSocket status:", msg.status);
@@ -86,13 +85,7 @@ worker.port.onclose = () => {
 
 export function sendMessage(worker, message) {
   const token = getCookieValue("session_token");
-  // if (!token) {
-  //   console.warn("No session token found in cookies");
-  //   render_error_page(500, "error with session!")
-  //   return;
-  // }
-
-  message.token = token; // attach token
+  message.token = token;
   worker.port.postMessage(message);
 }
 

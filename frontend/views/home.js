@@ -32,10 +32,8 @@ resetAppState()
     .then((data) => {
       worker.port.start();
 
-// TODO: A small issue when refresh.
         sendMessage(worker, { type: "login" });
       
-
       fetch_categories()
         .then((categories) => {
           categoriesData = categories;

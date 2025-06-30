@@ -1,40 +1,73 @@
 .online {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background-color: green;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: green;
 }
 
 .offline {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background-color: red;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: red;
 }
 
-#chat_users{
-    width: fit-content;
-    height: fit-content;
-    padding: 2vmin;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1vmin;
+
+#user_profile_container {
+  border-radius: 10px;
+  width: 350px;
+  height: fit-content;
+  background-color: white;
+  font-style: italic;
+  font-family: 'Times New Roman', Times, serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.user_chat{
-    width: fit-content;
-    min-width: 140px;
-    padding: 4px;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 4px;
-    border: 1px rgb(85, 82, 82) solid;
-    border-radius: 5px;
-    cursor: pointer;
+#profile_img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #f2f2f2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: fit-content;
+  height: fit-content;
+  gap: 2px;
+  border-radius: 6px;
+  padding: 4px;
+}
+
+#user_profile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  padding: 4px;
+}
+
+
+.user_chat {
+  width: fit-content;
+  min-width: 140px;
+  padding: 4px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  border: 1px rgb(85, 82, 82) solid;
+  border-radius: 5px;
+  cursor: pointer;
 }
 
 .notification {
@@ -46,7 +79,8 @@
   border-radius: 12px;
   text-align: center;
   margin-left: auto;
-  display: none; /* hide by default */
+  display: none;
+  /* hide by default */
 }
 
 .notification.show {

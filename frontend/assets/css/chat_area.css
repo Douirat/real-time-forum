@@ -97,3 +97,20 @@
   color: #555;
   padding: 5px 10px;
 }
+
+#cancel_chat{
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+#cancel_chat img{
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
