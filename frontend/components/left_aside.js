@@ -8,12 +8,12 @@ export function render_left_aside() {
         <div class="users-header">
         </div>
         <div id="users-scroll-box" style="overflow-y: auto; height: 400px;">
-          <div>
-            <h4>Users</h4>
+        
+            <strong>Chat users</strong>
             <div id="chat_users">
               <!-- Online users will be dynamically added here -->
             </div>
-          </div>
+     
           </div>
         </div>
       </div>

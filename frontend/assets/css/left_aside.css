@@ -9,13 +9,12 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: red;
+  background-color: rgb(160, 153, 153);
 }
 
 
 #user_profile_container {
   border-radius: 10px;
-  width: 350px;
   height: fit-content;
   background-color: white;
   font-style: italic;
@@ -55,6 +54,34 @@
   padding: 4px;
 }
 
+/* handle chat users: */
+#users_container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+  background-color: white;
+  font-style: italic;
+  font-family: 'Times New Roman', Times, serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#users-scroll-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 4px;
+}
+#chat_users{
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 4px;
+}
+
 
 .user_chat {
   width: fit-content;
@@ -65,7 +92,9 @@
   justify-content: space-between;
   align-items: center;
   gap: 4px;
-  border: 1px rgb(85, 82, 82) solid;
+  background-color: #f2f2f2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 0.03rem rgb(141, 138, 138) solid;
   border-radius: 5px;
   cursor: pointer;
 }

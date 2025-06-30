@@ -1,6 +1,30 @@
 @import url(left_aside.css);
 @import url(chat_area.css);
 
+:root {
+  --primary-color: #667eea;
+  --primary-dark: #5a67d8;
+  --secondary-color: #764ba2;
+  --accent-color: #4ecdc4;
+  --success-color: #48bb78;
+  --danger-color: #f56565;
+  --warning-color: #ed8936;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7fafc;
+  --bg-tertiary: #edf2f7;
+  --text-primary: #2d3748;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  --border-color: #e2e8f0;
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -8,20 +32,15 @@
 }
 
 body {
-  height: 100%;
-  overflow-x: hidden;
-  display: grid;
-  grid-template-columns: 400px 1fr;
-  /* Aside is 250px, main gets remaining */
-  grid-template-rows: 60px 1fr;
-  /* Header is 60px, rest fills */
-  grid-template-areas:
-    "header header"
-    "aside main";
   width: 100vw;
   height: fit-content;
+  overflow-x: hidden;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  grid-template-rows: 60px 1fr;
+  grid-template-areas: "header header" "aside main";
   font-family: sans-serif;
-  background-color: #f2f2f2;
+  background-color: var(--bg-tertiary);
 }
 
 .header {
@@ -33,27 +52,24 @@ body {
   height: fit-content;
 }
 
-
 .header nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color:  white;;
+  background-color: var(--bg-primary);
   width: 100%;
   height: 6vh;
-  color: rgb(97, 94, 94);
-  border-radius: 10px;
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
   margin: 4px;
   padding: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
-
-
 
 .logo {
   font-size: 1.5rem;
   font-weight: bold;
- color: rgb(107, 103, 103);
+  color: var(--text-muted);
   text-decoration: none;
 }
 
@@ -63,42 +79,40 @@ body {
   cursor: pointer;
   width: 30px;
   height: 30px;
+  background: none;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: none;
 }
 
-.logout img{
+.logout img {
   width: 30px;
   height: 30px;
 }
-/* ASIDE */
+
 #profile_users {
-  background-color: #f2f2f2;
+  background-color: var(--bg-tertiary);
   margin: 4px;
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10vh;
+  gap: 4vh;
 }
 
 main {
+  grid-area: main;
   width: 80%;
   min-width: 400px;
   margin: 2rem auto;
   padding: 0 1rem;
-  grid-area: main;
-
 }
 
 .postForm {
-  background: white;
+  background: var(--bg-primary);
   padding: 2rem;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   margin-bottom: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .postForm input,
@@ -106,8 +120,8 @@ main {
   width: 100%;
   padding: 0.75rem;
   margin-bottom: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
 }
 
 .postForm textarea {
@@ -132,11 +146,11 @@ main {
 }
 
 .post-item {
-  background: white;
+  background: var(--bg-primary);
   padding: 1.5rem;
   margin-bottom: 1rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
   width: 100%;
 }
 
@@ -145,21 +159,30 @@ main {
 }
 
 .category-tag {
-  background-color: #f0f0f0;
+  background-color: var(--bg-tertiary);
   padding: 3px 8px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   margin-right: 5px;
   font-size: 0.8rem;
 }
 
 .comment-btn {
-  background-color: #007bff;
-  color: white;
+  background: none;
+  color: var(--accent-color);
   border: none;
   padding: 0.5rem 1rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   margin-top: 1rem;
+}
+
+.comment-btn:hover {
+  background-color: var(--bg-primary);
+}
+
+.comment-btn img {
+  width: 30px;
+  height: auto;
 }
 
 .comment-form {
@@ -171,16 +194,16 @@ main {
 .comment-form input {
   flex: 1;
   padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
 }
 
 .comment-form button {
-  background-color: #28a745;
+  background-color: var(--success-color);
   color: white;
   border: none;
   padding: 0.5rem 1rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -190,37 +213,66 @@ main {
 
 .comment {
   margin-bottom: 10px;
-  border-left: 3px solid #ccc;
+  border-left: 3px solid var(--border-color);
   padding-left: 10px;
 }
 
-/* Form styles */
-form {
-  /* max-width: 400px; */
-  /* margin: 2rem auto; */
-  padding: 2rem;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-#login_form,
-#registration_form {
+.form_container {
   width: 100vw;
+  height: 100vh;
   min-width: 400px;
   padding: 2rem;
-  background: white;
-  height: 100vh;
+  background-color: var(--bg-tertiary);
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: 10vh;
+}
+
+#registration_form,
+#login_form {
+  padding: 2rem;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  width: 50%;
+  min-height: 350px;
+  box-shadow: var(--shadow-sm);
+}
+
+.Personal_fields,
+#general_field {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  width: 100%;
+}
+
+#gender {
+  width: 50%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
   align-items: center;
 }
 
+.gender_organizer {
+  width: 150px;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.login_register_btn {
+  width: 30%;
+}
+
 fieldset {
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   padding: 1rem;
   margin-bottom: 1rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 form input,
@@ -228,12 +280,12 @@ form button {
   width: 100%;
   padding: 0.75rem;
   margin-bottom: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
 }
 
 form button {
-  background-color: #007bff;
+  background-color: var(--primary-color);
   color: white;
   border: none;
   cursor: pointer;
@@ -243,6 +295,127 @@ form a {
   display: block;
   text-align: center;
   margin-top: 1rem;
-  color: #007bff;
+  color: var(--primary-color);
   text-decoration: none;
+}
+
+#posts_form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.categories-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2vmin;
+}
+
+.categories-options {
+  width: 60%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.post_check {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Tablet (≤768px) and below */
+@media (max-width: 768px) {
+  body {
+    grid-template-columns: 1fr;
+    grid-template-rows: 60px auto auto;
+    grid-template-areas:
+      "header"
+      "aside"
+      "main";
+  }
+
+  #profile_users {
+    padding: 1rem;
+    background-color: var(--bg-secondary);
+    gap: 2vh;
+  }
+
+  main {
+    width: 95%;
+    margin: 1rem auto;
+    padding: 0.5rem;
+  }
+
+  .postForm,
+  .post-item {
+    padding: 1rem;
+  }
+
+  #registration_form,
+  #login_form {
+    width: 90%;
+  }
+
+  .categories-options {
+    width: 100%;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .login_register_btn {
+    width: 100%;
+  }
+
+  #gender {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  #chat_area{
+    width: 90%;
+    align-self: center;
+  }
+}
+
+/* Mobile (≤480px) */
+@media (max-width: 480px) {
+  .header nav {
+    height: auto;
+    padding: 1rem;
+  }
+
+  .logo {
+    font-size: 1.2rem;
+  }
+
+  .logout {
+    width: 25px;
+    height: 25px;
+  }
+
+  .logout img {
+    width: 25px;
+    height: 25px;
+  }
+
+  .postForm input,
+  .postForm textarea,
+  form input,
+  form button {
+    font-size: 0.9rem;
+  }
+
+  .comment-form {
+    flex-direction: column;
+  }
+
+  .comment-form button {
+    width: 100%;
+  }
 }

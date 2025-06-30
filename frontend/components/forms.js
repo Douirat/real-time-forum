@@ -1,7 +1,13 @@
 // Registration form component:
 export function registration_form() {
     document.body.innerHTML = /*html*/`
-        <form id="registration_form" method="POST">
+            <header class="header">
+            <nav>
+                <a href="/" class="logo">FORUM</a>
+            </nav>
+        </header>
+<div class="form_container">
+ <form id="registration_form" method="POST">
             <fieldset id="general_field">
                 <legend>Sign-up:</legend>
                 <fieldset class="Personal_fields">
@@ -13,62 +19,70 @@ export function registration_form() {
                 </fieldset>
                 <fieldset id="gender">
                     <legend>Select your gender:</legend>
-                    <div>
-                        <label for="Male">Male</label>
+
+                    <div class="gender_organizer">
+                        <label for="Male">Male:</label>
                         <input type="radio" class="gender" name="gender" value="Male" checked />
                     </div>
-                    <div>
-                        <label for="Female">Female</label>
-                        <input type="radio" class="gender" name="gender" value="Female" />
+                  <div class="gender_organizer">
+                                      <label for="Female">Female:</label>
+                                      <input type="radio" class="gender" name="gender" value="Female" />
                     </div>
+            
                 </fieldset>
                 <fieldset class="Personal_fields">
                     <legend>Enter your password:</legend>
-                    <div>
+                
                         <input type="password" class="password" id="password" placeholder="password..." required />
-                    </div>
-                    <div>
+             
+             
                         <input type="password" class="password" id="confirmation" placeholder="confirmation..." required />
-                    </div>
+            
                 </fieldset>
-                <button type="submit">Register</button>
+                <button class="login_register_btn" type="submit">Register</button>
                 <a href="/login">Login</a>
             </fieldset>
         </form>
+    </div>
+       
     `;
 }
 
 // Login form component:
 export function login_form() {
     document.body.innerHTML = /*html*/`
-    <form id="login_form" method="post">
+            <header class="header">
+            <nav>
+                <a href="/" class="logo">FORUM</a>
+            </nav>
+        </header>
+     <div class="form_container">
+            <form id="login_form" method="post">
         <fieldset class="Personal_fields">
             <legend>Log-in:</legend>
-            <div>
                 <input type="email" class="email" id="email" placeholder="email..." required>
-            </div>
-            <div>
                 <input type="password" class="password" id="password" placeholder="password..." required>
-            </div>
-            <button type="submit">Login</button>
+            <button class="login_register_btn" type="submit">Login</button>
             <a href="/register">Sign-up</a>
         </fieldset>
     </form>
+    </div>
     `;
 }
 
 // Enhanced post creation form with categories:
 export function post_form(categories) {
     // Generate HTML for category checkboxes
-    const categoriesHTML = categories && categories.length > 0 
+    const categoriesHTML = categories && categories.length > 0
         ? /*HTML*/ `
             <div class="categories-container">
-                <h3>Select categories:</h3>
+                <h4>Select categories</h4>
                 <div class="categories-options">
                     ${categories.map(category => `
-                        <label class="category-label">
-                            <input type="checkbox" class="category-checkbox" value="${category.id}"> ${category.c_name}
-                        </label>
+                        <div class="post_check">
+                        <small>${category.c_name}</small>
+                        <input type="checkbox" class="category-checkbox" value="${category.id}">
+                        </div>
                     `).join('')}
                 </div>
             </div>
@@ -81,7 +95,7 @@ export function post_form(categories) {
             <input id="title" type="text" placeholder="Title..." required>
             <textarea id="content" placeholder="Content..." required></textarea>
             ${categoriesHTML}
-            <button type="submit">Create</button>
+            <button class="login_register_btn" type="submit">Create</button>
         </form>
     `;
 }

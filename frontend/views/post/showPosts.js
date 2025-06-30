@@ -105,7 +105,7 @@ export function show_posts() {
                     </div>`
                         : ""
                     }
-                    <button class="comment-btn">Comments</button>
+                    <button class="comment-btn"><img src="/assets/imgs/speech-bubble.png" alt="comments"></button>
                     <div id="comments-section-${post.id}" style="display:none">
                         <div id="comments-container-${
                           post.id
