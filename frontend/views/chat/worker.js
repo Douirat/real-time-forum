@@ -1,5 +1,5 @@
 import { appState } from "../../utils/state.js";
-import { mark_messages_as_read } from "./chat.js"
+import { mark_messages_as_read } from "./chat.js";
 import { load_users, setupUserScrollListener } from "../users/users.js";
 import { render_error_page } from "../error.js";
 
@@ -13,19 +13,20 @@ worker.port.onmessage = (event) => {
 
   switch (msg.type) {
     case "message":
-      displayMessage(msg);
-      appState.users_offset = 0
+      // Check if the message is from the currently open chat user
+      if (appState.chat_user && msg.sender == appState.chat_user.id) {
+        // If the message is from the open chat user, display it in the conversation
+        displayMessage(msg);
+        // Mark the message as read immediately
+        sendMessage(worker, { type: "read", sender: appState.chat_user.id });
+      }
+      // In all cases, reload the users list to show notifications
+      appState.users_offset = 0;
       if (users_container) {
         users_container.innerHTML = "";
       }
-      setupUserScrollListener()
-      load_users()
-      if (appState.chat_user) {
-        if (msg.sender == appState.chat_user.id) {
-          sendMessage(worker, { type: "read", sender: appState.chat_user.id })
-        }
-      }
-
+      setupUserScrollListener();
+      load_users();
       break;
 
     case "start_typing":
@@ -35,7 +36,6 @@ worker.port.onmessage = (event) => {
       hideTypingIndicator();
       break;
     case "offline":
-
       if (appState.chat_user) {
         if (msg.sender == appState.chat_user.id) {
           hideTypingIndicator();
@@ -44,27 +44,27 @@ worker.port.onmessage = (event) => {
 
       // update_status(msg.sender)
 
-      appState.users_offset = 0
+      appState.users_offset = 0;
       if (users_container) {
         users_container.innerHTML = "";
       }
-      setupUserScrollListener()
-      load_users()
+      setupUserScrollListener();
+      load_users();
       break;
     case "online":
       // update_status(msg.sender)
-      appState.users_offset = 0
+      appState.users_offset = 0;
       if (users_container) {
         users_container.innerHTML = "";
       }
-      setupUserScrollListener()
-      load_users()
+      setupUserScrollListener();
+      load_users();
       break;
     case "sent_message":
-      display_sent_message(msg)
+      display_sent_message(msg);
       break;
     case "read":
-      mark_messages_as_read(msg.sender)
+      mark_messages_as_read(msg.sender);
       break;
     case "status":
       console.log("[Main] WebSocket status:", msg.status);
@@ -88,7 +88,6 @@ export function sendMessage(worker, message) {
   message.token = token;
   worker.port.postMessage(message);
 }
-
 
 // Placeholder functions for UI updates:
 function displayMessage(msg) {
@@ -130,12 +129,11 @@ function displayMessage(msg) {
   container.scrollTop = container.scrollHeight;
 }
 
-
 function showTypingIndicator(msg) {
   const typingElem = document.getElementById("typing-indicator");
   if (!typingElem) return;
   if (!appState.chat_user || msg.sender != appState.chat_user.id) {
-    return
+    return;
   }
   typingElem.innerText = `User ${appState.chat_user.nick_name} is typing...`;
   typingElem.style.display = "block";
