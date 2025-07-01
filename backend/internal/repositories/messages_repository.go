@@ -42,7 +42,7 @@ func (mesRepo *MessageRepository) GetChatHistory(client, guest int, offset int, 
 	FROM private_messages
 	WHERE (sender_id = ? AND receiver_id = ?)
 	   OR (sender_id = ? AND receiver_id = ?)
-	ORDER BY created_at DESC
+	ORDER BY ID DESC
 	LIMIT ? OFFSET ?
 	`
 
