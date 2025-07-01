@@ -37,7 +37,7 @@ export function start_chat_with_user(user) {
     }
   }
 
-  // Create new chat area - تم تمرير اسم المستخدم كمعامل
+  // Create new chat area
   const temp = document.createElement("div");
   temp.innerHTML = render_char_area(user.nick_name);
   const element = temp.firstElementChild;
@@ -49,12 +49,11 @@ export function start_chat_with_user(user) {
 
   get_chat_history(user);
   setupChatScrollListener();
-  handle_messsage(); // تم إزالة معامل user من هنا
-  handle_typing();   // تم إزالة معامل user من هنا
+  handle_messsage();
+  handle_typing();
   cancel_chat();
 }
 
-// تم إزالة معامل user لأن الدالة تستخدم appState.chat_user
 function handle_messsage() {
   const users_container = document.querySelector("#chat_users");
   let sendBtn = document.getElementById("send-button");
@@ -63,23 +62,22 @@ function handle_messsage() {
   sendBtn.addEventListener("click", () => {
     let input = inputField.value.trim();
     if (input === "") return;
-    
-    // التحقق من وجود المستخدم المفتوح في المحادثة
+
     if (!appState.chat_user) {
       console.error("No active chat user");
       return;
     }
-    
+
     console.log("worker: ", worker);
     let message = {
       type: "message",
-      receiver: appState.chat_user.id, // استخدام appState.chat_user.id بدلاً من user.id
+      receiver: appState.chat_user.id,
       content: input,
     };
 
     let sent_message = {
       type: "sent_message",
-      receiver: appState.chat_user.id, // استخدام appState.chat_user.id بدلاً من user.id
+      receiver: appState.chat_user.id,
       content: input,
     };
 
@@ -95,19 +93,17 @@ function handle_messsage() {
   });
 }
 
-// تم إزالة معامل user لأن الدالة تستخدم appState.chat_user
 function handle_typing() {
   let input_field = document.getElementById("message-input");
   input_field.addEventListener("input", () => {
-    // التحقق من وجود المستخدم المفتوح في المحادثة
     if (!appState.chat_user) {
       return;
     }
-    
+
     if (!isTyping) {
       sendMessage(worker, {
         type: "start_typing",
-        receiver: appState.chat_user.id, // استخدام appState.chat_user.id بدلاً من user.id
+        receiver: appState.chat_user.id, 
         content: "typing_status",
       });
       isTyping = true;
@@ -119,7 +115,7 @@ function handle_typing() {
       if (isTyping) {
         sendMessage(worker, {
           type: "stop_typing",
-          receiver: appState.chat_user.id, // استخدام appState.chat_user.id بدلاً من user.id
+          receiver: appState.chat_user.id, 
           content: "typing_status",
         });
         isTyping = false;

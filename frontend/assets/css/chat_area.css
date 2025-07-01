@@ -1,12 +1,11 @@
 /* Chat area fixed at bottom right */
-/* Chat area fixed at bottom right */
 #chat_area {
   position: fixed;
   bottom: 0;
   right: 0;
   width: 100%;
   max-width: 400px;
-  height: 50vh; /* ⬅️ كبرنا الطول */
+  height: 50vh;
   display: flex;
   flex-direction: column;
   padding: 0;
