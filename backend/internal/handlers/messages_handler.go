@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -62,10 +61,6 @@ func (messHand *MessagesHandler) GetChatHistoryHandler(w http.ResponseWriter, r 
 			http.Error(w, "Failed to retrieve messages", http.StatusInternalServerError)
 		}
 		return
-	}
-
-	for _, v := range messages {
-		fmt.Println("zzzzzzzzzzzz", v)
 	}
 
 	// Send proper JSON response even when messages are empty

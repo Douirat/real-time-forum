@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -83,10 +82,5 @@ func (soc *WebSocketHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 		return
 	}
-
-	for i, v := range users {
-		fmt.Printf("User %d, is %v\n", i, v)
-	}
-
 	utils.ResponseJSON(w, http.StatusOK, users)
 }
