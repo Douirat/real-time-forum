@@ -3,6 +3,7 @@ import { show_posts, reset_pagination } from './showPosts.js';
 import { isEmptyPost ,clearPostForm} from '../../utils/post_validators.js';
 import { render_error_page } from "../error.js";
 import { getErrorMessage } from "../../utils/error_validators.js";
+import { showErrorNotification } from "../../utils/notification.js";
 
 export function add_new_post() {
     const selectedCategories = [];
@@ -13,7 +14,7 @@ export function add_new_post() {
     const content = document.getElementById("content").value.trim();
 
     if (isEmptyPost(title, content)) {
-        alert("Please fill in all the post fields");
+        showErrorNotification("Please fill in all the post fields");
         return;
     }
     const post_data = { title, content, categories: selectedCategories };

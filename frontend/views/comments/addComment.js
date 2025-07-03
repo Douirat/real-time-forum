@@ -2,12 +2,13 @@ import { isEmptyInput, formatDate } from '../../utils/comment_validators.js';
 import { render_error_page } from "../error.js";
 import { getErrorMessage } from "../../utils/error_validators.js";
 import { appState } from '../../utils/state.js';
+import { showErrorNotification } from "../../utils/notification.js";
 
 export function add_comment(postId) {
     const commentInput = document.getElementById(`comment-input-${postId}`);
     
     if (isEmptyInput(commentInput?.value)) {
-        alert("Please enter a comment");
+        showErrorNotification("Please enter a comment");
         return;
     }
     
