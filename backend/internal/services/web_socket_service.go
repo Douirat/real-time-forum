@@ -108,7 +108,6 @@ func (client *Client) WritePump() {
 	}
 }
 
-
 // A function to read data from the websocket:
 // readPump handles incoming messages from the WebSocket connection
 // This runs in its own goroutine per client (e.g., Client A)
@@ -349,12 +348,33 @@ func (socket *WebSocketService) CreateNewWebSocket(w http.ResponseWriter, r *htt
 		UserId:     userId,
 		Connection: conn,
 		Pipe:       make(chan *WebsocketMessage, 256),
-		SessionID: token,
+		SessionID:  token,
+	}
+	// -----------------------------------
+	// 4.5 Check if user already has an active session
+	socket.Hub.Mu.RLock()
+	oldClient, exists := socket.Hub.Clients[userId]
+	socket.Hub.Mu.RUnlock()
+
+	if exists && oldClient != nil && oldClient.Pipe != nil {
+		select {
+		case oldClient.Pipe <- &WebsocketMessage{
+			Type:    "invalid_session",
+			Sender:  0,
+			Content: "You have been logged out due to another login.",
+		}:
+		default:
+			log.Printf("[WARN] Could not notify old client %d about invalid session", oldClient.UserId)
+		}
+
+		// Unregister the old client to close its connection
+		socket.Hub.Unregister <- oldClient
 	}
 
+	//--------------------------------
 	// 5. Register the user to hub
 	socket.Hub.Register <- client
-
+	
 	// 6. Start goroutines
 	go client.ReadPump(socket.Hub, socket)
 	go client.WritePump()

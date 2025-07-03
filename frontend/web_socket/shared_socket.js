@@ -33,7 +33,9 @@ function connectWebSocket() {
   };
 
   ws.onclose = (event) => {
-    console.warn(`[Worker] WebSocket closed (code: ${event.code}). Reconnecting in 3 seconds...`);
+    console.warn(
+      `[Worker] WebSocket closed (code: ${event.code}). Reconnecting in 3 seconds...`
+    );
     broadcast({ type: "status", status: "disconnected" });
     reconnectTimeout = setTimeout(connectWebSocket, 3000);
   };
@@ -66,36 +68,32 @@ onconnect = (e) => {
   // Immediately inform port of current connection status
   port.postMessage({
     type: "status",
-    status: ws && ws.readyState === WebSocket.OPEN ? "connected" : "disconnected",
+    status:
+      ws && ws.readyState === WebSocket.OPEN ? "connected" : "disconnected",
   });
 
   port.onmessage = (event) => {
-    if (event.data.type === "read"){
-        console.log("himos recevido un nuevo mensage :", event.data);
+    if (event.data.type === "read") {
+      console.log("himos recevido un nuevo mensage :", event.data);
     }
     const { type, ...data } = event.data;
-    
+
     switch (type) {
-      
       case "read":
-    
-      console.log("happened");
-      
-        broadcast(event.data)
+        console.log("happened");
+
+        broadcast(event.data);
         break;
 
       case "login":
-  
         connectWebSocket();
         break;
-
       case "logout":
-       
         if (ws) ws.close();
         break;
 
       case "sent_message":
-        broadcast(event.data)
+        broadcast(event.data);
         break;
 
       case "message":
@@ -104,10 +102,9 @@ onconnect = (e) => {
       case "typing":
         if (ws && ws.readyState === WebSocket.OPEN) {
           const json = JSON.stringify({ type, ...data });
-        
+
           ws.send(json);
         } else {
-   
         }
         break;
 

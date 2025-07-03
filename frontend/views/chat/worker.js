@@ -1,7 +1,7 @@
 import { appState } from "../../utils/state.js";
 import { mark_messages_as_read } from "./chat.js";
 import { load_users, setupUserScrollListener } from "../users/users.js";
-import { render_error_page } from "../error.js";
+import { navigateTo } from "../../router/router.js";
 
 export const worker = new SharedWorker("./web_socket/shared_socket.js");
 
@@ -12,6 +12,9 @@ worker.port.onmessage = (event) => {
   const msg = event.data;
 
   switch (msg.type) {
+    case "invalid_session":
+      navigateTo("/login");
+      break;
     case "message":
       // Check if the message is from the currently open chat user
       if (appState.chat_user && msg.sender == appState.chat_user.id) {
