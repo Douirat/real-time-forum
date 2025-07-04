@@ -12,9 +12,9 @@ worker.port.onmessage = (event) => {
   const msg = event.data;
 
   switch (msg.type) {
-    case "invalid_session":
-      navigateTo("/login");
-      break;
+    // case "invalid_session":
+    //   navigateTo("/login");
+    //   break;
     case "message":
       // Check if the message is from the currently open chat user
       if (appState.chat_user && msg.sender == appState.chat_user.id) {
