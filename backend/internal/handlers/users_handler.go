@@ -105,6 +105,8 @@ func (userHandler *UsersHandlers) UsersLoginHandler(w http.ResponseWriter, r *ht
 		ExpiresAt: expiresAt.Format(http.TimeFormat),
 	}
 
+	userHandler.chatBroker.DeleteIfClientExist(user.Id)
+
 	utils.ResponseJSON(w, http.StatusCreated, response)
 }
 

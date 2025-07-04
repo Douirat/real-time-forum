@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"real_time_forum/internal/models"
@@ -32,11 +33,20 @@ func NewPostService(postRepo *repositories.PostsRepository, sessRepo *repositori
 
 // Create a new post server:
 func (postSer *PostsService) CreatePost(post *models.PostUser, token string) error {
+	var err error
 	if post.Title == "" || post.Content == "" {
 		return errors.New("missing content or title")
 	}
 	post.CreatedAt = time.Now().UTC().Format("2006-01-02 15:04:05")
-	post.UserId, _ = postSer.SessionRepo.GetSessionByToken(token)
+	post.UserId, err = postSer.SessionRepo.GetSessionByToken(token)
+	if err != nil || post.UserId == 0{
+		if err != nil {
+				fmt.Printf("error retreiving user id ->----------->: %v", err)
+			return err
+		}
+		fmt.Printf("error retreiving user id.")
+		return  errors.New("error retreiving user id.")
+	}
 	return postSer.PostRepo.CreatePost(post)
 }
 

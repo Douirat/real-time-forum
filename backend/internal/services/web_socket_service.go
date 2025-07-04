@@ -225,6 +225,29 @@ func (broker *ChatBroker) RunChatBroker() {
 	}
 }
 
+// check if the client exist in the first login:
+func (broker *ChatBroker) DeleteIfClientExist(clientId int){
+				broker.Mu.Lock()
+			client, exists := broker.Clients[clientId]
+			if exists {
+				delete(broker.Clients, clientId)
+				log.Printf("[INFO] Client %d disconnected. Remaining: %d", clientId, len(broker.Clients))
+			}
+			broker.Mu.Unlock()
+
+			if exists {
+				fmt.Printf("the user was connected and now it's deleted: %v", client.UserId)
+				broker.BroadcastToAll(&WebsocketMessage{
+					Type:     "offline",
+					Sender:   clientId,
+					Content:  "left the chat",
+					Receiver: 0,
+				})
+
+				safeClose(client.Pipe)
+			}
+}
+
 // Broadcast to all users:
 func (broker *ChatBroker) BroadcastToAll(msg *WebsocketMessage) {
 	broker.Mu.RLock()
