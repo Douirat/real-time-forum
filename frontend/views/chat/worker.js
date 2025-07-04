@@ -71,8 +71,10 @@ worker.port.onmessage = (event) => {
       break;
     case "status":
       console.log("[Main] WebSocket status:", msg.status);
-      // Optionally update UI status indicator here
-      break;
+      if (msg.status === "disconnected") {
+        navigateTo("/login")
+      }
+        break;
     default:
       console.warn("[Main] Unknown message type received:", msg);
   }
