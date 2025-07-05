@@ -230,6 +230,13 @@ func (broker *ChatBroker) DeleteIfClientExist(clientId int){
 				broker.Mu.Lock()
 			client, exists := broker.Clients[clientId]
 			if exists {
+				close := &WebsocketMessage{
+					Type:     "closed",
+					Sender:   clientId,
+					Content:  "close this pipe",
+					Receiver: clientId,
+				}
+				client.Pipe <- close
 				delete(broker.Clients, clientId)
 				log.Printf("[INFO] Client %d disconnected. Remaining: %d", clientId, len(broker.Clients))
 			}
