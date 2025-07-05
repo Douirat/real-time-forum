@@ -72,7 +72,7 @@ worker.port.onmessage = (event) => {
     case "status":
       console.log("[Main] WebSocket status:", msg.status);
       if (msg.status === "disconnected") {
-        navigateTo("/login")
+        // navigateTo("/")
       }
         break;
     default:
