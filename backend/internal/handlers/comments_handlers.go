@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"html"
 	"net/http"
 	"strconv"
 
@@ -39,6 +40,8 @@ func (comHand *CommentsHandler) MakeCommentsHandler(w http.ResponseWriter, r *ht
 		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid token"})
 		return
 	}
+	comment.Content = html.EscapeString(comment.Content)
+	
 	err = comHand.ComSer.MakeComments(&comment, session.Value)
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "error createComment"})
