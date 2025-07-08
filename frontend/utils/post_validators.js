@@ -2,7 +2,7 @@ export function isEmptyPost(title, content) {
   return !title.trim() || !content.trim();
 }
 export function validatePostLength(title, content) {
-  const maxLength = 150;
+  const maxLength = 255; 
 
   if (title.length > maxLength) {
     return {
@@ -11,7 +11,7 @@ export function validatePostLength(title, content) {
     };
   }
 
-  if (content.length > maxLength) {
+  if (content.length > 10000) {
     return {
       isValid: false,
       message: `Post content must be less than ${maxLength} characters. Current content has ${content.length} characters`,

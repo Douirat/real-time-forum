@@ -35,6 +35,14 @@ func (comHand *CommentsHandler) MakeCommentsHandler(w http.ResponseWriter, r *ht
 		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "Invalid request body"})
 		return
 	}
+	if comment.Content == "" {
+		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "content is required"})
+		return
+	}
+	if len(comment.Content) > 10000 {
+		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "content is too long"})
+		return
+	}
 	session, err := r.Cookie("session_token")
 	if err != nil || session == nil {
 		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid token"})

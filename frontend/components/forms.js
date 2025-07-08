@@ -60,7 +60,7 @@ export function login_form() {
             <form id="login_form" method="post">
         <fieldset class="Personal_fields">
             <legend>Log-in:</legend>
-                <input type="email" class="email" id="email" placeholder="email..." required>
+                <input type="text" class="email" id="email" placeholder="email or nickname..." required>
                 <input type="password" class="password" id="password" placeholder="password..." required>
             <button class="login_register_btn" type="submit">Login</button>
             <a href="/register">Sign-up</a>

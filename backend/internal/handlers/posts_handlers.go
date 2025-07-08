@@ -34,6 +34,15 @@ func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http
 		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "Invalid request body"})
 		return
 	}
+	if post.Title == "" || post.Content == "" {
+		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "missing content or title"})
+		return
+	}
+	if len(post.Title) > 255 || len(post.Content) > 10000 {
+		utils.ResponseJSON(w, http.StatusBadRequest, map[string]any{"message": "content or title is too long"})
+		return
+	}
+	
 
 	session, err := r.Cookie("session_token")
 

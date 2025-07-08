@@ -34,9 +34,7 @@ func NewPostService(postRepo *repositories.PostsRepository, sessRepo *repositori
 // Create a new post server:
 func (postSer *PostsService) CreatePost(post *models.PostUser, token string) error {
 	var err error
-	if post.Title == "" || post.Content == "" {
-		return errors.New("missing content or title")
-	}
+
 	
 	post.CreatedAt = time.Now().UTC().Format("2006-01-02 15:04:05")
 	post.UserId, err = postSer.SessionRepo.GetSessionByToken(token)

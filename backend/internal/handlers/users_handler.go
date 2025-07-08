@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -75,6 +76,7 @@ func (userHandler *UsersHandlers) UsersRegistrationHandler(w http.ResponseWriter
 
 // Login handles user authentication
 func (userHandler *UsersHandlers) UsersLoginHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("edddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
 	credentials := Credentials{}
 	err := json.NewDecoder(r.Body).Decode(&credentials)
 	if err != nil {
@@ -83,7 +85,7 @@ func (userHandler *UsersHandlers) UsersLoginHandler(w http.ResponseWriter, r *ht
 	}
 
 	// Authenticate user:
-	user, err := userHandler.userServ.AuthenticateUser(credentials.Email, credentials.Password)
+	user, err := userHandler.userServ.AuthenticateUser(credentials.Email , credentials.Password)
 	if err != nil {
 		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "Authentication failed"})
 		return

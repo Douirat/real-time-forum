@@ -41,10 +41,11 @@ func (userRepo *UsersRepository) RegisterNewUser(user *models.User) error {
 // get userbyemail
 func (userRepo *UsersRepository) GetUserByEmail(email string) (*models.User, error) {
 	// Fixed SQL query missing quotes
-	query := "SELECT * FROM users WHERE email = ?"
+	query := "SELECT * FROM users WHERE email = ? OR nick_name = ?"
 	user := &models.User{}
-	// Fixed Scan by using address-of fields
-	err := userRepo.db.QueryRow(query, email).Scan(
+	// Fixed Scan by using address-of fields*
+	
+	err := userRepo.db.QueryRow(query, email, email).Scan(
 		&user.Id, &user.NickName, &user.Age, &user.Gender, &user.FirstName, &user.LastName, &user.Email, &user.Password,
 	)
 	if err != nil {

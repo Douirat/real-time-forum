@@ -11,7 +11,7 @@ export async function login_user() {
         password: document.getElementById("password").value,
     };
 
-    if (!isValidEmail(credentials.email) || credentials.email === "" || credentials.password === "") {
+    if ( credentials.email === "" || credentials.password === "") {
         showErrorNotification("Invalid email or password");
         return;
     }
