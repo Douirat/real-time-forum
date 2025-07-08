@@ -49,6 +49,7 @@ type ChatBroker struct {
 	Register   chan *Client
 	Unregister chan *Client
 	Broadcast  chan *WebsocketMessage
+	NewRegistration chan *WebsocketMessage
 }
 
 // WebSocket upgrader
@@ -67,6 +68,7 @@ func NewChatBroker() *ChatBroker {
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
 		Broadcast:  make(chan *WebsocketMessage),
+		NewRegistration:  make(chan *WebsocketMessage),
 	}
 }
 
@@ -221,6 +223,11 @@ func (broker *ChatBroker) RunChatBroker() {
 				// Public broadcast
 				broker.BroadcastToOthers(msg, msg.Sender)
 			}
+
+
+		//  in case of a new registration:
+		case newRegistration := <- broker.NewRegistration:
+			broker.BroadcastToAll(newRegistration)
 		}
 	}
 }

@@ -59,6 +59,15 @@ func (userHandler *UsersHandlers) UsersRegistrationHandler(w http.ResponseWriter
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "error to regester"})
 		return
 	}
+
+	newRegistration:= &services.WebsocketMessage{
+					Type:     "new_registration",
+					Sender:   0,
+					Content:  "a new user was registred",
+					Receiver: 0,
+				}
+
+	userHandler.chatBroker.NewRegistration <- newRegistration
 	
 	utils.ResponseJSON(w, http.StatusCreated, map[string]string{"message": "User registered successfully"})
 }
