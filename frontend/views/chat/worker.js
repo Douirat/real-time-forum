@@ -69,14 +69,16 @@ worker.port.onmessage = (event) => {
     case "read":
       mark_messages_as_read(msg.sender);
       break;
-      case "closed":
+    case "closed":
       console.log("You closed this dore try the window if you want ...");
       navigateTo("/login")
       break;
+    case "new_registration":
+      load_users()
     case "status":
       console.log("[Main] WebSocket status:", msg.status);
 
-        break;
+      break;
     default:
       console.warn("[Main] Unknown message type received:", msg);
   }
