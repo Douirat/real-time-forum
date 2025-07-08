@@ -1,4 +1,4 @@
-import { isEmptyInput, formatDate } from '../../utils/comment_validators.js';
+import { isEmptyInput, formatDate, validateCommentLength, escapeHtml } from '../../utils/comment_validators.js';
 import { render_error_page } from "../error.js";
 import { getErrorMessage } from "../../utils/error_validators.js";
 import { appState } from '../../utils/state.js';
@@ -9,6 +9,15 @@ export function add_comment(postId) {
     
     if (isEmptyInput(commentInput?.value)) {
         showErrorNotification("Please enter a comment");
+        return;
+    }
+    
+    // Pass the VALUE of the input, not the input element itself
+    const lengthValidation = validateCommentLength(commentInput.value.trim());
+    console.log("Length validation result:", lengthValidation);
+    
+    if (!lengthValidation.isValid) {
+        showErrorNotification(lengthValidation.message);
         return;
     }
     
@@ -71,10 +80,10 @@ function addNewCommentToTop(postId, comment) {
         <li>
             <div class="comment">
                 <div class="comment-header">
-                    <strong>${comment.nick_name || 'Anonymous'}</strong>
+                    <strong>${escapeHtml(comment.nick_name || 'Anonymous')}</strong>
                     <small>${formatDate(comment.created_at)}</small>
                 </div>
-                <p>${comment.content}</p>
+                <p>${escapeHtml(comment.content)}</p>
             </div>
         </li>
     `;
