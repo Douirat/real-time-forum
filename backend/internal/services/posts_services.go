@@ -37,6 +37,7 @@ func (postSer *PostsService) CreatePost(post *models.PostUser, token string) err
 	if post.Title == "" || post.Content == "" {
 		return errors.New("missing content or title")
 	}
+	
 	post.CreatedAt = time.Now().UTC().Format("2006-01-02 15:04:05")
 	post.UserId, err = postSer.SessionRepo.GetSessionByToken(token)
 	if err != nil || post.UserId == 0{

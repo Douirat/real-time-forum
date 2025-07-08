@@ -6,6 +6,7 @@ import (
 )
 
 const schema = `
+    PRAGMA foreign_keys = ON;
     -- create users table:
     CREATE TABLE IF NOT EXISTS users(
     ID INTEGER PRIMARY KEY AUTOINCREMENT,

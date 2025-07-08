@@ -59,6 +59,7 @@ func (userHandler *UsersHandlers) UsersRegistrationHandler(w http.ResponseWriter
 		utils.ResponseJSON(w, http.StatusInternalServerError, map[string]any{"message": "error to regester"})
 		return
 	}
+	
 	utils.ResponseJSON(w, http.StatusCreated, map[string]string{"message": "User registered successfully"})
 }
 

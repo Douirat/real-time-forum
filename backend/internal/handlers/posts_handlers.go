@@ -40,6 +40,8 @@ func (postHand *PostsHandlers) CreatePostsHandler(w http.ResponseWriter, r *http
 		utils.ResponseJSON(w, http.StatusUnauthorized, map[string]any{"message": "invalid token"})
 		return
 	}
+	post.Title = html.EscapeString(post.Title)
+	post.Content = html.EscapeString(post.Content)
 
 	err = postHand.postsServ.CreatePost(&post, session.Value)
 	if err != nil {
