@@ -60,6 +60,7 @@ func (userHandler *UsersHandlers) UsersRegistrationHandler(w http.ResponseWriter
 		return
 	}
 
+	// inform the chat brocker with the new registration:
 	newRegistration:= &services.WebsocketMessage{
 					Type:     "new_registration",
 					Sender:   0,
